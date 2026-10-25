@@ -62,6 +62,9 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 - **`start-mac-netzwerk.command`:** wie oben, aber im lokalen Netzwerk erreichbar (zeigt die Adresse an).
 
 ### Behoben
+- **UKW einheitlich als Kreis:** Hat ein UKW-Sendegebiet einen Sender-Standort, zeigt die Karte nur den Kreis um den
+  Sender – auch wenn Bundesländer angehakt sind (vorher leuchtete z. B. ganz Tirol, Salzburg aber nicht).
+  Bundesländer leuchten bei UKW nur noch ohne Standort.
 - Legende der Karte: „DAB+ – ganz Österreich“ statt „DAB+ – ganzes Bundesland“ (bei einem regionalen DAB+-Gebiet
   steht „DAB+ – leuchtende Bundesländer“).
 - **Karte blieb bei Paketen mit Senderwahl dunkel**, wenn die Sendegebiete beim Paket statt beim Sender angehakt

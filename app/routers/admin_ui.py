@@ -342,7 +342,8 @@ ENTITIES: dict[str, Entity] = {
             F("technology", "Technik", "select", required=True,
               options=lambda _db: [("dab", "DAB+ (digital, landesweit über Multiplex)"), ("ukw", "UKW (analog, regional)")]),
             F("states", "Bundesländer, die aufleuchten", "multi", options=lambda _db: STATES,
-              help="DAB+ National = alle Bundesländer. Bei UKW optional – meist reicht der Kreis um den Sender."),
+              help="DAB+ National = alle Bundesländer. Bei UKW mit Sender-Standort zeigt die Karte nur den Kreis – "
+                   "die Bundesländer leuchten bei UKW nur, wenn kein Standort eingetragen ist."),
             F("center_lat", "Sender-Standort: Breitengrad", in_list=False,
               help="Am einfachsten unten auf die Karte klicken – die Werte werden dann automatisch eingetragen"),
             F("center_lon", "Sender-Standort: Längengrad", in_list=False),

@@ -79,7 +79,10 @@
     const colorOf = (a) => (/^#[0-9a-fA-F]{6}$/.test(a.color || "") ? a.color : ACCENT);
     // je Bundesland die Farben, in denen es leuchtet (DAB+ vor UKW, jede Farbe nur einmal)
     const layers = new Map();
+    const hasCircle = (a) => a.center_lat != null && a.center_lon != null && a.radius_km > 0;
     for (const a of areas) {
+      // UKW mit Sender-Standort: nur der Kreis – das ganze Bundesland einzufärben würde zu viel versprechen
+      if (a.technology === "ukw" && hasCircle(a)) continue;
       for (const key of a.states || []) {
         const list = layers.get(key) || [];
         const color = colorOf(a), found = list.find((l) => l.color === color);
