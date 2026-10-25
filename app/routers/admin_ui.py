@@ -377,8 +377,12 @@ ENTITIES: dict[str, Entity] = {
               help="Der Studiospot mit echtem Sprecher ist im Pauschalpreis enthalten"),
             F("ad_tax_applies", "Werbeabgabe fällt an", "bool", in_list=False,
               help="Bei reinen Stream-Paketen ausschalten"),
+            F("station_ids", "Wählbare Sender", "multi", options=lambda db: [
+                (str(s.id), s.name) for s in db.query(Station).order_by(Station.sort_order, Station.id)],
+              help="Der Kunde wählt beim Paket einen dieser Sender (Karte und PDF zeigen dann diesen Sender). "
+                   "Nichts angehakt = Paket mit festem Sendeumfang, z. B. eine Kombi aus mehreren Sendern."),
             F("coverage_ids", "Sendegebiete", "multi", options=_coverage_options, in_list=False,
-              help="Werden im Konfigurator auf der Österreich-Karte angezeigt"),
+              help="Für Pakete ohne Senderwahl: werden im Konfigurator auf der Österreich-Karte angezeigt"),
             F("airtime_cent", "Davon Radio-Sendezeit (€) – Basis der Werbeabgabe", "money", in_list=False,
               help="0 = Werbeabgabe auf den gesamten Paketpreis. Bei Paketen mit Studiospot hier nur den Sendezeit-Anteil eintragen"),
             F("sort_order", "Sortierung", "int"),

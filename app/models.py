@@ -215,6 +215,8 @@ class Package(Base):
     # Anteil Radio-Sendezeit als Basis der Werbeabgabe; 0 = gesamter Paketpreis
     airtime_cent: Mapped[int] = mapped_column(Integer, default=0)
     coverage_ids: Mapped[list] = mapped_column(JSON, default=list)  # Sendegebiete (CoverageArea.id)
+    # Sender, zwischen denen der Kunde beim Paket wählt (leer = Paket mit festem Sendeumfang)
+    station_ids: Mapped[list] = mapped_column(JSON, default=list)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 

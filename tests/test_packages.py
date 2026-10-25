@@ -124,3 +124,52 @@ def test_example_packages_created_once_inactive(db):
     db.commit()
     ensure_example_packages(db)  # gelöschte Beispiele kommen nicht zurück
     assert db.query(Package).count() == 0
+
+
+def test_package_with_station_choice(client, db, cat):
+    from app.models import CoverageArea
+    area = CoverageArea(name="UKW Wien", technology="ukw", states=["wien"])
+    db.add(area)
+    db.flush()
+    nostalgie = Station(name="Radio Nostalgie", price_per_second_cent=700, coverage_ids=[area.id], map_color="#0057b8")
+    db.add(nostalgie)
+    db.flush()
+    cat["basic"].station_ids = [cat["station"].id, nostalgie.id]
+    db.commit()
+
+    with pytest.raises(QuoteError, match="einen Sender wählen"):
+        calculate_quote(db, pq(cat, "basic"))
+    data = pq(cat, "basic").model_copy(update={"package_station_id": nostalgie.id})
+    r = calculate_quote(db, data)
+    assert r.package.station == "Radio Nostalgie" and r.package.coverage == "UKW Wien"
+    assert r.net_cent == 100000  # Pauschalpreis unabhängig vom Sender
+    with pytest.raises(QuoteError):  # Sender gehört nicht zum Paket
+        calculate_quote(db, pq(cat, "basic").model_copy(update={"package_station_id": 999}))
+    # Pakete ohne Senderwahl bleiben wie bisher
+    assert calculate_quote(db, pq(cat, "allin")).package.station == ""
+
+    assert client.get("/api/catalog").json()["packages"][0]["station_ids"] == [cat["station"].id, nostalgie.id]
+    req = client.post("/api/quote-requests", json={
+        "configuration": data.model_dump(), "customer_name": "Max", "email": "max@example.com",
+        "street": "Gasse 1", "zip_code": "1010", "city": "Wien", "phone": "+43 1 234567",
+        "accept_terms": True, "accept_privacy": True}).json()
+    assert req["quote"]["package"]["station"] == "Radio Nostalgie"
+    pdf = client.get(req["pdf_url"]).content
+    from io import BytesIO
+    from pypdf import PdfReader
+    assert "Sender: Radio Nostalgie" in PdfReader(BytesIO(pdf)).pages[0].extract_text()
+
+
+def test_admin_package_station_field(client, db, cat):
+    def csrf(path):
+        return re.search(r'name="csrf" value="([^"]+)"', client.get(path).text).group(1)
+    token = csrf("/admin/login")
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
+    page = client.get(f"/admin/packages/{cat['basic'].id}").text
+    assert "Wählbare Sender" in page and 'name="station_ids"' in page
+    token = csrf("/admin/packages/new")
+    r = client.post("/admin/packages/new", data={
+        "csrf": token, "name": "Wahl", "price_cent": "990", "spots": "20", "max_seconds": "0", "airtime_cent": "0",
+        "station_ids": [str(cat["station"].id)], "ad_tax_applies": "on", "sort_order": "9", "active": "on"})
+    assert "gespeichert" in r.text
+    assert db.query(Package).filter_by(name="Wahl").one().station_ids == [cat["station"].id]

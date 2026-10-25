@@ -51,7 +51,7 @@
     <h2>Kalkulation (zum Anfragezeitpunkt)</h2>
     <table class="quote">
       {% if q.package %}
-      <tr><td><strong>Komplettpaket „{{ q.package.name }}“</strong>{% if q.package.spots %} · {{ q.package.spots }} Ausstrahlungen{% endif %}<br>
+      <tr><td><strong>Komplettpaket „{{ q.package.name }}“</strong>{% if q.package.station %} · Sender: <strong>{{ q.package.station }}</strong>{% endif %}{% if q.package.spots %} · {{ q.package.spots }} Ausstrahlungen{% endif %}<br>
           <small>{{ q.package.description | replace('\n', ' · ') }}</small></td><td>{{ q.package.price_cent | eur }}</td></tr>
       {% endif %}
       {% if q.production %}{% set pr = q.production %}

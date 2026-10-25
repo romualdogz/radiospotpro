@@ -41,6 +41,7 @@ _ADDED_COLUMNS = [
     ("packages", "coverage_ids", "JSON NOT NULL DEFAULT '[]'"),
     ("stations", "map_color", "VARCHAR(7) NOT NULL DEFAULT ''"),
     ("coverage_areas", "color", "VARCHAR(7) NOT NULL DEFAULT ''"),
+    ("packages", "station_ids", "JSON NOT NULL DEFAULT '[]'"),
 ]
 
 

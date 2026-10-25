@@ -11,6 +11,10 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Senderwahl bei Komplettpaketen** (*Komplettpakete → Wählbare Sender*): Der Kunde wählt im Paket den Sender,
+  z. B. Radio Energy oder Radio Nostalgie – Karte (in der Senderfarbe), Kalkulation, Zusammenfassung, PDF und
+  Anfrage zeigen den gewählten Sender. Pauschalpreis bleibt gleich. Pakete ohne angehakte Sender haben wie bisher
+  einen festen Sendeumfang (z. B. Kombi).
 - **Eigene Kartenfarbe je Sender** (*Sender & Streams → Farbe auf der Karte*), z. B. Blau für Radio Nostalgie –
   dessen Sendegebiete leuchten dann blau. Auch Sendegebiete können eine eigene Farbe haben (für Pakete).
   Nutzen zwei gewählte Sender dasselbe Gebiet, wird es rot/blau gestreift, UKW-Kreise am selben Standort liegen

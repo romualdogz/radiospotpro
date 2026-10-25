@@ -24,6 +24,7 @@
     firma: "", tonalityId: null, styleId: null, botschaft: "", cta: "", script: "",
     voiceId: null, musicId: null, addonIds: new Set(),
     studio: false, items: [], bookingMode: "individual", packageId: null,
+    packageStations: {},  // Paket-ID → gewählter Sender (bei Paketen mit Senderwahl)
     promo: "", country: "AT", vatId: "",
     name: "", company: null, street: "", zip: "", city: "", email: "", phone: "", nachricht: "",
     acceptTerms: false, acceptPrivacy: false,
@@ -148,6 +149,13 @@
 
   // ------------------------------------------------------------------ Komplettpakete
   const selectedPackage = () => state.bookingMode === "package" ? byId(C.packages, state.packageId) : null;
+  // Sender, zwischen denen beim Paket gewählt werden kann (nur aktive Sender aus dem Katalog)
+  const packageStationOptions = (p) => (p?.station_ids || []).map((id) => byId(C.stations, id)).filter(Boolean);
+  const packageStation = (p) => {
+    const options = packageStationOptions(p);
+    if (!options.length) return null;
+    return options.find((s) => s.id === state.packageStations[p.id]) || options[0];
+  };
   const packageFits = (p) => !!p && (!p.max_seconds || byId(C.spot_lengths, state.lengthId).seconds <= p.max_seconds);
   // Studiospot gewählt oder im gewählten Paket enthalten
   const studioActive = () => state.studio || !!selectedPackage()?.includes_studio;
@@ -159,6 +167,7 @@
       production: { spot_length_id: state.lengthId, voice_id: state.voiceId, music_style_id: state.musicId,
         studio: state.studio && !pkg?.includes_studio },
       package_id: pkg ? pkg.id : null,
+      package_station_id: pkg ? packageStation(pkg)?.id ?? null : null,
       items: pkg ? [] : state.items.map((i) => ({ ...i, spot_length_id: state.lengthId })),
       addon_ids: [...state.addonIds],
       promo_code: state.promo.trim() || null,
@@ -194,7 +203,7 @@
     return h("div", {},
       h("table", { class: "price-table" },
         q.package ? row(`Komplettpaket „${q.package.name}“`, money(q.package.price_cent), "",
-          [q.package.spots ? `${q.package.spots} Ausstrahlungen` : "", "Pauschalpreis"].filter(Boolean).join(" · ")) : null,
+          [q.package.station, q.package.spots ? `${q.package.spots} Ausstrahlungen` : "", "Pauschalpreis"].filter(Boolean).join(" · ")) : null,
         p ? (p.studio
           ? row("Studiospot mit echtem Sprecher", p.in_package ? "inklusive" : money(p.total_cent), "", `${p.seconds} Sek.`)
           : row("Spot-Text & Hörbeispiel", "gratis", "", `${p.seconds} Sek.`)) : null,
@@ -504,7 +513,10 @@
       if (!entries.has(key)) entries.set(key, { ...area, color: c, stations: [] });
       if (station && !entries.get(key).stations.includes(station)) entries.get(key).stations.push(station);
     };
-    if (pkg) {
+    const pkgStation = packageStation(pkg);
+    if (pkg && pkgStation) {
+      (pkgStation.coverage_ids || []).forEach((id) => add(id, pkgStation.map_color, pkgStation.name));
+    } else if (pkg) {
       (pkg.coverage_ids || []).forEach((id) => add(id, "", null));
     } else {
       for (const item of state.items) {
@@ -586,6 +598,22 @@
     if (!studioActive()) C.addons.filter((a) => a.requires_studio).forEach((a) => state.addonIds.delete(a.id));
   }
 
+  function packageStationChoice(p, selected) {
+    const options = packageStationOptions(p);
+    if (!options.length) return null;
+    if (!selected) {
+      return h("div", { class: "package-lines package-stations-hint" }, "Sender wählbar: " + options.map((s) => s.name).join(" oder "));
+    }
+    const current = packageStation(p);
+    return h("div", { class: "package-stations", role: "radiogroup", "aria-label": "Sender für dieses Paket" },
+      h("span", { class: "package-stations-label" }, "Sender:"),
+      options.map((s) => h("button", {
+        type: "button", class: "chip small" + (s.id === current.id ? " sel" : ""), role: "radio",
+        "aria-checked": s.id === current.id ? "true" : "false",
+        onclick: (e) => { e.stopPropagation(); state.packageStations[p.id] = s.id; render(); scheduleQuote(); },
+      }, s.map_color ? h("i", { class: "cov-dot", style: `background:${s.map_color}` }) : null, s.name)));
+  }
+
   function packageCards() {
     const seconds = byId(C.spot_lengths, state.lengthId).seconds;
     return h("div", { class: "packages" }, C.packages.map((p) => {
@@ -601,6 +629,7 @@
           h("span", { class: "voice-name" }, p.name, p.badge ? h("span", { class: "voice-badge" }, p.badge) : null),
           h("span", { class: "package-price" }, money(p.price_cent), h("small", {}, "netto pauschal"))),
         lines.length ? h("div", { class: "package-lines" }, lines.join(" · ")) : null,
+        packageStationChoice(p, sel),
         fits ? null : h("div", { class: "voice-tag" }, `Nur für Spots bis ${p.max_seconds} Sek. – Ihr Spot hat ${seconds} Sek.`));
     }));
   }
@@ -748,6 +777,7 @@
           kv("Rechnungsland", C.countries.find((c) => c.code === state.country)?.name || state.country),
           state.vatId.trim() ? [" · ", kv("UID", state.vatId.trim().toUpperCase())] : null),
         h("div", {}, kv("Schaltung", selectedPackage() ? `Komplettpaket „${selectedPackage().name}“`
+          + (packageStation(selectedPackage()) ? ` · ${packageStation(selectedPackage()).name}` : "")
           : state.items.map((i) => `${i.spots}× ${byId(C.stations, i.station_id).name}`).join(", "))),
         selectedCoverage().areas.length
           ? h("div", {}, kv("Sendegebiet", [...new Set(selectedCoverage().areas.map((a) => a.name))].join(" · "))) : null,

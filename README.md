@@ -90,7 +90,7 @@ Tests: `pytest`
 | **Sender & Streams** | Typ (Radio / Stream der Energy-Gruppe), Sekundenpreis netto, „Werbeabgabe fällt an“ (Radio ja, Streams nein) |
 | **Zeitschienen** | z. B. Morning Show – Preisfaktor auf den Sekundenpreis (1,5 = +50 %) |
 | **Sendegebiete** | für die Reichweiten-Karte im Konfigurator: DAB+ (leuchtende Bundesländer) oder UKW (Kreis um den Sender-Standort – per Klick auf die Karte gesetzt, Radius in km), Hinweistext für Kunden. Bei Sendern und Komplettpaketen zuordnen. Je Sender (oder Sendegebiet) eine eigene Kartenfarbe, z. B. Blau für Radio Nostalgie; gemeinsame Gebiete werden gestreift. Kartendaten: Natural Earth (gemeinfrei), `app/static/austria-map.json`, neu erzeugbar mit `scripts/build_austria_map.py` |
-| **Komplettpakete** | Pakete zum Pauschalpreis (netto) mit Leistungsliste, Badge, Anzahl Ausstrahlungen, optional „Studiospot inklusive“ und max. Spotlänge; Sendezeit-Anteil als Basis der Werbeabgabe. Drei Beispielpakete werden einmalig **inaktiv** angelegt – Preise anpassen und auf „aktiv“ stellen |
+| **Komplettpakete** | Pakete zum Pauschalpreis (netto) mit optionaler Senderwahl (*Wählbare Sender*), Leistungsliste, Badge, Anzahl Ausstrahlungen, optional „Studiospot inklusive“ und max. Spotlänge; Sendezeit-Anteil als Basis der Werbeabgabe. Drei Beispielpakete werden einmalig **inaktiv** angelegt – Preise anpassen und auf „aktiv“ stellen |
 | **Zusatzleistungen** | optionale Extras mit Fixpreis, z. B. Express-Produktion; „Nur mit Studiospot“ blendet sie nur bei gewähltem Studiospot ein |
 | **Rabatte** | Prozent oder Fixbetrag, mit Bedingungen (s. u.) |
 | **Länder** | Rechnungsländer (Dropdown im Formular) mit MwSt.-Satz und Option „mit UID Nettorechnung“ |

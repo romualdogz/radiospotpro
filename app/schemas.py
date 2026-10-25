@@ -91,6 +91,7 @@ class PackagePublic(ORMModel):
     max_seconds: int
     includes_studio: bool
     coverage_ids: list[int] = Field(default_factory=list)
+    station_ids: list[int] = Field(default_factory=list)
 
 
 class CountryPublic(ORMModel):
@@ -155,6 +156,7 @@ class ProductionIn(BaseModel):
 class QuoteIn(BaseModel):
     production: ProductionIn | None = None
     package_id: int | None = Field(default=None, description="Komplettpaket zum Pauschalpreis")
+    package_station_id: int | None = Field(default=None, description="Gewählter Sender, wenn das Paket eine Senderwahl hat")
     items: list[QuoteItemIn] = Field(default_factory=list, max_length=50, description="Schaltung (optional)")
     addon_ids: list[int] = Field(default_factory=list, max_length=50)
     promo_code: str | None = Field(default=None, max_length=60)
@@ -193,6 +195,7 @@ class QuoteProduction(BaseModel):
 class QuotePackage(BaseModel):
     name: str
     description: str
+    station: str = Field(default="", description="Gewählter Sender (bei Paketen mit Senderwahl)")
     coverage: str = ""
     spots: int
     includes_studio: bool
@@ -462,6 +465,7 @@ class PackageIn(BaseModel):
     ad_tax_applies: bool = True
     airtime_cent: int = Field(default=0, ge=0, description="Basis Werbeabgabe; 0 = gesamter Paketpreis")
     coverage_ids: list[int] = Field(default_factory=list)
+    station_ids: list[int] = Field(default_factory=list)
     active: bool = True
     sort_order: int = 0
 

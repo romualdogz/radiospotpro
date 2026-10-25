@@ -329,3 +329,9 @@ a.btn { display: inline-block; text-decoration: none; }
 .coverage .tech-dab { border: 1.5px solid var(--accent); }
 .coverage .cov-station { color: var(--text); font-weight: 600; }
 .coverage .cov-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 6px; vertical-align: 0; }
+.package-stations { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0 26px; }
+.package-stations-label { font-size: 0.78rem; color: var(--text-muted); margin-right: 2px; }
+.package-stations .chip.small { padding: 5px 11px; font-size: 0.82rem; }
+.package-stations .cov-dot { margin: 0 6px 0 0; }
+.package-stations-hint { font-style: italic; }
+.package-stations .cov-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: 0; }

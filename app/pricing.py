@@ -127,6 +127,11 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         package = _load_active(db, Package, {data.package_id}, "Komplettpaket")[data.package_id]
         if prod and package.max_seconds and lengths[prod.spot_length_id].seconds > package.max_seconds:
             raise QuoteError(f"„{package.name}“ gilt für Spots bis {package.max_seconds} Sek.")
+    package_station = None
+    if package is not None and package.station_ids:
+        if data.package_station_id not in package.station_ids:
+            raise QuoteError(f"Bitte für „{package.name}“ einen Sender wählen.")
+        package_station = _load_active(db, Station, {data.package_station_id}, "Sender")[data.package_station_id]
 
     studio_in_package = bool(package and package.includes_studio)
     studio = bool(prod and prod.studio) or studio_in_package
@@ -236,7 +241,9 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         reverse_charge=reverse_charge,
         production=production_out,
         package=QuotePackage(name=package.name, description=package.description, spots=package.spots,
-                             coverage=_coverage_names(db, package.coverage_ids),
+                             station=package_station.name if package_station else "",
+                             coverage=_coverage_names(db, package_station.coverage_ids if package_station
+                                                      else package.coverage_ids),
                              includes_studio=package.includes_studio, price_cent=package.price_cent) if package else None,
         lines=out_lines,
         addons=[QuoteAddOn(name=a.name, price_cent=a.price_cent) for a in addons.values()],
