@@ -56,6 +56,8 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 - **`start-mac-netzwerk.command`:** wie oben, aber im lokalen Netzwerk erreichbar (zeigt die Adresse an).
 
 ### Behoben
+- Legende der Karte: „DAB+ – ganz Österreich“ statt „DAB+ – ganzes Bundesland“ (bei einem regionalen DAB+-Gebiet
+  steht „DAB+ – leuchtende Bundesländer“).
 - **Karte blieb bei Paketen mit Senderwahl dunkel**, wenn die Sendegebiete beim Paket statt beim Sender angehakt
   waren. Jetzt gelten die Sendegebiete des Pakets (in der Farbe des gewählten Senders, z. B. Blau für Nostalgie),
   sonst die des Senders. Das Dashboard zeigt Sender und Pakete ohne Sendegebiet an.

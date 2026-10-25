@@ -579,7 +579,10 @@
         items.length ? h("ul", { class: "coverage-list" }, items)
           : h("p", { class: "muted" }, "Für diese Auswahl ist noch kein Sendegebiet hinterlegt."),
         h("div", { class: "coverage-legend" },
-          h("span", {}, h("i", { class: "sw sw-dab" }), "DAB+ – ganzes Bundesland"),
+          h("span", {}, h("i", { class: "sw sw-dab" }),
+            // regionaler DAB+-Multiplex (nicht alle 9 Bundesländer) → allgemeiner formulieren
+            areas.some((a) => a.technology === "dab" && (a.states || []).length < 9)
+              ? "DAB+ – leuchtende Bundesländer" : "DAB+ – ganz Österreich"),
           h("span", {}, h("i", { class: "sw sw-ukw" }), "UKW – rund um den Sender")),
         h("details", { class: "coverage-help" },
           h("summary", {}, "DAB+ oder UKW – was ist der Unterschied?"),
