@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ e.title }}{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>{{ e.title }}</h1>
+  <a class="button primary" href="/admin/{{ e.slug }}/new">+ {{ e.singular }} anlegen</a>
+</div>
+{% if rows %}
+<div class="table-wrap">
+<table>
+  <thead><tr>{% for c in cols %}<th>{{ c.label }}</th>{% endfor %}<th></th></tr></thead>
+  <tbody>
+  {% for obj, values in rows %}
+    <tr class="{{ '' if obj.active else 'inactive' }}">
+      {% for v in values %}<td>{{ v }}</td>{% endfor %}
+      <td><a href="/admin/{{ e.slug }}/{{ obj.id }}">Bearbeiten</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">Noch keine Einträge.</p>
+{% endif %}
+{% endblock %}

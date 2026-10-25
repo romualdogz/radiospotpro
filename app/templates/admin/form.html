@@ -1,0 +1,107 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ e.singular }}{% endblock %}
+{% block content %}
+<p><a href="/admin/{{ e.slug }}">← {{ e.title }}</a></p>
+<form method="post" class="card form" action="/admin/{{ e.slug }}/{{ obj.id if obj else 'new' }}" enctype="multipart/form-data">
+  <h1>{{ e.singular }} {{ 'bearbeiten' if obj else 'anlegen' }}</h1>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% for f in e.fields %}
+    {% set v = values.get(f.name, '') %}
+    {% if f.type == 'bool' %}
+      <label class="check"><input type="checkbox" name="{{ f.name }}" {{ 'checked' if v == 'on' }}> {{ f.label }}</label>
+    {% elif f.type == 'multi' %}
+      <fieldset class="multi" data-field="{{ f.name }}">
+        <legend>{{ f.label }}{% if f.required %} *{% endif %}</legend>
+        {% for val, label in options[f.name] %}
+          <label class="check"><input type="checkbox" name="{{ f.name }}" value="{{ val }}" {{ 'checked' if val in v }}> {{ label }}</label>
+        {% else %}
+          <span class="muted">Noch keine Einträge vorhanden.</span>
+        {% endfor %}
+      </fieldset>
+    {% else %}
+      <label>{{ f.label }}{% if f.required %} *{% endif %}
+      {% if f.type == 'textarea' %}
+        <textarea name="{{ f.name }}" rows="3">{{ v }}</textarea>
+      {% elif f.type == 'select' %}
+        <select name="{{ f.name }}">
+          {% for val, label in options[f.name] %}
+            <option value="{{ val }}" {{ 'selected' if val == v }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      {% elif f.type in ('money', 'percent', 'factor') %}
+        <input name="{{ f.name }}" value="{{ v }}" inputmode="decimal" {{ 'required' if f.required }}>
+      {% elif f.type == 'int' %}
+        <input name="{{ f.name }}" value="{{ v }}" type="number" step="1" min="0" {{ 'required' if f.required }}>
+      {% elif f.type == 'file' %}
+        {% if obj and obj[f.name] %}
+          <audio controls preload="none" src="/media/music/{{ obj[f.name] }}" style="width:100%"></audio>
+        {% endif %}
+        <input name="{{ f.name }}" type="file" accept=".mp3,.wav,.ogg,.flac,audio/*">
+      {% elif f.type in ('date', 'time') %}
+        <input name="{{ f.name }}" value="{{ v }}" type="{{ f.type }}">
+      {% else %}
+        <input name="{{ f.name }}" value="{{ v }}" {{ 'required' if f.required }}>
+      {% endif %}
+      </label>
+    {% endif %}
+    {% if f.help %}<small class="help">{{ f.help }}</small>{% endif %}
+  {% endfor %}
+  {% if e.slug == 'coverage' %}
+  <div class="coverage-admin">
+    <strong>Vorschau</strong> <small class="help">– auf die Karte klicken, um den Sender-Standort zu setzen</small>
+    <div id="coverageAdminMap" class="coverage-map"></div>
+  </div>
+  {% endif %}
+  <div class="buttons">
+    <button class="primary">Speichern</button>
+    <a href="/admin/{{ e.slug }}">Abbrechen</a>
+  </div>
+</form>
+{% if e.slug == 'coverage' %}
+<script src="/static/coverage-map.js"></script>
+<script>
+  // Live-Vorschau des Sendegebiets; Klick auf die Karte setzt den Sender-Standort
+  (function () {
+    const form = document.querySelector("form.card");
+    const host = document.getElementById("coverageAdminMap");
+    const val = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || "";
+    const num = (n) => { const v = parseFloat(val(n).replace(",", ".")); return isNaN(v) ? null : v; };
+    function area() {
+      return {
+        id: 0, name: val("name") || "Sendegebiet", technology: val("technology"),
+        states: [...form.querySelectorAll('input[name="states"]:checked')].map((c) => c.value),
+        center_lat: num("center_lat"), center_lon: num("center_lon"),
+        radius_km: parseInt(val("radius_km"), 10) || 0, reach_text: val("reach_text"),
+      };
+    }
+    let last = "";
+    const draw = () => {
+      // nur neu zeichnen, wenn sich etwas geändert hat – sonst geht ein Klick verloren, wenn das
+      // „change“-Ereignis eines Textfelds die Karte zwischen Maus-Drücken und -Loslassen austauscht
+      const current = area(), key = JSON.stringify(current);
+      if (key === last) return;
+      last = key;
+      CoverageMap.render(host, [current], {
+      onPick(lat, lon) {
+        form.querySelector('[name="center_lat"]').value = lat.toFixed(4).replace(".", ",");
+        form.querySelector('[name="center_lon"]').value = lon.toFixed(4).replace(".", ",");
+        if (!(parseInt(val("radius_km"), 10) > 0)) form.querySelector('[name="radius_km"]').value = 35;
+        draw();
+      },
+      });
+    };
+    form.addEventListener("input", draw);
+    form.addEventListener("change", draw);
+    draw();
+  })();
+</script>
+{% endif %}
+{% if obj %}
+<form method="post" action="/admin/{{ e.slug }}/{{ obj.id }}/delete" class="card form"
+      onsubmit="return confirm('{{ e.singular }} wirklich löschen?')">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p class="muted">Tipp: Statt zu löschen kann der Eintrag über „Aktiv“ ausgeblendet werden – bestehende Anfragen bleiben davon ohnehin unberührt.</p>
+  <div><button class="danger">{{ e.singular }} löschen</button></div>
+</form>
+{% endif %}
+{% endblock %}

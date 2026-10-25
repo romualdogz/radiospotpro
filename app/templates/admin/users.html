@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+{% block title %}Benutzer{% endblock %}
+{% block content %}
+<h1>Benutzer</h1>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Benutzername</th><th>Rolle</th><th>Neues Passwort (optional)</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.username }}{% if u.id == user.id %} <small>(du)</small>{% endif %}</td>
+      <td colspan="2">
+        <form method="post" action="/admin/users/{{ u.id }}" class="inline-form">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <select name="role">
+            {% for key, label in roles.items() %}<option value="{{ key }}" {{ 'selected' if u.role == key }}>{{ label }}</option>{% endfor %}
+          </select>
+          <input name="password" type="password" autocomplete="new-password" minlength="10" placeholder="unverändert">
+          <button>Speichern</button>
+        </form>
+      </td>
+      <td>
+        {% if u.id != user.id %}
+        <form method="post" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('Benutzer „{{ u.username }}“ wirklich löschen?')">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="link danger">Löschen</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<form method="post" action="/admin/users/new" class="card form" style="margin-top:20px">
+  <h2>Neuen Benutzer anlegen</h2>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Benutzername <input name="username" value="{{ values.username or '' }}" required autocomplete="off" placeholder="z. B. verkauf"></label>
+  <label>Passwort (min. 10 Zeichen) <input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+  <label>Rolle
+    <select name="role">
+      {% for key, label in roles.items() %}<option value="{{ key }}" {{ 'selected' if values.role == key }}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <small class="help"><strong>Verkaufsleitung</strong> darf nur Sender &amp; Streams (Sekundenpreise), Zeitschienen,
+    Zusatzleistungen, Rabatte, Länder &amp; MwSt. und die Preis-Einstellungen bearbeiten.
+    <strong>Administrator</strong> darf alles, auch Benutzer verwalten.</small>
+  <div class="buttons"><button class="primary">Benutzer anlegen</button></div>
+</form>
+{% endblock %}

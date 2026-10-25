@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+{% block title %}Preis-Einstellungen{% endblock %}
+{% block content %}
+<h1>Preis-Einstellungen</h1>
+<form method="post" action="/admin/prices" class="card form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <h2>Studiospot, Werbeabgabe & Mindestbestellwert</h2>
+  <label>Studiospot mit echtem Sprecher (€, netto) <input name="studio_price" value="{{ '%.2f' | format(cfg.studio_price_cent / 100) | replace('.', ',') }}" inputmode="decimal"></label>
+  <small class="help">Text und Hörbeispiel sind gratis – kostenpflichtig sind nur Studiospot und Schaltung.</small>
+  <p class="help">MwSt.-Sätze je Rechnungsland stellst du unter <a href="/admin/countries">Preise → Länder</a> ein.</p>
+  <label>Werbeabgabe (%) <input name="ad_tax_rate" value="{{ cfg.ad_tax_rate_bp | pct('') }}" inputmode="decimal"></label>
+  <small class="help">Auf die Sendezeit nach Rabatten, nicht auf Zusatzleistungen. 0 = keine Werbeabgabe.</small>
+  <label class="check"><input type="checkbox" name="ad_tax_in_vat_base" {{ 'checked' if cfg.ad_tax_in_vat_base }}> Werbeabgabe in MwSt.-Basis einrechnen</label>
+  <label>Mindestbestellwert netto (€) <input name="min_order" value="{{ '%.2f' | format(cfg.min_order_cent / 100) | replace('.', ',') }}" inputmode="decimal"></label>
+  <small class="help">0 = kein Mindestbestellwert. Darunter kann im Konfigurator keine Anfrage gesendet werden.</small>
+  <label>Währung <input name="currency" value="{{ cfg.currency }}" maxlength="3"></label>
+  <div class="buttons"><button class="primary">Speichern</button></div>
+</form>
+<p class="help">Sekundenpreise unter <a href="/admin/stations">Sender &amp; Streams</a>, Preisfaktoren unter
+  <a href="/admin/time-slots">Zeitschienen</a>.</p>
+{% endblock %}

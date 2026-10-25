@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block title %}Anfragen{% endblock %}
+{% block content %}
+<h1>Angebotsanfragen</h1>
+{% if rows %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Datum</th><th>Kunde</th><th>Firma</th><th>Spots</th><th>Netto</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td>{{ r.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+      <td>{{ r.customer_name }}<br><small>{{ r.email }}{% if r.city %} · {{ r.city }}{% endif %}</small></td>
+      <td>{{ r.company }}</td>
+      <td>{{ r.quote.total_spots }}</td>
+      <td>{{ r.quote.net_cent | eur }}</td>
+      <td><span class="badge s-{{ r.status }}">{{ r.status | replace('_', ' ') }}</span></td>
+      <td><a href="/admin/requests/{{ r.id }}">Details</a> · <a href="/admin/requests/{{ r.id }}/pdf" target="_blank">PDF</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<p class="muted">Noch keine Anfragen.</p>{% endif %}
+{% endblock %}

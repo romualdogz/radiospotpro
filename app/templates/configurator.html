@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radiospot-Konfigurator — onaircraft</title>
+{% if fonts_url %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{ fonts_url }}" rel="stylesheet">
+{% endif %}
+<link rel="stylesheet" href="/static/configurator.css">
+<!-- Farben & Schriften aus Admin → Design -->
+<link rel="stylesheet" href="/theme.css?v={{ theme_version }}">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    {% if logo %}<img class="logo" src="{{ logo.url }}" alt="onaircraft" style="height: {{ logo.height }}px">
+    {% else %}<div class="wordmark">on<span>air</span>craft</div>{% endif %}
+    <div class="tag">sound so(u)lutions — Wien</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Ihr Radiospot, angehört, bevor er läuft.</h1>
+    <div class="wave" id="wave"></div>
+  </section>
+
+  <!-- data-api: Basis-URL des Backends (leer = gleiche Domain) -->
+  <section class="panel" id="radiospot-configurator" data-api="">
+    <div class="dial">
+      <div class="dial-row" id="dialRow"></div>
+      <div class="track"><div class="needle" id="needle"></div></div>
+    </div>
+
+    <div id="stepHost"><div class="step"><p class="hint">Konfigurator wird geladen …</p></div></div>
+
+    <div class="row-actions">
+      <button class="btn ghost" id="btnBack" type="button">Zurück</button>
+      <button class="btn" id="btnNext" type="button">Weiter</button>
+    </div>
+  </section>
+
+  <footer>© onaircraft sound so(u)lutions, Wien · <a href="/agb">AGB</a> · <a href="/datenschutz">Datenschutz</a></footer>
+</div>
+
+<script src="/static/coverage-map.js" defer></script>
+<script src="/static/configurator.js" defer></script>
+</body>
+</html>

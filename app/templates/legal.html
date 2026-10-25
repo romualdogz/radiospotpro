@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ text.title if text else "Nicht gefunden" }} — onaircraft</title>
+{% if fonts_url %}<link href="{{ fonts_url }}" rel="stylesheet">{% endif %}
+<link rel="stylesheet" href="/static/configurator.css">
+<link rel="stylesheet" href="/theme.css?v={{ theme_version }}">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    {% if logo %}<a href="/" class="logo-link"><img class="logo" src="{{ logo.url }}" alt="onaircraft" style="height: {{ logo.height }}px"></a>
+    {% else %}<a class="wordmark" href="/" style="text-decoration:none">on<span>air</span>craft</a>{% endif %}
+    <div class="tag">sound so(u)lutions — Wien</div>
+  </div>
+</header>
+<div class="wrap">
+  <section class="panel legal-page">
+    <div class="step">
+      {% if text %}
+        <h2>{{ text.title }}</h2>
+        <p class="hint">Stand: {{ text.updated_at.strftime('%d.%m.%Y') }}</p>
+        <div class="legal-body">{{ text.body }}</div>
+      {% else %}
+        <h2>Seite nicht gefunden</h2>
+      {% endif %}
+      <p style="margin-top:28px"><a class="btn ghost" href="/">← Zurück zum Konfigurator</a></p>
+    </div>
+  </section>
+  <footer>© onaircraft sound so(u)lutions, Wien · <a href="/agb">AGB</a> · <a href="/datenschutz">Datenschutz</a></footer>
+</div>
+</body>
+</html>

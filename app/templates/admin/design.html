@@ -1,0 +1,115 @@
+{% extends "admin/base.html" %}
+{% block title %}Design{% endblock %}
+{% block content %}
+<h1>Design des Konfigurators</h1>
+<div class="design-layout">
+  <div>
+    <form method="post" action="/admin/design/logo" enctype="multipart/form-data" class="card form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <h2>Logo</h2>
+      <div class="logo-preview" style="background: {{ design.page_bg }}; color: {{ design.page_text }}">
+        {% if logo %}
+          <img id="logoPreview" src="{{ logo.url }}" alt="Aktuelles Logo" style="height: {{ logo.height }}px">
+        {% else %}
+          <span class="logo-wordmark">on<span style="color: {{ design.logo_accent }}">air</span>craft</span>
+          <small>Noch kein Logo – im Konfigurator steht der Schriftzug.</small>
+        {% endif %}
+      </div>
+      <label>{{ 'Neues Logo hochladen' if logo else 'Logo hochladen' }} (PNG, JPG, WebP oder SVG, max. 2 MB)
+        <input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml">
+      </label>
+      <small class="help">Am besten ein PNG oder SVG mit transparentem Hintergrund, in einer Farbe, die auf dem
+        Seitenhintergrund gut lesbar ist.</small>
+      <label><span>Höhe im Konfigurator: <output id="logoHeightOut">{{ logo.height if logo else logo_limits[1] }}</output> px</span>
+        <input type="range" name="height" min="{{ logo_limits[0] }}" max="{{ logo_limits[2] }}" step="2"
+               value="{{ logo.height if logo else logo_limits[1] }}" id="logoHeight">
+      </label>
+      <label class="check"><input type="checkbox" name="in_pdf" {{ 'checked' if not logo or logo.in_pdf }}>
+        Logo auch im PDF verwenden</label>
+      <small class="help">Das PDF hat einen weißen Hintergrund – bei einem weißen Logo hier ausschalten.
+        {% if logo and not logo.pdf_capable %}<strong>Hinweis:</strong> SVG-Logos werden im PDF nicht unterstützt.{% endif %}</small>
+      <div class="buttons">
+        <button class="primary" name="action" value="upload">Logo speichern</button>
+        {% if logo %}<button name="action" value="remove"
+                onclick="return confirm('Logo entfernen und wieder den Schriftzug anzeigen?')">Logo entfernen</button>{% endif %}
+      </div>
+    </form>
+
+    <form method="post" action="/admin/design" class="card form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <h2>Farbvorlagen</h2>
+      <p class="help">Übernimmt alle Farben auf einmal – Schriften bleiben unverändert. Danach kannst du einzelne Farben anpassen.</p>
+      <div class="buttons wrap">
+        {% for name in presets %}<button name="action" value="preset:{{ name }}">{{ name }}</button>{% endfor %}
+      </div>
+    </form>
+
+    <form method="post" action="/admin/design" class="card form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% for group, items in color_groups.items() %}
+        <h2>Farben – {{ group }}</h2>
+        {% for key, label, default in items %}
+          <div class="color-row" data-color-row>
+            {# Eigene Farbfläche – die native Farbauswahl liegt unsichtbar darüber (Safari zeigt sie sonst leer an) #}
+            <span class="swatch" style="background: {{ design[key] }}" title="Farbe wählen">
+              <input type="color" value="{{ design[key] }}" aria-label="{{ label }} – Farbe wählen">
+            </span>
+            <input type="text" name="{{ key }}" value="{{ design[key] }}" maxlength="7" class="hex"
+                   pattern="#[0-9a-fA-F]{6}" aria-label="{{ label }} (Hex)" spellcheck="false">
+            <span>{{ label }} <small class="help">aktuell {{ design[key] }} · Vorlage {{ default }}</small></span>
+          </div>
+        {% endfor %}
+      {% endfor %}
+
+      <h2>Schriften</h2>
+      {% for key, label in [("font_heading", "Überschriften"), ("font_body", "Fließtext & Formular")] %}
+        {% set current = design[key] %}
+        {% set is_custom = current != system_font and current not in fonts %}
+        <label>{{ label }}
+          <select name="{{ key }}" onchange="this.parentElement.nextElementSibling.style.display = this.value === 'custom' ? '' : 'none'">
+            {% for f in fonts %}<option value="{{ f }}" {{ 'selected' if f == current }} style="font-family: '{{ f }}'">{{ f }}</option>{% endfor %}
+            <option value="{{ system_font }}" {{ 'selected' if current == system_font }}>Systemschrift (ohne Google Fonts)</option>
+            <option value="custom" {{ 'selected' if is_custom }}>Andere Google-Font …</option>
+          </select>
+        </label>
+        <label style="{{ '' if is_custom else 'display:none' }}">Name der Google-Font (genau wie auf fonts.google.com)
+          <input name="{{ key }}_custom" value="{{ current if is_custom else '' }}" placeholder="z. B. Lexend">
+        </label>
+      {% endfor %}
+      <small class="help">Google Fonts werden von Google-Servern geladen. Wegen der DSGVO kann die
+        „Systemschrift“ die sicherere Wahl sein – oder die Schrift später auf dem eigenen Server ablegen.</small>
+
+      <div class="buttons">
+        <button class="primary" name="action" value="save">Speichern</button>
+        <button name="action" value="reset" formnovalidate
+                onclick="return confirm('Alle Farben und Schriften auf die Vorlage zurücksetzen?')">Auf Vorlage zurücksetzen</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card preview">
+    <div class="head"><h2>Vorschau</h2><a href="/" target="_blank">In neuem Tab öffnen ↗</a></div>
+    <iframe src="/?admin-preview={{ range(1000000) | random }}" title="Vorschau Konfigurator"></iframe>
+    <small class="help">Zeigt den gespeicherten Stand – nach dem Speichern aktualisiert sich die Vorschau.</small>
+  </div>
+</div>
+<script>
+  // Logo-Höhe live in der Vorschau anzeigen
+  const heightInput = document.getElementById("logoHeight");
+  heightInput.addEventListener("input", () => {
+    document.getElementById("logoHeightOut").textContent = heightInput.value;
+    const img = document.getElementById("logoPreview");
+    if (img) img.style.height = heightInput.value + "px";
+  });
+  // Farbfläche, Farbauswahl und Hex-Feld synchron halten
+  document.querySelectorAll("[data-color-row]").forEach((row) => {
+    const swatch = row.querySelector(".swatch"), picker = row.querySelector("input[type=color]"),
+          hex = row.querySelector(".hex");
+    picker.addEventListener("input", () => { hex.value = picker.value; swatch.style.background = picker.value; });
+    hex.addEventListener("input", () => {
+      const v = hex.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) { picker.value = v.toLowerCase(); swatch.style.background = v; }
+    });
+  });
+</script>
+{% endblock %}

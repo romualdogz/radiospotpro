@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% block title %}Einstellungen{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+<form method="post" action="/admin/settings" class="card form" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p class="help">Preise, Werbeabgabe und Mindestbestellwert: <a href="/admin/prices">Preis-Einstellungen</a>.</p>
+  <label>Standard-Empfänger für E-Mails <input name="mail_default_to" value="{{ mail_default_to }}" type="email"
+         placeholder="z. B. studio@onaircraft.at"></label>
+  <small class="help">Wird beim Versenden einer Anfrage (PDF + Audiodateien) als Empfänger vorausgefüllt.</small>
+  <label>Firmenangaben für das PDF <input name="company_info" value="{{ cfg.company_info }}" maxlength="255"></label>
+  <small class="help">Erscheint in der Fußzeile der PDF-Kostenaufstellung, z. B. Adresse, UID, Telefon, E-Mail.</small>
+  <h2>Wasserzeichen der Hörprobe</h2>
+  <small class="help">Liegt über jeder Kunden-Hörprobe, damit sie nicht ungefragt verwendet werden kann.
+    Der fertige Spot für den Admin und die Sprachdatei haben nie ein Wasserzeichen.</small>
+  <div class="wm-modes">
+    <label class="check"><input type="radio" name="watermark_mode" value="text" {{ 'checked' if wm.mode == 'text' }}>
+      Gesprochener Text <small class="help">– von der gewählten KI-Stimme gesprochen</small></label>
+    <label class="check"><input type="radio" name="watermark_mode" value="file" {{ 'checked' if wm.mode == 'file' }}
+      {{ '' if wm.file else 'disabled' }}>
+      Eigene Audiodatei <small class="help">– z. B. Jingle oder gesprochenes „onaircraft“ vom Sprecher</small></label>
+  </div>
+  <label>Wasserzeichen-Text <small class="help">(nur bei „Gesprochener Text“)</small> <input name="watermark_text" value="{{ cfg.watermark_text }}" maxlength="120"></label>
+  <div class="wm-file">
+    {% if wm.file %}
+      <span class="help">Aktuelle Datei:</span>
+      <audio controls preload="none" src="/admin/settings/watermark-audio?v={{ wm.file }}"></audio>
+      <label class="check"><input type="checkbox" name="watermark_remove"> Datei entfernen</label>
+    {% endif %}
+    <label>{{ 'Andere Datei hochladen' if wm.file else 'Audiodatei hochladen' }}
+      (MP3, WAV, OGG, FLAC · max. {{ wm_limits[2] | int }} s, 5 MB)
+      <input type="file" name="watermark_upload" accept=".mp3,.wav,.ogg,.flac,audio/*"></label>
+    <small class="help">Nach dem Hochladen wird automatisch „Eigene Audiodatei“ verwendet. Am besten kurz (1–3 s)
+      und ohne Stille am Anfang und Ende.</small>
+  </div>
+  <label><span>Lautstärke des Wasserzeichens: <output id="wmVolumeOut">{{ wm.volume }}</output> %</span>
+    <input type="range" name="watermark_volume" id="wmVolume" min="{{ wm_limits[0] }}" max="{{ wm_limits[1] }}"
+           step="5" value="{{ wm.volume }}"
+           oninput="document.getElementById('wmVolumeOut').textContent = this.value"></label>
+  <small class="help">Bezogen auf den Spitzenpegel, Standard 40 %. Der fertige Hörproben-Spot wird danach wie immer
+    auf die Ziel-Lautheit gemastert.</small>
+  <label>Wasserzeichen alle … Sekunden <input name="watermark_interval" value="{{ cfg.watermark_interval_s }}" type="number" min="3" max="60"></label>
+  <h2>Hintergrundmusik</h2>
+  <small class="help">Lautstärke der Musik im Spot – in Prozent vom Spitzenpegel (die Stimme liegt bei 90 %).
+    Gilt für Hörprobe und fertigen Spot. Einzelne Stücke lassen sich unter
+    <a href="/admin/music-styles">Musik</a> zusätzlich lauter oder leiser stellen.</small>
+  {% for key, label, hint in [("mix_bed_level", "Musik unter der Stimme", "Standard 14 % – höher = Musik präsenter, aber Text schwerer verständlich"),
+                              ("mix_open_level", "Musik ohne Stimme (Intro & Outro)", "Standard 45 %")] %}
+  <label><span>{{ label }}: <output id="{{ key }}Out">{{ mix[key] }}</output> %</span>
+    <input type="range" name="{{ key }}" min="{{ mix_limits[key][1] }}" max="{{ mix_limits[key][2] }}" step="1"
+           value="{{ mix[key] }}" oninput="document.getElementById('{{ key }}Out').textContent = this.value"></label>
+  <small class="help">{{ hint }}</small>
+  {% endfor %}
+  <h2>Mastering</h2>
+  <label>Ziel-Lautheit fertiger Spot (LUFS) <input name="master_lufs" value="{{ '%g' | format(cfg.master_lufs) | replace('.', ',') }}" inputmode="decimal"></label>
+  <label>True-Peak-Grenze (dBTP) <input name="master_ceiling" value="{{ '%g' | format(cfg.master_ceiling_dbtp) | replace('.', ',') }}" inputmode="decimal"></label>
+  <small class="help">Gilt für Hörprobe und fertigen Spot (48 kHz, Stereo, 24 Bit). Die einzelne Sprachdatei wird nicht angehoben.</small>
+  <div class="buttons"><button class="primary">Speichern</button></div>
+</form>
+{% endblock %}

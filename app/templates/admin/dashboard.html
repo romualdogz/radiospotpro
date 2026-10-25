@@ -1,0 +1,69 @@
+{% extends "admin/base.html" %}
+{% block title %}Übersicht{% endblock %}
+{% block content %}
+<h1>Übersicht</h1>
+<div class="tiles">
+  {% for slug, e in entities.items() %}
+  <a class="tile" href="/admin/{{ slug }}"><strong>{{ counts[slug] }}</strong><span>{{ e.title }}</span></a>
+  {% endfor %}
+  <a class="tile highlight" href="/admin/requests"><strong>{{ open_requests }}</strong><span>neue Anfragen</span></a>
+</div>
+{% if legal_placeholders %}
+<section class="card">
+  <h2>Rechtstexte</h2>
+  <p class="error">Noch nicht hinterlegt: {{ legal_placeholders | join(", ") }} –
+    bitte unter <a href="/admin/legal">Rechtstexte</a> eure geprüften Texte eintragen.</p>
+</section>
+{% endif %}
+<section class="card">
+  <h2>KI-Textvorschlag</h2>
+  {% if ai_enabled %}
+    <p>✔ Aktiv (Modell <code>{{ ai_model }}</code>). Kunden sehen im Konfigurator den Button „Text mit KI generieren“.</p>
+  {% else %}
+    <p class="error">Nicht eingerichtet – der Button ist im Konfigurator ausgeblendet.</p>
+    <p>API-Key unter <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> erstellen,
+       in der Datei <code>.env</code> bei <code>ANTHROPIC_API_KEY=</code> eintragen und den Server neu starten.</p>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>E-Mail-Versand</h2>
+  {% if mail_enabled %}
+    <p>✔ Eingerichtet (Absender <code>{{ mail_from }}</code>). PDF und Audiodateien lassen sich bei jeder
+       <a href="/admin/requests">Anfrage</a> per E-Mail verschicken.</p>
+  {% else %}
+    <p class="error">Nicht eingerichtet – bitte die SMTP-Zugangsdaten deines Mail-Kontos in der Datei <code>.env</code>
+       eintragen (siehe README) und den Server neu starten.</p>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>KI-Stimme (ElevenLabs)</h2>
+  {% if tts_enabled %}
+    <p>✔ API-Key geladen (Modell <code>{{ tts_model }}</code>).
+       {% if tts_tags %}Regieanweisungen wie <code>[excited]</code> sind aktiv; Sprech-Dynamik über Stabilität je Stimme und Tonalität.
+       {% else %}Regieanweisungen in [Klammern] werden entfernt; Dynamik über Stabilität, Style und Tempo je Stimme und Tonalität.{% endif %}</p>
+    {% if voices_without_id %}
+      <p class="error">Diese Stimmen haben noch keine ElevenLabs Voice-ID und laufen deshalb über die Browser-Stimme
+         (ohne Musik-Mischung):
+         {% for v in voices_without_id %}<a href="/admin/voices/{{ v.id }}">{{ v.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
+    {% else %}
+      <p>✔ Alle aktiven Stimmen haben eine Voice-ID – Hörproben mit Musik sind aktiv.</p>
+    {% endif %}
+  {% else %}
+    <p class="error">Nicht eingerichtet – Hörproben laufen über die Browser-Stimme, Mischen mit Musik ist nicht möglich.</p>
+    <p>API-Key unter <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io → API Keys</a> erstellen,
+       in <code>.env</code> bei <code>ELEVENLABS_API_KEY=</code> eintragen und den Server neu starten.</p>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>So wird der Preis berechnet</h2>
+  <p><strong>Spot:</strong> Text (auch per KI) und Hörbeispiel sind gratis. Optional Studiospot mit echtem Sprecher zum
+     Pauschalpreis (unter <a href="/admin/prices">Preis-Einstellungen</a>).</p>
+  <p><strong>Schaltung (optional):</strong> <code>Spotlänge (s) × Sekundenpreis des Senders × Preisfaktor der Zeitschiene × Ausstrahlungen</code></p>
+  <p>Dazu kommen ggf. Zusatzleistungen.</p>
+  <p><strong>Werbeabgabe:</strong> wird auf die Sendezeit nach Rabatten berechnet (nicht auf Zusatzleistungen)
+     und – sofern eingestellt – in die MwSt.-Basis einbezogen. Satz unter <a href="/admin/prices">Preis-Einstellungen</a>.</p>
+  <p><strong>Rabatte:</strong> Alle kombinierbaren Rabatte, deren Bedingungen erfüllt sind, werden addiert
+     (jeweils auf die ursprüngliche Basis). Ein nicht kombinierbarer Rabatt greift nur, wenn er allein
+     höher ist als die Summe der kombinierbaren. Der Rabatt kann den Auftragswert nie übersteigen.</p>
+</section>
+{% endblock %}

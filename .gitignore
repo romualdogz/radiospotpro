@@ -1,0 +1,26 @@
+# Zugangsdaten – niemals ins Repository (Vorlage: .env.example)
+.env
+.env.*
+!.env.example
+
+# Datenbank mit Kundenanfragen und Benutzern
+*.db
+*.db-journal
+*.sqlite3
+
+# Hochgeladene Dateien und Cache (Musik, Logos, Wasserzeichen, Hörproben)
+media/*
+!media/logos/
+media/logos/*
+!media/logos/energy-logo.svg
+
+# Python-Umgebung und Zwischendateien
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Installation und System
+install.log
+.DS_Store

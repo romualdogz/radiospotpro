@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %}
+{% block title %}Anfrage #{{ row.id }}{% endblock %}
+{% block content %}
+{% set q = row.quote %}
+<p><a href="/admin/requests">← Anfragen</a></p>
+<div class="head">
+  <h1>Anfrage #{{ row.id }}</h1>
+  <span>
+    <a class="button" href="/admin/requests/{{ row.id }}/audio/spot" title="48 kHz · Stereo · 24 Bit · gemastert">Spot (WAV)</a>
+    <a class="button" href="/admin/requests/{{ row.id }}/audio/voice" title="48 kHz · Stereo · 24 Bit · nur Sprache">Nur Sprache (WAV)</a>
+    <a class="button primary" href="/admin/requests/{{ row.id }}/pdf" target="_blank">PDF herunterladen</a>
+  </span>
+</div>
+<div class="grid2">
+  <section class="card">
+    <h2>Kunde</h2>
+    <p><strong>{{ row.customer_name }}</strong>{% if row.company %}<br>{{ row.company }}{% endif %}
+       {% if row.street %}<br>{{ row.street }}{% endif %}
+       {% if row.zip_code or row.city %}<br>{{ row.zip_code }} {{ row.city }}{% endif %}
+       {% if row.quote.country_name %}<br>{{ row.quote.country_name }}{% endif %}
+       {% if row.quote.vat_id %}<br>UID: {{ row.quote.vat_id }}{% endif %}</p>
+    <p>{% if row.phone %}Tel.: <a href="tel:{{ row.phone }}">{{ row.phone }}</a><br>{% endif %}
+       E-Mail: <a href="mailto:{{ row.email }}">{{ row.email }}</a></p>
+    {% if row.message %}<p class="message">{{ row.message }}</p>{% endif %}
+    {% set b = row.brief or {} %}
+    {% if b.firma or b.script %}
+    <h2>Spot</h2>
+    <table class="brief">
+      {% for label, key in [('Firma / Marke', 'firma'), ('Anlass', 'occasion'), ('Tonalität', 'tonality'),
+                            ('Sprachstil', 'language_style'), ('Kernbotschaft', 'botschaft'), ('Call-to-Action', 'cta')] %}
+        {% if b[key] %}<tr><th>{{ label }}</th><td>{{ b[key] }}</td></tr>{% endif %}
+      {% endfor %}
+    </table>
+    {% if b.script %}<h3>Spot-Text</h3><p class="message">{{ b.script }}</p>{% endif %}
+    {% endif %}
+    {% if row.consent %}
+    <p class="muted">Zustimmung:
+      {% for key, c in row.consent.items() %}{{ c.title }} (Version {{ c.version }}){{ ", " if not loop.last }}{% endfor %}
+      – am {{ (row.consent.values() | first).accepted_at[:16] | replace("T", " ") }} UTC</p>
+    {% endif %}
+    <p class="muted">Eingegangen am {{ row.created_at.strftime('%d.%m.%Y um %H:%M') }}</p>
+    <form method="post" action="/admin/requests/{{ row.id }}/status" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <select name="status">
+        {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s == row.status }}>{{ s | replace('_', ' ') }}</option>{% endfor %}
+      </select>
+      <button class="primary">Status setzen</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Kalkulation (zum Anfragezeitpunkt)</h2>
+    <table class="quote">
+      {% if q.package %}
+      <tr><td><strong>Komplettpaket „{{ q.package.name }}“</strong>{% if q.package.spots %} · {{ q.package.spots }} Ausstrahlungen{% endif %}<br>
+          <small>{{ q.package.description | replace('\n', ' · ') }}</small></td><td>{{ q.package.price_cent | eur }}</td></tr>
+      {% endif %}
+      {% if q.production %}{% set pr = q.production %}
+      <tr><td>{{ 'Studiospot mit echtem Sprecher' if pr.studio else 'Spot: Text & Hörbeispiel (gratis)' }} · {{ pr.seconds }} s<br>
+          <small>Hörbeispiel-Stimme: {{ pr.voice }} · Musik: {{ pr.music or 'keine' }}</small></td>
+          <td>{{ 'inklusive' if pr.in_package else (pr.total_cent | eur) }}</td></tr>
+      {% endif %}
+      {% for l in q.lines %}
+      <tr><td>{{ l.spots }} × {{ l.station }} · {{ l.time_slot }} · {{ l.seconds }} s<br>
+          <small>à {{ l.unit_price_cent | eur }}</small></td><td>{{ l.total_cent | eur }}</td></tr>
+      {% endfor %}
+      {% for a in q.addons %}<tr><td>{{ a.name }}</td><td>{{ a.price_cent | eur }}</td></tr>{% endfor %}
+      <tr class="sum"><td>Zwischensumme</td><td>{{ q.subtotal_cent | eur }}</td></tr>
+      {% for d in q.discounts %}<tr class="discount"><td>{{ d.name }}</td><td>− {{ d.amount_cent | eur }}</td></tr>{% endfor %}
+      <tr class="sum"><td>Netto</td><td>{{ q.net_cent | eur }}</td></tr>
+      {% if q.ad_tax_cent %}<tr><td>Werbeabgabe {{ q.ad_tax_rate_bp | pct }}<br><small>auf {{ q.ad_tax_base_cent | eur }}</small></td><td>{{ q.ad_tax_cent | eur }}</td></tr>{% endif %}
+      {% if q.reverse_charge %}
+      <tr><td>MwSt. 0 % – Nettorechnung<br><small>Reverse Charge, UID {{ q.vat_id }} – bitte über VIES prüfen</small></td>
+      {% else %}
+      <tr><td>MwSt. {{ q.vat_rate_bp | pct }}{% if q.country_name %} ({{ q.country_name }}){% endif %}</td>
+      {% endif %}<td>{{ q.vat_cent | eur }}</td></tr>
+      <tr class="total"><td>Brutto</td><td>{{ q.gross_cent | eur }}</td></tr>
+    </table>
+    {% if row.configuration.promo_code %}<p class="muted">Gutscheincode: {{ row.configuration.promo_code }}</p>{% endif %}
+  </section>
+</div>
+<section class="card" id="email">
+  <h2>Per E-Mail senden</h2>
+  {% if not mail_enabled %}
+    <p class="error">E-Mail-Versand ist noch nicht eingerichtet. Bitte in der Datei <code>.env</code> die
+      Zugangsdaten deines Mail-Kontos eintragen (<code>SMTP_HOST</code>, <code>SMTP_USER</code>,
+      <code>SMTP_PASSWORD</code>, <code>SMTP_FROM</code>) und den Server neu starten – siehe README.</p>
+  {% else %}
+  <form method="post" action="/admin/requests/{{ row.id }}/email#email" class="form mail-form"
+        onsubmit="this.querySelector('button.primary').disabled = true; this.querySelector('button.primary').textContent = 'Wird gesendet … (Audio wird erzeugt)'">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>An <input name="to" type="text" value="{{ mail.to }}" required placeholder="studio@example.com"
+                    autocomplete="email" spellcheck="false"></label>
+    <small class="help">Mehrere Adressen mit Komma trennen. Standard-Empfänger unter
+      <a href="/admin/settings">Einstellungen</a>.</small>
+    <label>Betreff <input name="subject" value="{{ mail.subject }}" required maxlength="200"></label>
+    <label>Nachricht <textarea name="body" rows="9">{{ mail.body }}</textarea></label>
+    <fieldset class="attachments">
+      <legend>Anhänge</legend>
+      <label class="check"><input type="checkbox" name="pdf" {{ 'checked' if mail.pdf }}> Kostenaufstellung (PDF)</label>
+      <label class="check"><input type="checkbox" name="spot" {{ 'checked' if mail.spot }} {{ '' if audio_possible else 'disabled' }}>
+        Fertiger Spot ohne Wasserzeichen (WAV, 48 kHz, Stereo, 24 Bit)</label>
+      <label class="check"><input type="checkbox" name="voice" {{ 'checked' if mail.voice }} {{ '' if audio_possible else 'disabled' }}>
+        Nur Sprache (WAV)</label>
+      {% if not audio_possible %}<small class="help">Audiodateien sind für diese Anfrage nicht möglich
+        (kein Spot-Text, keine KI-Stimme oder ElevenLabs nicht eingerichtet).</small>{% endif %}
+    </fieldset>
+    <div class="buttons"><button class="primary">E-Mail senden</button></div>
+  </form>
+  {% endif %}
+  {% if row.mail_log %}
+  <h3>Bereits gesendet</h3>
+  <ul class="mail-log">
+    {% for m in row.mail_log | reverse %}
+    <li><strong>{{ m.sent_at[:16] | replace("T", " ") }} UTC</strong> an {{ m.to | join(", ") }} –
+      „{{ m.subject }}“<br><small>{{ m.attachments | join(", ") or "keine Anhänge" }} · von {{ m.by }}</small></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

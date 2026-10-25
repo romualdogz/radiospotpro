@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% block title %}Rechtstexte{% endblock %}
+{% block content %}
+<h1>Rechtstexte</h1>
+<p class="muted">Diese Texte erscheinen im Konfigurator beim Absenden (Häkchen „AGB“ und „Datenschutz“, Text per Klick
+  einblendbar) und als eigene Seiten unter <a href="/agb" target="_blank">/agb</a> und
+  <a href="/datenschutz" target="_blank">/datenschutz</a>. Zu jeder Anfrage wird gespeichert, welcher Textstand akzeptiert wurde.</p>
+{% for t in texts %}
+<form method="post" action="/admin/legal/{{ t.key }}" class="card form legal-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="head">
+    <h2>{{ t.title }}</h2>
+    <small class="muted">Stand {{ t.updated_at.strftime('%d.%m.%Y %H:%M') }} · Version {{ t.version }}</small>
+  </div>
+  {% if t.is_placeholder %}<div class="error">Noch Platzhalter – bitte durch euren rechtlich geprüften Text ersetzen.</div>{% endif %}
+  <label>Titel <input name="title" value="{{ t.title }}" required maxlength="160"></label>
+  <label>Text <textarea name="body" rows="18">{{ t.body }}</textarea></label>
+  <small class="help">Absätze mit Leerzeilen trennen. Zeilenumbrüche werden übernommen.</small>
+  <div class="buttons"><button class="primary">Speichern</button>
+    <a href="/{{ t.key }}" target="_blank">Ansehen ↗</a></div>
+</form>
+{% endfor %}
+{% endblock %}

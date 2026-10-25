@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %} · Radiospot-Konfigurator</title>
+  <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+{% if user %}
+<header class="topbar">
+  <a class="brand" href="/admin">📻 Radiospot Admin</a>
+  <nav>
+    {% if can('requests') %}<a href="/admin/requests"><strong>Anfragen</strong></a>{% endif %}
+    {% for group, items in nav_groups.items() %}
+      <span class="nav-group">{{ group }}:
+        {% for e in items %}<a href="/admin/{{ e.slug }}">{{ e.title }}</a>{% endfor %}
+        {% if group == "Preise" %}<a href="/admin/prices">Preis-Einstellungen</a>{% endif %}
+      </span>
+    {% endfor %}
+    {% if can('legal') %}<a href="/admin/legal">Rechtstexte</a>{% endif %}
+    {% if can('design') %}<a href="/admin/design">Design</a>{% endif %}
+    {% if can('settings') %}<a href="/admin/settings">Einstellungen</a>{% endif %}
+    {% if can('users') %}<a href="/admin/users">Benutzer</a>{% endif %}
+    <a href="/admin/account">Mein Konto</a>
+    <a href="/" target="_blank">Konfigurator ↗</a>
+  </nav>
+  <form method="post" action="/admin/logout" class="logout">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="link">{{ user.username }}{% if user.role != 'admin' %} ({{ roles[user.role] }}){% endif %} · Abmelden</button>
+  </form>
+</header>
+{% endif %}
+<main>
+  {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
