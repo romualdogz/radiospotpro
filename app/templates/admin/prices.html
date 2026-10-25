@@ -14,6 +14,12 @@
   <label>Mindestbestellwert netto (€) <input name="min_order" value="{{ '%.2f' | format(cfg.min_order_cent / 100) | replace('.', ',') }}" inputmode="decimal"></label>
   <small class="help">0 = kein Mindestbestellwert. Darunter kann im Konfigurator keine Anfrage gesendet werden.</small>
   <label>Währung <input name="currency" value="{{ cfg.currency }}" maxlength="3"></label>
+  <h2>Buchungsarten im Konfigurator</h2>
+  <label class="check"><input type="checkbox" name="individual_booking" {{ 'checked' if cfg.individual_booking }}>
+    „Individuell“ anbieten – Buchung nach Sekunden (Sender, Zeitschiene, Ausstrahlungen)</label>
+  <small class="help">Ausgeschaltet sehen Kunden nur die Komplettpakete.
+    {% if not has_packages %}<strong>Hinweis:</strong> Es gibt gerade kein aktives Komplettpaket – solange bleibt
+    „Individuell“ trotzdem verfügbar, damit Kunden buchen können.{% endif %}</small>
   <div class="buttons"><button class="primary">Speichern</button></div>
 </form>
 <p class="help">Sekundenpreise unter <a href="/admin/stations">Sender &amp; Streams</a>, Preisfaktoren unter

@@ -245,7 +245,8 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         vat_id=data.vat_id,
         reverse_charge=reverse_charge,
         production=production_out,
-        package=QuotePackage(name=package.name, description=package.description, spots=package.spots,
+        package=QuotePackage(name=package.name, article_no=package.article_no or "",
+                             description=package.description, spots=package.spots,
                              station=" + ".join(s.name for s in package_stations),
                              coverage=_coverage_names(db, package.coverage_ids or list(dict.fromkeys(
                                  i for s in package_stations for i in (s.coverage_ids or [])))),

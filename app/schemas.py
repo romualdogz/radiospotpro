@@ -120,6 +120,7 @@ class Catalog(BaseModel):
     spot_lengths: list[SpotLengthPublic]
     addons: list[AddOnPublic]
     packages: list[PackagePublic] = Field(default_factory=list)
+    individual_booking: bool = Field(default=True, description="„Individuell“ (Buchung nach Sekunden) verfügbar")
     coverage_areas: list[CoverageAreaPublic] = Field(default_factory=list)
 
 
@@ -195,6 +196,7 @@ class QuoteProduction(BaseModel):
 
 class QuotePackage(BaseModel):
     name: str
+    article_no: str = ""
     description: str
     station: str = Field(default="", description="Gewählter bzw. enthaltene Sender, z. B. „Radio Energy + Radio Nostalgie“")
     coverage: str = ""
@@ -457,6 +459,7 @@ class AddOnOut(AddOnIn, ORMModel):
 
 class PackageIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
+    article_no: str = Field(default="", max_length=40)
     badge: str = Field(default="", max_length=40)
     description: str = ""
     price_cent: int = Field(ge=0, description="Pauschalpreis netto in Cent")
@@ -522,6 +525,7 @@ class SettingsIn(BaseModel):
     min_order_cent: int = Field(ge=0)
     studio_price_cent: int = Field(default=34_900, ge=0)
     currency: str = Field(min_length=3, max_length=3)
+    individual_booking: bool = Field(default=True, description="Individuelle Buchung nach Sekunden anbieten")
 
 
 class QuoteRequestOut(ORMModel):

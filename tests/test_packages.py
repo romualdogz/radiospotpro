@@ -226,3 +226,40 @@ def test_package_includes_all_stations(client, db, cat):
     client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
     page = client.get(f"/admin/packages/{cat['basic'].id}").text
     assert 'name="station_mode"' in page and "Alle angehakten Sender sind im Paket enthalten" in page
+
+
+def test_article_number_in_quote_pdf_and_admin(client, db, cat):
+    cat["basic"].article_no = "PKT-1001"
+    db.commit()
+    assert calculate_quote(db, pq(cat, "basic")).package.article_no == "PKT-1001"
+    req = client.post("/api/quote-requests", json={
+        "configuration": pq(cat, "basic").model_dump(), "customer_name": "Max", "email": "max@example.com",
+        "street": "Gasse 1", "zip_code": "1010", "city": "Wien", "phone": "+43 1 234567",
+        "accept_terms": True, "accept_privacy": True}).json()
+    from io import BytesIO
+    from pypdf import PdfReader
+    assert "Art.-Nr. PKT-1001" in PdfReader(BytesIO(client.get(req["pdf_url"]).content)).pages[0].extract_text()
+
+    def csrf(path):
+        return re.search(r'name="csrf" value="([^"]+)"', client.get(path).text).group(1)
+    token = csrf("/admin/login")
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
+    assert "PKT-1001" in client.get("/admin/packages").text
+    assert "Art.-Nr. <strong>PKT-1001</strong>" in client.get(f"/admin/requests/{req['id']}").text
+
+
+def test_individual_booking_can_be_disabled(client, db, cat):
+    from app.settings_store import save_settings
+    individual = QuoteIn(country="AT", items=[{"station_id": cat["station"].id, "time_slot_id": cat["slot"].id,
+                                               "spot_length_id": cat["len20"].id, "spots": 5}])
+    assert client.post("/api/quote", json=individual.model_dump()).status_code == 200
+    save_settings(db, {"individual_booking": False})
+    assert client.get("/api/catalog").json()["individual_booking"] is False
+    r = client.post("/api/quote", json=individual.model_dump())
+    assert r.status_code == 422 and "nicht verfügbar" in r.json()["detail"]
+    assert client.post("/api/quote", json=pq(cat, "basic").model_dump()).status_code == 200  # Pakete gehen weiter
+    # ohne aktive Pakete bleibt „Individuell“ verfügbar, damit Kunden buchen können
+    db.query(Package).update({"active": False})
+    db.commit()
+    assert client.get("/api/catalog").json()["individual_booking"] is True
+    assert client.post("/api/quote", json=individual.model_dump()).status_code == 200

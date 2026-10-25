@@ -702,7 +702,7 @@
       h("div", { class: "booking-layout" + (coverageBlock() ? "" : " no-map") },
         h("div", { class: "booking-main" },
           h("h3", { class: "sub" }, "Schaltung"),
-          C.packages.length ? h("div", { class: "booking-mode" }, chips(modes, state.bookingMode, (mode) => {
+          C.packages.length && C.individual_booking !== false ? h("div", { class: "booking-mode" }, chips(modes, state.bookingMode, (mode) => {
             state.bookingMode = mode;
             if (mode === "package" && !packageFits(byId(C.packages, state.packageId))) {
               state.packageId = C.packages.find(packageFits)?.id ?? null;

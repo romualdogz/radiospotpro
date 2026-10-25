@@ -224,6 +224,7 @@ def _finalize_coverage(d: dict) -> dict:
 
 
 def _finalize_package(d: dict) -> dict:
+    d["article_no"] = d.get("article_no", "").strip()[:40]
     if d["airtime_cent"] > d["price_cent"]:
         raise ValueError("Der Sendezeit-Anteil kann nicht höher als der Paketpreis sein")
     if not 0 <= d["max_seconds"] <= 300:
@@ -366,6 +367,7 @@ ENTITIES: dict[str, Entity] = {
         ], group="Schaltung"),
         Entity("packages", Package, "Komplettpakete", "Komplettpaket", [
             F("name", "Name", required=True),
+            F("article_no", "Artikelnummer", help="Erscheint in Anfrage, PDF und E-Mail-Kalkulation, z. B. „PKT-1001“"),
             F("badge", "Badge", help="Kurzer Hinweis auf der Paketkarte, z. B. „Beliebt“ – optional"),
             F("price_cent", "Pauschalpreis (€, netto)", "money", required=True),
             F("description", "Leistungen (eine pro Zeile)", "textarea", in_list=False,
@@ -772,13 +774,18 @@ def watermark_audio(user=Depends(admin_only), db: Session = Depends(get_db)):
 @router.get("/prices", response_class=HTMLResponse)
 def prices_form(request: Request, user=Depends(section_page("prices")), db: Session = Depends(get_db)):
     return render(request, "admin/prices.html", user=user, cfg=get_settings(db),
-                  error=None, flash=pop_flash(request))
+                  error=None, flash=pop_flash(request), has_packages=_active_packages(db))
+
+
+def _active_packages(db: Session) -> int:
+    return db.query(Package).filter(Package.active.is_(True)).count()
 
 
 @router.post("/prices")
 def prices_save(request: Request, user=Depends(section_page("prices")), db: Session = Depends(get_db),
                 csrf: str = Form(""), min_order: str = Form("0"), currency: str = Form("EUR"),
-                ad_tax_rate: str = Form("0"), studio_price: str = Form("349"), ad_tax_in_vat_base: str = Form("")):
+                ad_tax_rate: str = Form("0"), studio_price: str = Form("349"), ad_tax_in_vat_base: str = Form(""),
+                individual_booking: str = Form("")):
     check_csrf(request, csrf)
     try:
         values = {
@@ -787,13 +794,15 @@ def prices_save(request: Request, user=Depends(section_page("prices")), db: Sess
             "min_order_cent": int(_parse_decimal(min_order or "0", "Mindestbestellwert") * 100),
             "studio_price_cent": int(_parse_decimal(studio_price or "0", "Preis Studiospot") * 100),
             "currency": currency.strip().upper()[:3] or "EUR",
+            "individual_booking": individual_booking == "on",
         }
         if not 0 <= values["ad_tax_rate_bp"] <= 10_000:
             raise ValueError("Werbeabgabe: zwischen 0 und 100 %")
         if values["min_order_cent"] < 0 or values["studio_price_cent"] < 0:
             raise ValueError("Preise dürfen nicht negativ sein")
     except ValueError as e:
-        return render(request, "admin/prices.html", user=user, cfg=get_settings(db), error=str(e), flash=None)
+        return render(request, "admin/prices.html", user=user, cfg=get_settings(db), error=str(e), flash=None,
+                      has_packages=_active_packages(db))
     save_settings(db, values)
     return redirect("/admin/prices", "Preise gespeichert.", request)
 

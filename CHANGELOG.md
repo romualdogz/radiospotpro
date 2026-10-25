@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Artikelnummer bei Komplettpaketen** (*Komplettpakete → Artikelnummer*): erscheint in der Paketliste im Admin,
+  in der Anfrage, im PDF („Art.-Nr. …“) und damit auch im E-Mail-Versand.
+- **„Individuell“ abschaltbar** (*Preis-Einstellungen → Buchungsarten*, auch für die Verkaufsleitung):
+  ausgeschaltet sehen Kunden nur die Komplettpakete, der Umschalter verschwindet; Einzelbuchungen werden auch
+  serverseitig abgelehnt. Gibt es kein aktives Paket, bleibt „Individuell“ verfügbar, damit Kunden buchen können.
 - **Pakete mit mehreren Sendern zugleich** (*Komplettpakete → Senderwahl → „Alle angehakten Sender sind im Paket
   enthalten“*): keine Auswahl, die Paketkarte zeigt „Enthalten: ● Radio Energy ● Radio Nostalgie“, die Karte jeden
   Sender in seiner Farbe (gemeinsame Gebiete rot/blau gestreift). Kalkulation und PDF nennen alle Sender.

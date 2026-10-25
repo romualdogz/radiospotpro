@@ -205,6 +205,7 @@ class Package(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
+    article_no: Mapped[str] = mapped_column(String(40), default="")  # Artikelnummer (Angebot, Rechnung, PDF)
     badge: Mapped[str] = mapped_column(String(40), default="")  # z. B. „Beliebt“
     description: Mapped[str] = mapped_column(Text, default="")  # Leistungen, eine pro Zeile
     price_cent: Mapped[int] = mapped_column(Integer)  # Pauschalpreis netto

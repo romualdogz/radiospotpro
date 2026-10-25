@@ -14,6 +14,7 @@ DEFAULTS: dict[str, str] = {
     "ad_tax_rate_bp": "500",  # 5 % Werbeabgabe auf die Sendezeit (0 = keine)
     "ad_tax_in_vat_base": "1",  # Werbeabgabe unterliegt der Umsatzsteuer
     "currency": "EUR",
+    "individual_booking": "1",  # „Individuell“ (Buchung nach Sekunden) im Konfigurator anbieten
 }
 
 
@@ -31,6 +32,7 @@ def get_settings(db: Session) -> dict:
         "ad_tax_rate_bp": int(merged["ad_tax_rate_bp"]),
         "ad_tax_in_vat_base": merged["ad_tax_in_vat_base"] in ("1", "True", "true"),
         "currency": merged["currency"],
+        "individual_booking": merged["individual_booking"] in ("1", "True", "true"),
     }
 
 

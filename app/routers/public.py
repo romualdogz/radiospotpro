@@ -50,12 +50,24 @@ def catalog(db: Session = Depends(get_db)):
         spot_lengths=_active(db, SpotLength),
         addons=_active(db, AddOn),
         packages=_active(db, Package),
+        individual_booking=individual_booking_available(db),
         coverage_areas=_active(db, CoverageArea),
     )
 
 
+def individual_booking_available(db: Session) -> bool:
+    """Ausgeschaltet nur, wenn es aktive Komplettpakete gibt – sonst könnte niemand buchen."""
+    return get_settings(db)["individual_booking"] or not db.query(Package).filter(Package.active.is_(True)).count()
+
+
+def _check_booking_mode(db: Session, data) -> None:
+    if data.items and not individual_booking_available(db):
+        raise HTTPException(422, "Die individuelle Buchung ist derzeit nicht verfügbar – bitte ein Komplettpaket wählen.")
+
+
 @router.post("/quote", response_model=QuoteOut, summary="Preis für eine Konfiguration berechnen")
 def quote(data: QuoteIn, db: Session = Depends(get_db)):
+    _check_booking_mode(db, data)
     try:
         return calculate_quote(db, data)
     except QuoteError as e:
@@ -67,6 +79,7 @@ def quote(data: QuoteIn, db: Session = Depends(get_db)):
 def create_quote_request(data: QuoteRequestIn, db: Session = Depends(get_db)):
     if not data.configuration.items and data.configuration.package_id is None:
         raise HTTPException(422, "Bitte ein Komplettpaket wählen oder mindestens einen Sender oder Stream buchen.")
+    _check_booking_mode(db, data.configuration)
     # Preis wird serverseitig neu berechnet – Werte aus dem Browser werden nie übernommen.
     try:
         result = calculate_quote(db, data.configuration)

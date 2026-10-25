@@ -85,14 +85,14 @@ def test_admin_ui_station_form_and_settings(client, db):
     assert client.get("/api/admin/stations").json()[0]["price_per_second_cent"] == 850
     token = _csrf(client, "/admin/settings")
     client.post("/admin/settings", data={"csrf": token, "company_info": "onaircraft · Wien"})
-    client.post("/admin/prices", data={"csrf": token, "ad_tax_rate": "5",
+    client.post("/admin/prices", data={"csrf": token, "ad_tax_rate": "5", "individual_booking": "on",
                 "ad_tax_in_vat_base": "on", "min_order": "250", "currency": "eur", "studio_price": "349,00"})
     cfg = client.get("/api/admin/settings").json()
     assert cfg == {"company_info": "onaircraft · Wien",
                    "ad_tax_rate_bp": 500, "ad_tax_in_vat_base": True,
                    "min_order_cent": 25000, "studio_price_cent": 34900, "currency": "EUR",
                    "watermark_text": "Hörprobe von onaircraft", "watermark_interval_s": 7,
-                   "master_lufs": -8.0, "master_ceiling_dbtp": -1.0}
+                   "master_lufs": -8.0, "master_ceiling_dbtp": -1.0, "individual_booking": True}
     for page in ["/admin", "/admin/time-slots", "/admin/spot-lengths", "/admin/addons", "/admin/requests"]:
         assert client.get(page).status_code == 200, page
 

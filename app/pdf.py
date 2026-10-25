@@ -80,7 +80,8 @@ def _price_rows(q: dict) -> list[list]:
                                      f"{pkg['spots']} Ausstrahlungen" if pkg.get("spots") else "", "Pauschalpreis",
                                      f"Sendegebiet: {pkg['coverage']}" if pkg.get("coverage") else "",
                                      *[l.strip() for l in pkg.get("description", "").splitlines() if l.strip()]] if x)
-        row(f"Komplettpaket „{pkg['name']}“", _eur(pkg["price_cent"]), sub)
+        row(f"Komplettpaket „{pkg['name']}“" + (f" (Art.-Nr. {pkg['article_no']})" if pkg.get("article_no") else ""),
+            _eur(pkg["price_cent"]), sub)
     p = q.get("production")
     if p:
         if p.get("studio"):
