@@ -25,6 +25,7 @@
     voiceId: null, musicId: null, addonIds: new Set(),
     studio: false, items: [], bookingMode: "individual", packageId: null,
     packageStations: {},  // Paket-ID → gewählter Sender (bei Paketen mit Senderwahl)
+    startDate: "", endDate: "",  // Kampagnenzeitraum (JJJJ-MM-TT)
     promo: "", country: "AT", vatId: "",
     name: "", company: null, street: "", zip: "", city: "", email: "", phone: "", nachricht: "",
     acceptTerms: false, acceptPrivacy: false,
@@ -45,6 +46,14 @@
     return el;
   }
   const byId = (list, id) => list.find((x) => x.id === id);
+  // Datumswerte als JJJJ-MM-TT; gerechnet in UTC, damit Sommer-/Winterzeit nichts verschiebt
+  const addDays = (iso, n) => {
+    const d = new Date(iso + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  const daysBetween = (a, b) => Math.round((new Date(b + "T00:00:00Z") - new Date(a + "T00:00:00Z")) / 864e5);
+  const deDate = (iso) => iso ? iso.split("-").reverse().join(".") : "";
   const money = (cent) => new Intl.NumberFormat("de-AT", { style: "currency", currency: C?.currency || "EUR" }).format(cent / 100);
   const pct = (bp) => (bp / 100).toLocaleString("de-AT") + " %";
 
@@ -133,7 +142,10 @@
   function canAdvance() {
     // Eigener Spot-Text reicht – Firma, Kernbotschaft und Call-to-Action braucht nur der KI-Vorschlag
     if (state.step === 1) return !!(state.script.trim() || (state.firma.trim() && state.botschaft.trim() && state.cta.trim()));
-    if (state.step === 3 && state.bookingMode === "package") return packageFits(selectedPackage());
+    if (state.step === 3) {
+      if (!periodValid()) return false;
+      if (state.bookingMode === "package") return packageFits(selectedPackage());
+    }
     if (state.step === 4) {
       return !state.sent && ["name", "street", "zip", "city", "phone", "email"].every((k) => state[k].trim())
         && state.acceptTerms && state.acceptPrivacy;
@@ -169,6 +181,8 @@
         studio: state.studio && !pkg?.includes_studio },
       package_id: pkg ? pkg.id : null,
       package_station_id: pkg ? packageStation(pkg)?.id ?? null : null,
+      start_date: state.startDate || null,
+      end_date: pkg?.duration_days ? null : state.endDate || null,
       items: pkg ? [] : state.items.map((i) => ({ ...i, spot_length_id: state.lengthId })),
       addon_ids: [...state.addonIds],
       promo_code: state.promo.trim() || null,
@@ -501,6 +515,54 @@
       groups.length > 1 ? groups.map(([label, list]) => h("optgroup", { label }, list.map(opt))) : C.stations.map(opt));
   }
 
+  // ------------------------------------------------------------------ Kampagnenzeitraum
+  let refreshPeriod = () => {};  // aktualisiert „Laufzeit … · Schaltungen pro Tag“ ohne neu zu zeichnen
+  function periodEnd() {
+    const pkg = selectedPackage();
+    if (!state.startDate) return "";
+    return pkg?.duration_days ? addDays(state.startDate, pkg.duration_days - 1) : state.endDate;
+  }
+  function periodValid() {
+    const end = periodEnd();
+    return !!(state.startDate && end && state.startDate >= C.earliest_start && end >= state.startDate
+      && daysBetween(state.startDate, end) < 366);
+  }
+
+  function periodBlock() {
+    const pkg = selectedPackage();
+    const fixed = !!pkg?.duration_days;
+    const update = () => { refreshPeriodInfo(); scheduleQuote(); refreshNav(); };
+    const start = h("input", { type: "date", value: state.startDate, min: C.earliest_start, required: true,
+      onchange: (e) => {
+        state.startDate = e.target.value;
+        // Ende mitziehen (auch im Paket-Modus, falls der Kunde danach zu „Individuell“ wechselt)
+        if (!state.endDate || state.endDate < state.startDate) state.endDate = addDays(state.startDate, 13);
+        render(); scheduleQuote();
+      } });
+    const endInput = fixed ? null : h("input", { type: "date", value: state.endDate, min: state.startDate || C.earliest_start,
+      required: true, oninput: (e) => { state.endDate = e.target.value; update(); } });
+    const info = h("p", { class: "est", id: "periodInfo" });
+    function refreshPeriodInfo() {
+      const e = periodEnd(), d = state.startDate && e && e >= state.startDate ? daysBetween(state.startDate, e) + 1 : 0;
+      const spots = pkg ? pkg.spots : state.items.reduce((n, i) => n + i.spots, 0);
+      info.textContent = !state.startDate ? "Bitte den Beginn wählen."
+        : state.startDate < C.earliest_start ? `Frühester Beginn: ${deDate(C.earliest_start)}`
+        : !d ? "Das Ende liegt vor dem Beginn."
+        : [fixed ? `Ende: ${deDate(e)}` : null, `Laufzeit ${d} Tage`,
+           spots ? `ca. ${(spots / d).toLocaleString("de-AT", { maximumFractionDigits: 1 })} Schaltungen pro Tag` : null]
+            .filter(Boolean).join(" · ");
+      info.classList.toggle("error-text", !periodValid());
+    }
+    refreshPeriodInfo();
+    refreshPeriod = refreshPeriodInfo;
+    return h("div", { class: "period" },
+      h("h3", { class: "sub" }, "Zeitraum"),
+      h("div", { class: fixed ? "period-fields fixed" : "period-fields" },
+        field(fixed ? `Beginn (Laufzeit ${pkg.duration_days} Tage)` : "Beginn", start),
+        fixed ? null : field("Ende", endInput)),
+      info);
+  }
+
   // ------------------------------------------------------------------ Reichweiten-Karte (DAB+ vs. UKW)
   // Gewählte Sendegebiete – jedes in der Farbe seines Senders (sonst Gebietsfarbe bzw. Akzentfarbe)
   function selectedCoverage() {
@@ -670,7 +732,7 @@
       field("Zeitschiene", select(C.time_slots, item.time_slot_id, (id) => { item.time_slot_id = id; scheduleQuote(); },
         (t) => t.start_time ? `${t.name} (${t.start_time}–${t.end_time})` : t.name)),
       field("Ausstrahlungen", h("input", { type: "number", min: 1, max: 10000, value: item.spots,
-        oninput: (e) => { item.spots = Math.max(1, parseInt(e.target.value, 10) || 1); scheduleQuote(); } })),
+        oninput: (e) => { item.spots = Math.max(1, parseInt(e.target.value, 10) || 1); scheduleQuote(); refreshPeriod(); } })),
       h("button", { type: "button", class: "btn small ghost", title: "Entfernen", disabled: state.items.length === 1,
         onclick: () => { state.items.splice(idx, 1); render(); scheduleQuote(); } }, "×"),
     ));
@@ -710,6 +772,7 @@
             dropStudioAddons(); render(); scheduleQuote();
           })) : null,
           state.bookingMode === "package" ? packageCards() : individual,
+          periodBlock(),
           extras),
         coverageBlock() ? h("div", { class: "booking-side" }, coverageBlock()) : null,
         h("div", { class: "booking-price" },
@@ -797,6 +860,8 @@
           + (packageStation(selectedPackage()) ? ` · ${packageStation(selectedPackage()).name}` : "")
           + (includesAllStations(selectedPackage()) ? ` · ${packageStationOptions(selectedPackage()).map((s) => s.name).join(" + ")}` : "")
           : state.items.map((i) => `${i.spots}× ${byId(C.stations, i.station_id).name}`).join(", "))),
+        state.startDate ? h("div", {}, kv("Zeitraum",
+          `${deDate(state.startDate)} – ${deDate(periodEnd())} (${daysBetween(state.startDate, periodEnd()) + 1} Tage)`)) : null,
         selectedCoverage().areas.length
           ? h("div", {}, kv("Sendegebiet", [...new Set(selectedCoverage().areas.map((a) => a.name))].join(" · "))) : null,
         h("div", { "data-price": "", style: "margin-top:12px" }, priceBlock()),
@@ -902,6 +967,8 @@
     }
     state.items.push({ station_id: C.stations[0].id, time_slot_id: C.time_slots[0].id, spots: 20 });
     C.packages = C.packages || [];
+    state.startDate = C.earliest_start || new Date().toISOString().slice(0, 10);
+    state.endDate = addDays(state.startDate, 13);
     if (C.packages.length) {  // Komplettpakete zuerst anbieten
       state.bookingMode = "package";
       state.packageId = C.packages.find(packageFits)?.id ?? C.packages[0].id;

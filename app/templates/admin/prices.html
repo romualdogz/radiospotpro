@@ -17,7 +17,9 @@
   <h2>Buchungsarten im Konfigurator</h2>
   <label class="check"><input type="checkbox" name="individual_booking" {{ 'checked' if cfg.individual_booking }}>
     „Individuell“ anbieten – Buchung nach Sekunden (Sender, Zeitschiene, Ausstrahlungen)</label>
-  <small class="help">Ausgeschaltet sehen Kunden nur die Komplettpakete.
+  <label>Vorlaufzeit (Tage) <input name="booking_lead_days" value="{{ cfg.booking_lead_days }}" type="number" min="0" max="60"></label>
+  <small class="help">Frühester Kampagnenbeginn = heute + so viele Tage (Zeit für Freigabe und Produktion). 0 = ab heute.</small>
+  <small class="help">„Individuell“ ausgeschaltet: Kunden sehen nur die Komplettpakete.
     {% if not has_packages %}<strong>Hinweis:</strong> Es gibt gerade kein aktives Komplettpaket – solange bleibt
     „Individuell“ trotzdem verfügbar, damit Kunden buchen können.{% endif %}</small>
   <div class="buttons"><button class="primary">Speichern</button></div>

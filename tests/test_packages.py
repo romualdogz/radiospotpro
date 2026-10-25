@@ -5,6 +5,7 @@ import pytest
 from app.models import AddOn, Discount, DiscountKind, DiscountScope, MusicStyle, Package, SpotLength, Station, TimeSlot, Voice
 from app.pricing import QuoteError, calculate_quote
 from app.schemas import QuoteIn
+from tests.conftest import PERIOD
 
 
 @pytest.fixture()
@@ -86,7 +87,7 @@ def test_catalog_lists_active_packages_and_request_pdf(client, db, cat):
     names = [p["name"] for p in client.get("/api/catalog").json()["packages"]]
     assert names == ["Basic", "All-in", "Streams"]
     r = client.post("/api/quote-requests", json={
-        "configuration": pq(cat, "allin", studio=True).model_dump(),
+        "configuration": {**pq(cat, "allin", studio=True).model_dump(mode="json"), **PERIOD},
         "customer_name": "Max", "email": "max@example.com", "street": "Gasse 1", "zip_code": "1010",
         "city": "Wien", "phone": "+43 1 234567", "accept_terms": True, "accept_privacy": True})
     assert r.status_code == 201, r.text
@@ -150,7 +151,7 @@ def test_package_with_station_choice(client, db, cat):
 
     assert client.get("/api/catalog").json()["packages"][0]["station_ids"] == [cat["station"].id, nostalgie.id]
     req = client.post("/api/quote-requests", json={
-        "configuration": data.model_dump(), "customer_name": "Max", "email": "max@example.com",
+        "configuration": {**data.model_dump(mode="json"), **PERIOD}, "customer_name": "Max", "email": "max@example.com",
         "street": "Gasse 1", "zip_code": "1010", "city": "Wien", "phone": "+43 1 234567",
         "accept_terms": True, "accept_privacy": True}).json()
     assert req["quote"]["package"]["station"] == "Radio Nostalgie"
@@ -233,7 +234,7 @@ def test_article_number_in_quote_pdf_and_admin(client, db, cat):
     db.commit()
     assert calculate_quote(db, pq(cat, "basic")).package.article_no == "PKT-1001"
     req = client.post("/api/quote-requests", json={
-        "configuration": pq(cat, "basic").model_dump(), "customer_name": "Max", "email": "max@example.com",
+        "configuration": {**pq(cat, "basic").model_dump(mode="json"), **PERIOD}, "customer_name": "Max", "email": "max@example.com",
         "street": "Gasse 1", "zip_code": "1010", "city": "Wien", "phone": "+43 1 234567",
         "accept_terms": True, "accept_privacy": True}).json()
     from io import BytesIO
@@ -263,3 +264,48 @@ def test_individual_booking_can_be_disabled(client, db, cat):
     db.commit()
     assert client.get("/api/catalog").json()["individual_booking"] is True
     assert client.post("/api/quote", json=individual.model_dump()).status_code == 200
+
+
+def test_booking_period(client, db, cat):
+    from datetime import date, timedelta
+    from app.settings_store import save_settings
+    today = date.today()
+    cat["basic"].duration_days = 14
+    db.commit()
+    start = today + timedelta(days=5)
+    r = calculate_quote(db, pq(cat, "basic").model_copy(update={"start_date": start, "end_date": today}))
+    assert (r.period_start, r.period_end, r.period_days) == (start, start + timedelta(days=13), 14)  # Ende berechnet
+    with pytest.raises(QuoteError, match="Frühester Beginn"):
+        calculate_quote(db, pq(cat, "basic").model_copy(update={"start_date": today + timedelta(days=1)}))
+    save_settings(db, {"booking_lead_days": 0})
+    assert calculate_quote(db, pq(cat, "basic").model_copy(update={"start_date": today})).period_days == 14
+    # Paket ohne Laufzeit bzw. individuell: Ende selbst wählen
+    free = pq(cat, "stream").model_copy(update={"start_date": start})
+    with pytest.raises(QuoteError, match="Ende"):
+        calculate_quote(db, free)
+    with pytest.raises(QuoteError, match="vor dem Beginn"):
+        calculate_quote(db, free.model_copy(update={"end_date": start - timedelta(days=1)}))
+    assert calculate_quote(db, free.model_copy(update={"end_date": start + timedelta(days=6)})).period_days == 7
+    assert calculate_quote(db, pq(cat, "basic")).period_start is None  # Preisvorschau ohne Datum geht
+
+    base = {"customer_name": "Max", "email": "max@example.com", "street": "Gasse 1", "zip_code": "1010",
+            "city": "Wien", "phone": "+43 1 234567", "accept_terms": True, "accept_privacy": True}
+    r = client.post("/api/quote-requests", json={"configuration": pq(cat, "basic").model_dump(mode="json"), **base})
+    assert r.status_code == 422 and "Zeitraum" in r.json()["detail"]
+    r = client.post("/api/quote-requests", json={"configuration": {**pq(cat, "basic").model_dump(mode="json"),
+                                                                     "start_date": start.isoformat()}, **base})
+    assert r.status_code == 201 and r.json()["quote"]["period_days"] == 14
+    from io import BytesIO
+    from pypdf import PdfReader
+    text = " ".join(PdfReader(BytesIO(client.get(r.json()["pdf_url"]).content)).pages[0].extract_text().split())
+    assert f"{start:%d.%m.%Y} – {start + timedelta(days=13):%d.%m.%Y} 14 Tage" in text
+    cat_json = client.get("/api/catalog").json()
+    assert cat_json["earliest_start"] == today.isoformat() and cat_json["packages"][0]["duration_days"] == 14
+
+    def csrf(path):
+        return re.search(r'name="csrf" value="([^"]+)"', client.get(path).text).group(1)
+    token = csrf("/admin/login")
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
+    assert "(14 Tage)" in client.get(f"/admin/requests/{r.json()['id']}").text
+    assert 'name="duration_days"' in client.get(f"/admin/packages/{cat['basic'].id}").text
+    assert 'name="booking_lead_days"' in client.get("/admin/prices").text

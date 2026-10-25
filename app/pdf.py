@@ -62,6 +62,15 @@ def _p(text: str, style=BODY) -> Paragraph:
     return Paragraph(escape(str(text)).replace("\n", "<br/>"), style)
 
 
+def _period(q: dict) -> str:
+    """„03.11.2026 – 16.11.2026“ und darunter „14 Tage“ aus der gespeicherten Kalkulation."""
+    from datetime import date
+    if not q.get("period_start"):
+        return ""
+    start, end = (date.fromisoformat(str(q[k])) for k in ("period_start", "period_end"))
+    return f"{start:%d.%m.%Y} – {end:%d.%m.%Y}\n{q.get('period_days')} Tage"
+
+
 def _price_rows(q: dict) -> list[list]:
     rows: list[list] = []
 
@@ -175,6 +184,7 @@ def build_request_pdf(req: QuoteRequest, company_info: str, accent: str = "#e400
     spot = kv_table([
         ("Variante", "Studiospot mit echtem Sprecher" if prod.get("studio") else "Text & Hörbeispiel"),
         ("Paket", (q.get("package") or {}).get("name", "")),
+        ("Zeitraum", _period(q)),
         ("Länge", f"{prod['seconds']} Sek." if prod.get("seconds") else ""),
         ("Anlass", b.get("occasion", "")), ("Tonalität", b.get("tonality", "")),
         ("Sprachstil", b.get("language_style", "")), ("Musik", prod.get("music") or ""),

@@ -93,6 +93,7 @@ class PackagePublic(ORMModel):
     coverage_ids: list[int] = Field(default_factory=list)
     station_ids: list[int] = Field(default_factory=list)
     station_mode: str = "choose"
+    duration_days: int = 0
 
 
 class CountryPublic(ORMModel):
@@ -121,6 +122,7 @@ class Catalog(BaseModel):
     addons: list[AddOnPublic]
     packages: list[PackagePublic] = Field(default_factory=list)
     individual_booking: bool = Field(default=True, description="„Individuell“ (Buchung nach Sekunden) verfügbar")
+    earliest_start: date | None = Field(default=None, description="Frühester Kampagnenbeginn (heute + Vorlaufzeit)")
     coverage_areas: list[CoverageAreaPublic] = Field(default_factory=list)
 
 
@@ -159,6 +161,8 @@ class QuoteIn(BaseModel):
     production: ProductionIn | None = None
     package_id: int | None = Field(default=None, description="Komplettpaket zum Pauschalpreis")
     package_station_id: int | None = Field(default=None, description="Gewählter Sender, wenn das Paket eine Senderwahl hat")
+    start_date: date | None = Field(default=None, description="Beginn der Kampagne")
+    end_date: date | None = Field(default=None, description="Ende der Kampagne (bei Paketen mit Laufzeit berechnet)")
     items: list[QuoteItemIn] = Field(default_factory=list, max_length=50, description="Schaltung (optional)")
     addon_ids: list[int] = Field(default_factory=list, max_length=50)
     promo_code: str | None = Field(default=None, max_length=60)
@@ -228,6 +232,9 @@ class AppliedDiscount(BaseModel):
 
 
 class QuoteOut(BaseModel):
+    period_start: date | None = Field(default=None, description="Beginn der Kampagne")
+    period_end: date | None = Field(default=None, description="Ende der Kampagne")
+    period_days: int | None = Field(default=None, description="Laufzeit in Tagen (inkl. Start- und Endtag)")
     currency: str
     country: str
     country_name: str
@@ -471,6 +478,7 @@ class PackageIn(BaseModel):
     coverage_ids: list[int] = Field(default_factory=list)
     station_ids: list[int] = Field(default_factory=list)
     station_mode: Literal["choose", "all"] = "choose"
+    duration_days: int = Field(default=0, ge=0, le=366, description="Laufzeit in Tagen; 0 = Zeitraum frei wählbar")
     active: bool = True
     sort_order: int = 0
 
@@ -526,6 +534,7 @@ class SettingsIn(BaseModel):
     studio_price_cent: int = Field(default=34_900, ge=0)
     currency: str = Field(min_length=3, max_length=3)
     individual_booking: bool = Field(default=True, description="Individuelle Buchung nach Sekunden anbieten")
+    booking_lead_days: int = Field(default=3, ge=0, le=60, description="Frühester Beginn: heute + Tage")
 
 
 class QuoteRequestOut(ORMModel):

@@ -1,8 +1,9 @@
 import re
 
 from app.models import LegalText, QuoteRequest, SpotLength, Station, TimeSlot
+from tests.conftest import PERIOD
 
-BASE = {"configuration": {"items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
+BASE = {"configuration": {**PERIOD, "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
         "customer_name": "Erika", "email": "erika@example.com", "street": "Gasse 1", "zip_code": "1010",
         "city": "Wien", "phone": "+43 1 1234"}
 

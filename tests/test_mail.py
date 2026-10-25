@@ -9,6 +9,7 @@ import pytest
 from app import audio, mailer
 from app.models import QuoteRequest, SpotLength, Station, TimeSlot, Voice
 from tests.smtp_sink import SmtpSink
+from tests.conftest import PERIOD
 
 
 def _tone(seconds: float) -> np.ndarray:
@@ -38,7 +39,7 @@ def request_row(client, db, monkeypatch):
                 TimeSlot(name="Tag"), SpotLength(seconds=20)])
     db.commit()
     r = client.post("/api/quote-requests", json={
-        "configuration": {"production": {"spot_length_id": 1, "voice_id": 1},
+        "configuration": {**PERIOD, "production": {"spot_length_id": 1, "voice_id": 1},
                           "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
         "brief": {"script": "Jetzt neu in Wien!"}, "customer_name": "Erika", "company": "Erikas Laden",
         "email": "erika@example.com", "street": "Gasse 1", "zip_code": "1010", "city": "Wien",

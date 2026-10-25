@@ -8,6 +8,7 @@ import pytest
 
 from app import audio
 from app.models import MusicStyle, SpotLength, Station, TimeSlot, Voice
+from tests.conftest import PERIOD
 
 SR = audio.SAMPLE_RATE
 
@@ -148,7 +149,7 @@ def test_music_upload_and_clean_admin_audio(client, db, tts):
 
     # Anfrage mit Musik → Admin lädt den Spot OHNE Wasserzeichen
     req = client.post("/api/quote-requests", json={
-        "configuration": {"production": {"spot_length_id": 1, "voice_id": 1, "music_style_id": style.id},
+        "configuration": {**PERIOD, "production": {"spot_length_id": 1, "voice_id": 1, "music_style_id": style.id},
                           "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
         "brief": {"script": "Jetzt neu in Wien!"},
         "customer_name": "Erika", "email": "erika@example.com",

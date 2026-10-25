@@ -50,6 +50,7 @@ def fmt_bp(bp: int | None, suffix: str = " %") -> str:
 
 templates.env.filters["eur"] = fmt_eur
 templates.env.filters["pct"] = fmt_bp
+templates.env.filters["de_date"] = lambda v: date.fromisoformat(str(v)).strftime("%d.%m.%Y") if v else ""
 
 
 def _parse_decimal(raw: str, label: str) -> Decimal:
@@ -225,6 +226,8 @@ def _finalize_coverage(d: dict) -> dict:
 
 def _finalize_package(d: dict) -> dict:
     d["article_no"] = d.get("article_no", "").strip()[:40]
+    if not 0 <= d.get("duration_days", 0) <= 366:
+        raise ValueError("Laufzeit: 0 bis 366 Tage")
     if d["airtime_cent"] > d["price_cent"]:
         raise ValueError("Der Sendezeit-Anteil kann nicht höher als der Paketpreis sein")
     if not 0 <= d["max_seconds"] <= 300:
@@ -372,8 +375,11 @@ ENTITIES: dict[str, Entity] = {
             F("price_cent", "Pauschalpreis (€, netto)", "money", required=True),
             F("description", "Leistungen (eine pro Zeile)", "textarea", in_list=False,
               help="z. B. „40 Ausstrahlungen auf Radio Energy Österreich“, „Laufzeit 2 Wochen“"),
-            F("spots", "Ausstrahlungen gesamt", "int",
-              help="Wird angezeigt und zählt für Mengenrabatte (Mindestanzahl Spots)"),
+            F("spots", "Schaltungen (Ausstrahlungen gesamt)", "int",
+              help="Anzahl der Ausstrahlungen im Paket – wird angezeigt und zählt für Mengenrabatte"),
+            F("duration_days", "Laufzeit (Tage)", "int",
+              help="Der Kunde wählt nur den Beginn, das Ende ergibt sich aus der Laufzeit (z. B. 14 = zwei Wochen). "
+                   "0 = Kunde wählt Beginn und Ende selbst."),
             F("max_seconds", "Für Spots bis … Sek.", "int", in_list=False,
               help="0 = jede Spotlänge. Längere Spots können das Paket nicht wählen"),
             F("includes_studio", "Studiospot inklusive", "bool",
@@ -444,7 +450,7 @@ def _form_value(entity: Entity, f: F, obj: Any) -> str:
         if f.type == "multi":
             return []
         return {"active": "on", "technology": "ukw", "stackable": "on", "price_factor_bp": "1", "pitch_bp": "1", "rate_bp": "1",
-                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "reverse_charge": "on",
+                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "duration_days": "0", "reverse_charge": "on",
                 **({"vat_rate_bp": "20"} if entity.slug == "countries" else {}),
                 **(_VOICE_FORM_DEFAULTS if entity.slug == "voices" else {})}.get(f.name, "")
     if f.name == "value_raw":  # Rabattwert je nach Art
@@ -785,7 +791,7 @@ def _active_packages(db: Session) -> int:
 def prices_save(request: Request, user=Depends(section_page("prices")), db: Session = Depends(get_db),
                 csrf: str = Form(""), min_order: str = Form("0"), currency: str = Form("EUR"),
                 ad_tax_rate: str = Form("0"), studio_price: str = Form("349"), ad_tax_in_vat_base: str = Form(""),
-                individual_booking: str = Form("")):
+                individual_booking: str = Form(""), booking_lead_days: str = Form("3")):
     check_csrf(request, csrf)
     try:
         values = {
@@ -795,7 +801,10 @@ def prices_save(request: Request, user=Depends(section_page("prices")), db: Sess
             "studio_price_cent": int(_parse_decimal(studio_price or "0", "Preis Studiospot") * 100),
             "currency": currency.strip().upper()[:3] or "EUR",
             "individual_booking": individual_booking == "on",
+            "booking_lead_days": int(_parse_decimal(booking_lead_days or "0", "Vorlaufzeit")),
         }
+        if not 0 <= values["booking_lead_days"] <= 60:
+            raise ValueError("Vorlaufzeit: 0 bis 60 Tage")
         if not 0 <= values["ad_tax_rate_bp"] <= 10_000:
             raise ValueError("Werbeabgabe: zwischen 0 und 100 %")
         if values["min_order_cent"] < 0 or values["studio_price_cent"] < 0:
@@ -955,7 +964,12 @@ async def _render_request_audio(db: Session, row: QuoteRequest, kind: str) -> tu
 def _default_mail(row: QuoteRequest) -> dict:
     who = row.company or row.customer_name
     script = (row.brief or {}).get("script", "").strip()
-    body = (f"Hallo,\n\nanbei die Unterlagen zur Radiospot-Anfrage Nr. {row.id} von {who}.\n"
+    q = row.quote or {}
+    period = ""
+    if q.get("period_start"):
+        start, end = (date.fromisoformat(str(q[k])) for k in ("period_start", "period_end"))
+        period = f"Zeitraum: {start:%d.%m.%Y} – {end:%d.%m.%Y} ({q.get('period_days')} Tage)\n"
+    body = (f"Hallo,\n\nanbei die Unterlagen zur Radiospot-Anfrage Nr. {row.id} von {who}.\n" + period
             + (f"\nSpot-Text:\n{script}\n" if script else "")
             + "\nViele Grüße\nonaircraft")
     return {"subject": f"Radiospot-Anfrage Nr. {row.id} – {who}", "body": body}

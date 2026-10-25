@@ -15,6 +15,7 @@ DEFAULTS: dict[str, str] = {
     "ad_tax_in_vat_base": "1",  # Werbeabgabe unterliegt der Umsatzsteuer
     "currency": "EUR",
     "individual_booking": "1",  # „Individuell“ (Buchung nach Sekunden) im Konfigurator anbieten
+    "booking_lead_days": "3",   # frühester Kampagnenbeginn: heute + so viele Tage
 }
 
 
@@ -33,6 +34,7 @@ def get_settings(db: Session) -> dict:
         "ad_tax_in_vat_base": merged["ad_tax_in_vat_base"] in ("1", "True", "true"),
         "currency": merged["currency"],
         "individual_booking": merged["individual_booking"] in ("1", "True", "true"),
+        "booking_lead_days": int(merged["booking_lead_days"]),
     }
 
 

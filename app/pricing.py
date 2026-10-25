@@ -30,7 +30,7 @@ Werbeabgabe:
       (abschaltbar über die Einstellung "Werbeabgabe in MwSt.-Basis").
 """
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy.orm import Session
@@ -101,6 +101,38 @@ def _discount_amount(d: Discount, base: int) -> int:
     return min(amount, base)
 
 
+MAX_ADVANCE_DAYS = 730   # Beginn höchstens zwei Jahre im Voraus
+MAX_PERIOD_DAYS = 366
+
+
+def _fmt(d: date) -> str:
+    return d.strftime("%d.%m.%Y")
+
+
+def booking_period(data: QuoteIn, package, lead_days: int, today: date) -> tuple[date, date, int] | None:
+    """Kampagnenzeitraum prüfen: Vorlaufzeit, Ende ≥ Beginn; bei Paketen mit Laufzeit wird das Ende berechnet."""
+    if data.start_date is None:
+        return None
+    start = data.start_date
+    earliest = today + timedelta(days=lead_days)
+    if start < earliest:
+        raise QuoteError(f"Frühester Beginn ist der {_fmt(earliest)}.")
+    if start > today + timedelta(days=MAX_ADVANCE_DAYS):
+        raise QuoteError("Der Beginn liegt zu weit in der Zukunft.")
+    if package is not None and package.duration_days:
+        end = start + timedelta(days=package.duration_days - 1)
+    else:
+        if data.end_date is None:
+            raise QuoteError("Bitte das Ende des Zeitraums wählen.")
+        end = data.end_date
+        if end < start:
+            raise QuoteError("Das Ende liegt vor dem Beginn.")
+    days = (end - start).days + 1
+    if days > MAX_PERIOD_DAYS:
+        raise QuoteError(f"Der Zeitraum darf höchstens {MAX_PERIOD_DAYS} Tage lang sein.")
+    return start, end, days
+
+
 def _coverage_names(db: Session, ids: list | None) -> str:
     """Sendegebiete als Text für Kalkulation und PDF, z. B. „UKW Wien · DAB+ National“."""
     if not ids:
@@ -137,6 +169,8 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
             if data.package_station_id not in package.station_ids:
                 raise QuoteError(f"Bitte für „{package.name}“ einen Sender wählen.")
             package_stations = [_load_active(db, Station, {data.package_station_id}, "Sender")[data.package_station_id]]
+
+    period = booking_period(data, package, cfg["booking_lead_days"], today)
 
     studio_in_package = bool(package and package.includes_studio)
     studio = bool(prod and prod.studio) or studio_in_package
@@ -239,6 +273,9 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
     vat = _bp(vat_base, vat_rate)
 
     return QuoteOut(
+        period_start=period[0] if period else None,
+        period_end=period[1] if period else None,
+        period_days=period[2] if period else None,
         currency=cfg["currency"],
         country=data.country,
         country_name=country.name,

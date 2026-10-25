@@ -3,7 +3,7 @@ import asyncio
 import hashlib
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -51,6 +51,7 @@ def catalog(db: Session = Depends(get_db)):
         addons=_active(db, AddOn),
         packages=_active(db, Package),
         individual_booking=individual_booking_available(db),
+        earliest_start=date.today() + timedelta(days=cfg["booking_lead_days"]),
         coverage_areas=_active(db, CoverageArea),
     )
 
@@ -80,6 +81,8 @@ def create_quote_request(data: QuoteRequestIn, db: Session = Depends(get_db)):
     if not data.configuration.items and data.configuration.package_id is None:
         raise HTTPException(422, "Bitte ein Komplettpaket wählen oder mindestens einen Sender oder Stream buchen.")
     _check_booking_mode(db, data.configuration)
+    if data.configuration.start_date is None:
+        raise HTTPException(422, "Bitte den Zeitraum der Kampagne wählen.")
     # Preis wird serverseitig neu berechnet – Werte aus dem Browser werden nie übernommen.
     try:
         result = calculate_quote(db, data.configuration)
@@ -98,9 +101,9 @@ def create_quote_request(data: QuoteRequestIn, db: Session = Depends(get_db)):
         email=data.email,
         phone=data.phone,
         message=data.message,
-        configuration=data.configuration.model_dump(),
+        configuration=data.configuration.model_dump(mode="json"),
         brief=data.brief.model_dump(),
-        quote=result.model_dump(),
+        quote=result.model_dump(mode="json"),
     )
     db.add(req)
     db.commit()

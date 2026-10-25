@@ -1,6 +1,7 @@
 import re
 
 from app.models import QuoteRequest, SpotLength, Station, TimeSlot
+from tests.conftest import PERIOD
 
 CONTACT = {"street": "Mariahilfer Straße 1", "zip_code": "1060", "city": "Wien", "phone": "+43 1 234567",
            "accept_terms": True, "accept_privacy": True}
@@ -36,7 +37,7 @@ def test_catalog_and_quote(client, db):
 def test_quote_request_recalculates_server_side(client, db):
     _setup(db)
     r = client.post("/api/quote-requests", json={
-        "configuration": {"items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
+        "configuration": {**PERIOD, "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
         "customer_name": "Max", "email": "max@example.com", **CONTACT,
     })
     assert r.status_code == 201
@@ -92,7 +93,8 @@ def test_admin_ui_station_form_and_settings(client, db):
                    "ad_tax_rate_bp": 500, "ad_tax_in_vat_base": True,
                    "min_order_cent": 25000, "studio_price_cent": 34900, "currency": "EUR",
                    "watermark_text": "Hörprobe von onaircraft", "watermark_interval_s": 7,
-                   "master_lufs": -8.0, "master_ceiling_dbtp": -1.0, "individual_booking": True}
+                   "master_lufs": -8.0, "master_ceiling_dbtp": -1.0, "individual_booking": True,
+                   "booking_lead_days": 3}
     for page in ["/admin", "/admin/time-slots", "/admin/spot-lengths", "/admin/addons", "/admin/requests"]:
         assert client.get(page).status_code == 200, page
 
@@ -126,7 +128,7 @@ def test_catalog_contains_production_options(client, db):
 def test_quote_request_with_brief(client, db):
     _setup_production(db)
     r = client.post("/api/quote-requests", json={
-        "configuration": {"production": {"spot_length_id": 1, "voice_id": 1, "music_style_id": 1, "studio": True},
+        "configuration": {**PERIOD, "production": {"spot_length_id": 1, "voice_id": 1, "music_style_id": 1, "studio": True},
                           "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
         "brief": {"firma": "Aquaristik Neusiedl", "script": "Jetzt 20 % auf alles!"},
         "customer_name": "Erika", "email": "erika@example.com", **CONTACT,
@@ -185,7 +187,7 @@ def test_admin_pages_for_production_entities(client, db):
 def _create_request(client, db, country="AT", vat_id=None):
     _setup_production(db)
     r = client.post("/api/quote-requests", json={
-        "configuration": {"production": {"spot_length_id": 1, "voice_id": 1, "music_style_id": 1, "studio": True},
+        "configuration": {**PERIOD, "production": {"spot_length_id": 1, "voice_id": 1, "music_style_id": 1, "studio": True},
                           "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 3}],
                           "country": country, "vat_id": vat_id},
         "brief": {"firma": "Aquaristik Neusiedl", "occasion": "Event", "script": "Größte Auswahl – jetzt!"},
@@ -237,7 +239,7 @@ def test_pdf_reverse_charge(client, db):
 def test_request_requires_booking(client, db):
     _setup_production(db)
     r = client.post("/api/quote-requests", json={
-        "configuration": {"production": {"spot_length_id": 1, "voice_id": 1, "studio": True}},
+        "configuration": {**PERIOD, "production": {"spot_length_id": 1, "voice_id": 1, "studio": True}},
         "customer_name": "Erika", "email": "erika@example.com", **CONTACT,
     })
     assert r.status_code == 422 and "Sender oder Stream" in r.json()["detail"]
@@ -254,7 +256,7 @@ def test_catalog_station_kind(client, db):
 
 def test_request_requires_address_and_phone(client, db):
     _setup(db)
-    base = {"configuration": {"items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
+    base = {"configuration": {**PERIOD, "items": [{"station_id": 1, "time_slot_id": 1, "spot_length_id": 1, "spots": 1}]},
             "customer_name": "Erika", "email": "erika@example.com", **CONTACT}
     for missing in ["street", "zip_code", "city", "phone"]:
         r = client.post("/api/quote-requests", json={**base, missing: "  "})

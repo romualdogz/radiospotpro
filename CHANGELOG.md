@@ -11,6 +11,12 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Kampagnenzeitraum mit Datumswähler** (Schritt „Buchung“): bei Paketen mit Laufzeit nur der Beginn – das Ende
+  wird berechnet –, sonst Beginn und Ende; dazu „Laufzeit … Tage · ca. … Schaltungen pro Tag“. Pflicht für die
+  Anfrage; erscheint in Zusammenfassung, Anfrage, PDF und E-Mail-Vorschlag. Der Server prüft Vorlaufzeit,
+  Ende ≥ Beginn und berechnet das Ende bei Paketen selbst.
+- **Pakete: Schaltungen und Laufzeit** (*Komplettpakete → „Schaltungen“ und „Laufzeit (Tage)“*; 0 = Zeitraum frei).
+- **Vorlaufzeit** (*Preis-Einstellungen*, Standard 3 Tage): frühester Kampagnenbeginn.
 - **Artikelnummer bei Komplettpaketen** (*Komplettpakete → Artikelnummer*): erscheint in der Paketliste im Admin,
   in der Anfrage, im PDF („Art.-Nr. …“) und damit auch im E-Mail-Versand.
 - **„Individuell“ abschaltbar** (*Preis-Einstellungen → Buchungsarten*, auch für die Verkaufsleitung):

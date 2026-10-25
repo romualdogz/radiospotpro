@@ -12,7 +12,13 @@ os.environ["MEDIA_DIR"] = f"{_tmp}/media"
 os.environ.pop("ELEVENLABS_API_KEY", None)
 os.environ.pop("ANTHROPIC_API_KEY", None)
 
-import pytest  # noqa: E402
+from datetime import date, timedelta
+
+import pytest
+
+# Kampagnenzeitraum für Test-Anfragen (Beginn nach der Vorlaufzeit von 3 Tagen)
+PERIOD = {"start_date": (date.today() + timedelta(days=10)).isoformat(),
+          "end_date": (date.today() + timedelta(days=23)).isoformat()}  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.database import Base, SessionLocal, engine  # noqa: E402

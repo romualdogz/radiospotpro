@@ -337,3 +337,11 @@ a.btn { display: inline-block; text-decoration: none; }
 .package-stations .cov-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: 0; }
 .package-included { display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 600; margin-right: 10px; }
 .package-included .cov-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+
+/* Kampagnenzeitraum */
+.period { margin: 4px 0 14px; }
+.period-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.period-fields.fixed { grid-template-columns: minmax(0, 1fr); max-width: 260px; }
+.period input[type=date] { width: 100%; background: var(--bg-field); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 10px 12px; font-family: var(--sans); font-size: 0.96rem; }
+.period .field { margin-bottom: 4px; }

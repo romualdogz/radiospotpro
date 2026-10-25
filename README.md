@@ -91,14 +91,14 @@ Tests: `pytest`
 | **Sender & Streams** | Typ (Radio / Stream der Energy-Gruppe), Sekundenpreis netto, „Werbeabgabe fällt an“ (Radio ja, Streams nein) |
 | **Zeitschienen** | z. B. Morning Show – Preisfaktor auf den Sekundenpreis (1,5 = +50 %) |
 | **Sendegebiete** | für die Reichweiten-Karte im Konfigurator: DAB+ (leuchtende Bundesländer) oder UKW (Kreis um den Sender-Standort – per Klick auf die Karte gesetzt, Radius in km), Hinweistext für Kunden. Bei Sendern und Komplettpaketen zuordnen. Je Sender (oder Sendegebiet) eine eigene Kartenfarbe, z. B. Blau für Radio Nostalgie; gemeinsame Gebiete werden gestreift. Kartendaten: Natural Earth (gemeinfrei), `app/static/austria-map.json`, neu erzeugbar mit `scripts/build_austria_map.py` |
-| **Komplettpakete** | Pakete zum Pauschalpreis (netto) mit Artikelnummer, optionaler Senderwahl (*Wählbare Sender*), Leistungsliste, Badge, Anzahl Ausstrahlungen, optional „Studiospot inklusive“ und max. Spotlänge; Sendezeit-Anteil als Basis der Werbeabgabe. Drei Beispielpakete werden einmalig **inaktiv** angelegt – Preise anpassen und auf „aktiv“ stellen |
+| **Komplettpakete** | Pakete zum Pauschalpreis (netto) mit Artikelnummer, Schaltungen und Laufzeit in Tagen (Kunde wählt nur den Beginn), optionaler Senderwahl (*Wählbare Sender*), Leistungsliste, Badge, Anzahl Ausstrahlungen, optional „Studiospot inklusive“ und max. Spotlänge; Sendezeit-Anteil als Basis der Werbeabgabe. Drei Beispielpakete werden einmalig **inaktiv** angelegt – Preise anpassen und auf „aktiv“ stellen |
 | **Zusatzleistungen** | optionale Extras mit Fixpreis, z. B. Express-Produktion; „Nur mit Studiospot“ blendet sie nur bei gewähltem Studiospot ein |
 | **Rabatte** | Prozent oder Fixbetrag, mit Bedingungen (s. u.) |
 | **Länder** | Rechnungsländer (Dropdown im Formular) mit MwSt.-Satz und Option „mit UID Nettorechnung“ |
 | **Rechtstexte** | AGB und Datenschutzerklärung – Pflicht-Häkchen im Checkout, per Klick einblendbar, eigene Seiten `/agb` und `/datenschutz`; Zustimmung (Zeitpunkt + Textversion) wird je Anfrage gespeichert |
 | **Design** | Farben (Seite, Formular, Akzente) und Schriften (Google Fonts oder Systemschrift) des Konfigurators, Farbvorlagen, Vorschau; Text und Größe der Überschrift, Untertitel oben rechts |
 | **Logo** (unter *Design*) | Logo als PNG, JPG, WebP oder SVG hochladen (max. 2 MB), Höhe einstellen, optional auch im PDF (nur PNG/JPG/WebP). Ersetzt den Schriftzug im Konfigurator und auf AGB/Datenschutz. Alternativ das Bild einfach in den Ordner `media/logos` legen – es wird automatisch verwendet, solange im Admin kein anderes Logo gespeichert ist |
-| **Preis-Einstellungen** | Preis Studiospot, Werbeabgabe, Mindestbestellwert, Währung, „Individuell“ (Buchung nach Sekunden) ein/aus (auch für die Verkaufsleitung) |
+| **Preis-Einstellungen** | Preis Studiospot, Werbeabgabe, Mindestbestellwert, Währung, „Individuell“ (Buchung nach Sekunden) ein/aus, Vorlaufzeit für den Kampagnenbeginn (auch für die Verkaufsleitung) |
 | **Einstellungen** | PDF-Firmenangaben, Wasserzeichen, Mastering (nur Administrator) |
 | **Benutzer** | Zugänge und Rollen (nur Administrator) |
 | **Anfragen** | eingegangene Angebotsanfragen inkl. Kalkulation und Status |

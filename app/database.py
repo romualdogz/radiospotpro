@@ -44,6 +44,7 @@ _ADDED_COLUMNS = [
     ("packages", "station_ids", "JSON NOT NULL DEFAULT '[]'"),
     ("packages", "station_mode", "VARCHAR(10) NOT NULL DEFAULT 'choose'"),
     ("packages", "article_no", "VARCHAR(40) NOT NULL DEFAULT ''"),
+    ("packages", "duration_days", "INTEGER NOT NULL DEFAULT 0"),
 ]
 
 
