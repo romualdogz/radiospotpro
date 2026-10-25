@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Eigene Kartenfarbe je Sender** (*Sender & Streams → Farbe auf der Karte*), z. B. Blau für Radio Nostalgie –
+  dessen Sendegebiete leuchten dann blau. Auch Sendegebiete können eine eigene Farbe haben (für Pakete).
+  Nutzen zwei gewählte Sender dasselbe Gebiet, wird es rot/blau gestreift, UKW-Kreise am selben Standort liegen
+  ineinander; die Liste zeigt je Gebiet farbige Punkte mit den Sendern. Radio Nostalgie bekommt einmalig Blau
+  (#0057b8), falls noch keine Farbe gesetzt ist. Farbauswahl mit Vorlagen (Energy-Rot, Nostalgie-Blau …).
 - **„Spot & Buchung“ mit weniger Scrollen:** Am Computer links die Schaltung (Komplettpaket / Individuell),
   Extras und Preis, rechts daneben die Reichweiten-Karte, die beim Scrollen sichtbar bleibt. Kompaktere
   Paketkarten (Name und Preis in einer Zeile, Leistungen als kurze Zeile), Umschalter als zwei gleich breite

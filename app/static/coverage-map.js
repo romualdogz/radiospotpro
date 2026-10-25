@@ -1,7 +1,8 @@
 /* Reichweiten-Karte Österreich: DAB+ (Bundesländer) und UKW (Kreis um den Sender).
  *
  * CoverageMap.render(host, areas, { onPick(lat, lon) })
- *   areas: [{ id, name, technology: "dab"|"ukw", states: [...], center_lat, center_lon, radius_km, reach_text }]
+ *   areas: [{ id, name, technology: "dab"|"ukw", states: [...], center_lat, center_lon, radius_km, reach_text, color }]
+ *   color: "#rrggbb" (Sender- bzw. Gebietsfarbe) oder leer = Akzentfarbe
  *   onPick: optional – Klick auf die Karte liefert Breiten-/Längengrad (Admin: Sender-Standort setzen)
  * Kartendaten: /static/austria-map.json (Natural Earth, gemeinfrei). Farbe der Leuchtflächen: --accent.
  */
@@ -16,12 +17,9 @@
   --map-base: #26262b; --map-line: #3a3a41; --map-text: #c9c9d1; }
 .coverage-map svg { display: block; width: 100%; height: auto; }
 .coverage-map .cm-state { fill: var(--map-base); stroke: var(--map-line); stroke-width: 1.2; transition: fill .4s, fill-opacity .4s; }
-.coverage-map .cm-lit { fill: var(--accent, #e4002b); }
-.coverage-map .cm-dab { fill-opacity: .62; }
-.coverage-map .cm-ukw { fill-opacity: .38; }
-.coverage-map .cm-glow { fill: none; stroke: var(--accent, #e4002b); stroke-width: 2.4; }
-.coverage-map .cm-ring { fill: none; stroke: var(--accent, #e4002b); stroke-width: 2; stroke-dasharray: 6 5; }
-.coverage-map .cm-pulse { fill: none; stroke: var(--accent, #e4002b); stroke-width: 2; opacity: 0;
+.coverage-map .cm-glow { fill: none; stroke-width: 2.4; }
+.coverage-map .cm-ring { fill: none; stroke-width: 2; stroke-dasharray: 6 5; }
+.coverage-map .cm-pulse { fill: none; stroke-width: 2; opacity: 0;
   transform-box: fill-box; transform-origin: center; animation: cm-pulse 2.6s ease-out infinite; }
 @keyframes cm-pulse { 0% { opacity: .7; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .coverage-map .cm-pulse { animation: none; } }
@@ -76,34 +74,77 @@
     const unproject = (x, y) => [p.lat_max - (y - p.pad) / p.scale, p.lon_min + (x - p.pad) / (p.kx * p.scale)];
     const kmToPx = p.scale / KM_PER_DEG_LAT;
 
-    const dab = new Set(), ukw = new Set();
-    for (const a of areas) for (const s of a.states || []) (a.technology === "dab" ? dab : ukw).add(s);
+    // Akzentfarbe aus dem Design auslesen – var() in SVG-Attributen versteht nicht jeder Browser
+    const ACCENT = getComputedStyle(host).getPropertyValue("--accent").trim() || "#e4002b";
+    const colorOf = (a) => (/^#[0-9a-fA-F]{6}$/.test(a.color || "") ? a.color : ACCENT);
+    // je Bundesland die Farben, in denen es leuchtet (DAB+ vor UKW, jede Farbe nur einmal)
+    const layers = new Map();
+    for (const a of areas) {
+      for (const key of a.states || []) {
+        const list = layers.get(key) || [];
+        const color = colorOf(a), found = list.find((l) => l.color === color);
+        if (!found) list.push({ color, tech: a.technology });
+        else if (a.technology === "dab") found.tech = "dab";
+        layers.set(key, list);
+      }
+    }
 
     const id = ++uid;
     const svg = el("svg", { viewBox: map.viewBox.join(" "), role: "img",
       "aria-label": areas.length ? "Sendegebiet: " + areas.map((a) => a.name).join(", ") : "Österreich-Karte" });
     const defs = el("defs", {}, svg);
-    const grad = el("radialGradient", { id: `cm-grad-${id}` }, defs);
-    el("stop", { offset: "0%", "stop-color": "var(--accent, #e4002b)", "stop-opacity": ".85" }, grad);
-    el("stop", { offset: "65%", "stop-color": "var(--accent, #e4002b)", "stop-opacity": ".4" }, grad);
-    el("stop", { offset: "100%", "stop-color": "var(--accent, #e4002b)", "stop-opacity": "0" }, grad);
     const glow = el("filter", { id: `cm-glow-${id}`, x: "-20%", y: "-20%", width: "140%", height: "140%" }, defs);
     el("feGaussianBlur", { stdDeviation: "5" }, glow);
+    const gradients = new Map();
+    const gradientFor = (color) => {  // Verlauf für UKW-Kreise, einer je Farbe
+      if (!gradients.has(color)) {
+        const gid = `cm-grad-${id}-${gradients.size}`;
+        const grad = el("radialGradient", { id: gid }, defs);
+        el("stop", { offset: "0%", "stop-color": color, "stop-opacity": ".85" }, grad);
+        el("stop", { offset: "65%", "stop-color": color, "stop-opacity": ".4" }, grad);
+        el("stop", { offset: "100%", "stop-color": color, "stop-opacity": "0" }, grad);
+        gradients.set(color, gid);
+      }
+      return gradients.get(color);
+    };
 
-    // Bundesländer
-    const lit = [];
+    // Streifenmuster für Bundesländer, die in mehreren Farben leuchten (z. B. Energy + Nostalgie)
+    const patterns = new Map();
+    const stripesFor = (colors) => {
+      const key = colors.join(",");
+      if (!patterns.has(key)) {
+        const pid = `cm-stripes-${id}-${patterns.size}`, w = 9;
+        const pat = el("pattern", { id: pid, width: w * colors.length, height: 10, patternUnits: "userSpaceOnUse",
+          patternTransform: "rotate(45)" }, defs);
+        colors.forEach((c, i) => el("rect", { x: i * w, y: 0, width: w, height: 10, fill: c }, pat));
+        patterns.set(key, pid);
+      }
+      return patterns.get(key);
+    };
+
+    // Bundesländer: Grundfläche, darüber die leuchtende Fläche – bei mehreren Farben gestreift
+    const byColor = new Map();
     for (const s of map.states) {
-      const tech = dab.has(s.key) ? "dab" : ukw.has(s.key) ? "ukw" : "";
-      const path = el("path", { d: s.d, class: "cm-state" + (tech ? ` cm-lit cm-${tech}` : "") }, svg);
-      title(path, s.name + (tech ? (tech === "dab" ? " – DAB+" : " – UKW") : ""));
-      if (tech) lit.push(s);
+      const list = layers.get(s.key) || [];
+      const path = el("path", { d: s.d, class: "cm-state" }, svg);
+      const techs = [...new Set(list.map((l) => (l.tech === "dab" ? "DAB+" : "UKW")))];
+      title(path, s.name + (techs.length ? " – " + techs.join(" & ") : ""));
+      if (list.length) {
+        const opacity = list.some((l) => l.tech === "dab") ? 0.62 : 0.38;
+        const fill = list.length > 1 ? `url(#${stripesFor(list.map((l) => l.color))})` : list[0].color;
+        el("path", { d: s.d, fill, "fill-opacity": opacity, "pointer-events": "none" }, svg);
+      }
+      for (const l of list) {
+        if (!byColor.has(l.color)) byColor.set(l.color, []);
+        byColor.get(l.color).push(s);
+      }
     }
-    // Leuchtender Rand um die gewählten Bundesländer
-    if (lit.length) {
+    // Leuchtender Rand um die gewählten Bundesländer – in der jeweiligen Farbe
+    for (const [color, states] of byColor) {
       const g = el("g", { filter: `url(#cm-glow-${id})`, "pointer-events": "none" }, svg);
-      for (const s of lit) el("path", { d: s.d, class: "cm-glow" }, g);
+      for (const s of states) el("path", { d: s.d, class: "cm-glow", stroke: color }, g);
       const crisp = el("g", { "pointer-events": "none", opacity: ".9" }, svg);
-      for (const s of lit) el("path", { d: s.d, class: "cm-glow", "stroke-width": "1.2" }, crisp);
+      for (const s of states) el("path", { d: s.d, class: "cm-glow", stroke: color, "stroke-width": "1.2" }, crisp);
     }
 
     // Städte zur Orientierung (dezent)
@@ -116,19 +157,29 @@
       }
     }
 
-    // UKW-Sender: Kreis mit Verlauf, gestrichelter Rand, pulsierender Ring, Beschriftung
+    // UKW-Sender: Kreis mit Verlauf, gestrichelter Rand, pulsierender Ring, Beschriftung (je Gebiet einmal)
+    const labels = new Set(), sameSpot = new Map();
     for (const a of areas) {
       if (a.center_lat == null || a.center_lon == null || !(a.radius_km > 0)) continue;
       const [x, y] = project(a.center_lat, a.center_lon);
-      const r = a.radius_km * kmToPx;
+      // mehrere Sender am selben Standort: Kreise ineinander, damit jede Farbe sichtbar bleibt
+      const spot = `${x.toFixed(0)}|${y.toFixed(0)}|${a.radius_km}`;
+      const n = sameSpot.get(spot) || 0;
+      sameSpot.set(spot, n + 1);
+      const r = a.radius_km * kmToPx * (1 - 0.22 * n);
+      const color = colorOf(a);
       const g = el("g", {}, svg);
       title(g, `${a.name}${a.reach_text ? " – " + a.reach_text : ""} (ca. ${a.radius_km} km um den Sender)`);
-      el("circle", { cx: x, cy: y, r, fill: `url(#cm-grad-${id})` }, g);
-      el("circle", { cx: x, cy: y, r, class: "cm-ring" }, g);
-      el("circle", { cx: x, cy: y, r, class: "cm-pulse" }, g);
+      el("circle", { cx: x, cy: y, r, fill: `url(#${gradientFor(color)})` }, g);
+      el("circle", { cx: x, cy: y, r, class: "cm-ring", stroke: color }, g);
+      el("circle", { cx: x, cy: y, r, class: "cm-pulse", stroke: color }, g);
       el("circle", { cx: x, cy: y, r: 4.5, class: "cm-dot" }, g);
-      const t = el("text", { x, y: y - Math.min(r, 60) - 8, class: "cm-label", "text-anchor": "middle" }, g);
-      t.textContent = a.name;
+      const key = `${a.name}|${x.toFixed(0)}|${y.toFixed(0)}`;
+      if (!labels.has(key)) {
+        labels.add(key);
+        const t = el("text", { x, y: y - Math.min(r, 60) - 8, class: "cm-label", "text-anchor": "middle" }, g);
+        t.textContent = a.name;
+      }
     }
 
     if (opts.onPick) {

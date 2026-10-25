@@ -20,7 +20,7 @@ from . import branding, theme
 from .models import LegalText
 from .routers import admin_api, admin_ui, public
 from .seed import (
-    apply_tonality_presets, attach_demo_music, ensure_admin, ensure_countries, ensure_legal_texts, ensure_example_packages, seed_demo_data, ensure_coverage_areas,
+    apply_tonality_presets, attach_demo_music, ensure_admin, ensure_countries, ensure_legal_texts, ensure_example_packages, seed_demo_data, ensure_coverage_areas, ensure_station_colors,
 )
 
 
@@ -37,6 +37,7 @@ async def lifespan(_: FastAPI):
             attach_demo_music(db)
             apply_tonality_presets(db)
         ensure_coverage_areas(db)  # nach den Demo-Daten, damit die Beispiel-Sender verknüpft werden
+        ensure_station_colors(db)
     yield
 
 

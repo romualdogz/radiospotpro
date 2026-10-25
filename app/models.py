@@ -42,6 +42,7 @@ class Station(Base):
     # Österreichische Werbeabgabe gilt für Radio, nicht für Online-Streams
     ad_tax_applies: Mapped[bool] = mapped_column(Boolean, default=True)
     coverage_ids: Mapped[list] = mapped_column(JSON, default=list)  # Sendegebiete (CoverageArea.id)
+    map_color: Mapped[str] = mapped_column(String(7), default="")   # Farbe auf der Karte, leer = Gebietsfarbe/Akzent
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -67,6 +68,7 @@ class CoverageArea(Base):
     center_lon: Mapped[float | None] = mapped_column(Float, nullable=True)
     radius_km: Mapped[int] = mapped_column(Integer, default=0)          # 0 = kein Kreis
     reach_text: Mapped[str] = mapped_column(String(255), default="")    # Hinweis für Kunden
+    color: Mapped[str] = mapped_column(String(7), default="")           # Farbe auf der Karte, leer = Akzentfarbe
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 

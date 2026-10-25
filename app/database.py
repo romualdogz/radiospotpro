@@ -39,6 +39,8 @@ _ADDED_COLUMNS = [
     ("music_styles", "gain_bp", "INTEGER NOT NULL DEFAULT 10000"),
     ("stations", "coverage_ids", "JSON NOT NULL DEFAULT '[]'"),
     ("packages", "coverage_ids", "JSON NOT NULL DEFAULT '[]'"),
+    ("stations", "map_color", "VARCHAR(7) NOT NULL DEFAULT ''"),
+    ("coverage_areas", "color", "VARCHAR(7) NOT NULL DEFAULT ''"),
 ]
 
 

@@ -149,6 +149,20 @@ def ensure_coverage_areas(db: Session) -> None:
     db.commit()
 
 
+# Kartenfarben einzelner Sender (einmalig, nur wenn noch keine Farbe gesetzt ist)
+STATION_MAP_COLORS = {"Radio Nostalgie": "#0057b8"}
+
+
+def ensure_station_colors(db: Session) -> None:
+    if db.get(Setting, "station_colors_set") is not None:
+        return
+    for st in db.query(Station).filter(Station.name.in_(list(STATION_MAP_COLORS))):
+        if not st.map_color:
+            st.map_color = STATION_MAP_COLORS[st.name]
+    db.add(Setting(key="station_colors_set", value="1"))
+    db.commit()
+
+
 # Selbst erzeugte, lizenzfreie Platzhalter-Musik (app/static/demo-music) je Musikrichtung
 DEMO_MUSIC = {
     "Corporate / Uplifting": "corporate-uplifting.wav",

@@ -69,7 +69,7 @@ def _parse_decimal(raw: str, label: str) -> Decimal:
 class F:
     name: str
     label: str
-    type: str = "text"  # text, textarea, int, money, percent, factor, bool, time, date, select, multi, file
+    type: str = "text"  # text, textarea, int, money, percent, factor, bool, time, date, select, multi, color, file
     required: bool = False
     help: str = ""
     options: Callable[[Session], list[tuple[str, str]]] | None = None
@@ -105,6 +105,8 @@ class F:
             return value.strftime("%d.%m.%Y") if value else ""
         if self.type == "file":
             return "✔ vorhanden" if value else "–"
+        if self.type == "color":
+            return value or "Standard"
         return self.to_form(value)
 
     def parse(self, raw: str | list | None) -> Any:
@@ -119,7 +121,7 @@ class F:
         if not raw:
             if self.required:
                 raise ValueError(f"{self.label} ist ein Pflichtfeld")
-            return {"int": 0, "money": 0, "percent": 0, "text": "", "textarea": "", "time": ""}.get(self.type)
+            return {"int": 0, "money": 0, "percent": 0, "text": "", "textarea": "", "time": "", "color": ""}.get(self.type)
         if self.type == "int":
             try:
                 return int(raw)
@@ -138,6 +140,10 @@ class F:
                 raise ValueError(f"{self.label}: ungültiges Datum") from e
         if self.type == "select" and raw.isdigit():
             return int(raw)
+        if self.type == "color":
+            if not re.fullmatch(r"#[0-9a-fA-F]{6}", raw):
+                raise ValueError(f"{self.label}: bitte eine Farbe im Format #RRGGBB wählen oder leer lassen")
+            return raw.lower()
         return raw
 
 
@@ -324,6 +330,9 @@ ENTITIES: dict[str, Entity] = {
             F("coverage_ids", "Sendegebiete", "multi", options=_coverage_options,
               help="Werden im Konfigurator auf der Österreich-Karte angezeigt. Sendegebiete pflegst du unter "
                    "Schaltung → Sendegebiete."),
+            F("map_color", "Farbe auf der Karte", "color",
+              help="Die Sendegebiete dieses Senders leuchten in dieser Farbe, z. B. Blau für Radio Nostalgie. "
+                   "Leer = Farbe des Sendegebiets bzw. Akzentfarbe."),
             F("description", "Beschreibung", "textarea", in_list=False),
             F("sort_order", "Sortierung", "int"),
             F("active", "Aktiv / buchbar", "bool"),
@@ -340,6 +349,8 @@ ENTITIES: dict[str, Entity] = {
             F("radius_km", "Radius um den Sender (km)", "int", help="0 = kein Kreis. UKW-Sender reichen meist 25–60 km"),
             F("reach_text", "Reichweite / Hinweis für Kunden",
               help="z. B. „Wien und Umgebung“ oder „ganz Österreich – Empfang mit DAB+-Radio“"),
+            F("color", "Farbe auf der Karte", "color",
+              help="Leer = Akzentfarbe aus dem Design. Hat der Sender eine eigene Kartenfarbe, gilt diese."),
             F("sort_order", "Sortierung", "int"),
             F("active", "Aktiv", "bool"),
         ], group="Schaltung", finalize=_finalize_coverage),

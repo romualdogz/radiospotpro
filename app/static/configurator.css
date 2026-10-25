@@ -326,3 +326,6 @@ a.btn { display: inline-block; text-decoration: none; }
   .booking-layout, .booking-layout.no-map { grid-template-columns: 1fr; grid-template-areas: "main" "side" "price"; gap: 8px; }
   .booking-side { position: static; margin-bottom: 14px; }
 }
+.coverage .tech-dab { border: 1.5px solid var(--accent); }
+.coverage .cov-station { color: var(--text); font-weight: 600; }
+.coverage .cov-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 6px; vertical-align: 0; }

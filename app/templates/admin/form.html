@@ -37,6 +37,16 @@
           <audio controls preload="none" src="/media/music/{{ obj[f.name] }}" style="width:100%"></audio>
         {% endif %}
         <input name="{{ f.name }}" type="file" accept=".mp3,.wav,.ogg,.flac,audio/*">
+      {% elif f.type == 'color' %}
+        <span class="color-field" data-color-field>
+          <span class="swatch{{ '' if v else ' empty' }}" style="background-color: {{ v or 'transparent' }}"><input type="color" value="{{ v or '#e4002b' }}" aria-label="{{ f.label }} wählen"></span>
+          <input name="{{ f.name }}" value="{{ v }}" maxlength="7" class="hex" placeholder="Standard" spellcheck="false">
+          <button type="button" class="link" data-clear>Standard</button>
+          {% if f.name == 'map_color' or f.name == 'color' %}
+          <span class="color-presets">{% for c, n in [('#e4002b', 'Energy-Rot'), ('#0057b8', 'Nostalgie-Blau'), ('#e5007e', 'Magenta'), ('#1e7a43', 'Grün'), ('#f39200', 'Orange')] %}
+            <button type="button" class="preset" data-preset="{{ c }}" title="{{ n }}" style="background: {{ c }}"></button>{% endfor %}</span>
+          {% endif %}
+        </span>
       {% elif f.type in ('date', 'time') %}
         <input name="{{ f.name }}" value="{{ v }}" type="{{ f.type }}">
       {% else %}
@@ -57,6 +67,26 @@
     <a href="/admin/{{ e.slug }}">Abbrechen</a>
   </div>
 </form>
+<script>
+  // Farbfelder: eigene Farbfläche (Safari zeigt <input type=color> sonst oft leer), Hex-Feld, Vorlagen, „Standard“
+  document.querySelectorAll("[data-color-field]").forEach((box) => {
+    const swatch = box.querySelector(".swatch"), picker = box.querySelector("input[type=color]"), hex = box.querySelector(".hex");
+    const set = (v) => {
+      hex.value = v; swatch.style.backgroundColor = v || "transparent"; swatch.classList.toggle("empty", !v);
+      if (v) picker.value = v;
+      hex.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    picker.addEventListener("input", () => set(picker.value));
+    hex.addEventListener("input", (e) => {
+      if (!e.isTrusted) return;
+      const v = hex.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) { picker.value = v.toLowerCase(); swatch.style.backgroundColor = v; swatch.classList.remove("empty"); }
+      else if (!v) { swatch.style.backgroundColor = "transparent"; swatch.classList.add("empty"); }
+    });
+    box.querySelector("[data-clear]").addEventListener("click", () => set(""));
+    box.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => set(b.dataset.preset)));
+  });
+</script>
 {% if e.slug == 'coverage' %}
 <script src="/static/coverage-map.js"></script>
 <script>
@@ -71,7 +101,7 @@
         id: 0, name: val("name") || "Sendegebiet", technology: val("technology"),
         states: [...form.querySelectorAll('input[name="states"]:checked')].map((c) => c.value),
         center_lat: num("center_lat"), center_lon: num("center_lon"),
-        radius_km: parseInt(val("radius_km"), 10) || 0, reach_text: val("reach_text"),
+        radius_km: parseInt(val("radius_km"), 10) || 0, reach_text: val("reach_text"), color: val("color"),
       };
     }
     let last = "";

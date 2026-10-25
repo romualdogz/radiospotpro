@@ -22,6 +22,7 @@ class StationPublic(ORMModel):
     price_per_second_cent: int
     kind: str
     coverage_ids: list[int] = Field(default_factory=list)
+    map_color: str = ""
 
 
 class CoverageAreaPublic(ORMModel):
@@ -33,6 +34,7 @@ class CoverageAreaPublic(ORMModel):
     center_lon: float | None
     radius_km: int
     reach_text: str
+    color: str = ""
 
 
 class TimeSlotPublic(ORMModel):
@@ -338,6 +340,7 @@ class StationIn(BaseModel):
     kind: Literal["radio", "stream"] = "radio"
     ad_tax_applies: bool = True
     coverage_ids: list[int] = Field(default_factory=list)
+    map_color: str = Field(default="", pattern=r"^$|^#[0-9a-fA-F]{6}$")
     active: bool = True
     sort_order: int = 0
 
@@ -474,6 +477,7 @@ class CoverageAreaIn(NamedIn):
     center_lon: float | None = Field(default=None, ge=9.0, le=17.5)
     radius_km: int = Field(default=0, ge=0, le=300)
     reach_text: str = Field(default="", max_length=255)
+    color: str = Field(default="", pattern=r"^$|^#[0-9a-fA-F]{6}$")
 
 
 class CoverageAreaOut(CoverageAreaIn, ORMModel):

@@ -492,26 +492,46 @@
   }
 
   // ------------------------------------------------------------------ Reichweiten-Karte (DAB+ vs. UKW)
+  // Gewählte Sendegebiete – jedes in der Farbe seines Senders (sonst Gebietsfarbe bzw. Akzentfarbe)
   function selectedCoverage() {
     const pkg = selectedPackage();
-    const ids = new Set(), streams = [];
+    const entries = new Map(), streams = [];
+    const add = (areaId, color, station) => {
+      const area = byId(C.coverage_areas || [], areaId);
+      if (!area) return;
+      const c = color || area.color || "";
+      const key = `${area.id}|${c}`;
+      if (!entries.has(key)) entries.set(key, { ...area, color: c, stations: [] });
+      if (station && !entries.get(key).stations.includes(station)) entries.get(key).stations.push(station);
+    };
     if (pkg) {
-      (pkg.coverage_ids || []).forEach((id) => ids.add(id));
+      (pkg.coverage_ids || []).forEach((id) => add(id, "", null));
     } else {
       for (const item of state.items) {
         const st = byId(C.stations, item.station_id);
         if (!st) continue;
-        (st.coverage_ids || []).forEach((id) => ids.add(id));
+        (st.coverage_ids || []).forEach((id) => add(id, st.map_color, st.name));
         if (st.kind === "stream" && !streams.includes(st.name)) streams.push(st.name);
       }
     }
-    const areas = (C.coverage_areas || []).filter((a) => ids.has(a.id));
+    const areas = [...entries.values()];
     // DAB+ zuerst (großflächig), dann UKW
     areas.sort((a, b) => (a.technology === "dab" ? 0 : 1) - (b.technology === "dab" ? 0 : 1));
-    return { areas, streams };
+    const multiStation = new Set(areas.flatMap((a) => a.stations)).size > 1;
+    return { areas, streams, multiStation };
   }
 
   const TECH = { dab: ["DAB+", "digital · landesweit"], ukw: ["UKW", "analog · regional"] };
+
+  // Liste unter der Karte: jedes Sendegebiet einmal, mit den Farben/Sendern, die es enthalten
+  function groupById(areas) {
+    const groups = new Map();
+    for (const a of areas) {
+      if (!groups.has(a.id)) groups.set(a.id, { ...a, colors: [] });
+      groups.get(a.id).colors.push({ color: a.color, stations: a.stations });
+    }
+    return [...groups.values()];
+  }
 
   function coverageBlock() {
     if (!(C.coverage_areas || []).length || !window.CoverageMap) return null;
@@ -521,13 +541,20 @@
   function refreshCoverage() {
     const hosts = document.querySelectorAll("[data-coverage]");
     if (!hosts.length) return;
-    const { areas, streams } = selectedCoverage();
+    const { areas, streams, multiStation } = selectedCoverage();
     hosts.forEach((host) => {
       const mapHost = h("div", { class: "coverage-mapbox" });
       const items = [
-        ...areas.map((a) => h("li", {},
-          h("span", { class: "tech tech-" + a.technology }, TECH[a.technology]?.[0] || a.technology),
-          h("span", {}, h("b", {}, a.name), a.reach_text ? h("small", {}, " – " + a.reach_text) : null))),
+        ...groupById(areas).map((g) => h("li", {},
+          h("span", { class: "tech tech-" + g.technology,
+            style: g.colors.length === 1 && g.colors[0].color ? (g.technology === "dab"
+              ? `background:${g.colors[0].color};border-color:${g.colors[0].color}`
+              : `color:${g.colors[0].color};border-color:${g.colors[0].color}`) : null },
+            TECH[g.technology]?.[0] || g.technology),
+          h("span", {}, h("b", {}, g.name),
+            multiStation ? g.colors.map((c) => h("small", { class: "cov-station" }, " ",
+              h("i", { class: "cov-dot", style: `background:${c.color || "var(--accent)"}` }), c.stations.join(", "))) : null,
+            g.reach_text ? h("small", {}, " – " + g.reach_text) : null))),
         ...streams.map((name) => h("li", {},
           h("span", { class: "tech tech-stream" }, "Stream"),
           h("span", {}, h("b", {}, name), h("small", {}, " – online über App & Web, überall empfangbar")))),
@@ -723,7 +750,7 @@
         h("div", {}, kv("Schaltung", selectedPackage() ? `Komplettpaket „${selectedPackage().name}“`
           : state.items.map((i) => `${i.spots}× ${byId(C.stations, i.station_id).name}`).join(", "))),
         selectedCoverage().areas.length
-          ? h("div", {}, kv("Sendegebiet", selectedCoverage().areas.map((a) => a.name).join(" · "))) : null,
+          ? h("div", {}, kv("Sendegebiet", [...new Set(selectedCoverage().areas.map((a) => a.name))].join(" · "))) : null,
         h("div", { "data-price": "", style: "margin-top:12px" }, priceBlock()),
       ),
       h("div", { class: "promo-row" }, field("Gutscheincode", promoInput)),

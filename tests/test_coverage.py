@@ -88,3 +88,35 @@ def test_catalog_quote_and_pdf_show_coverage(client, db):
     assert q.lines[0].coverage == "UKW Wien"
     assert client.get("/static/austria-map.json").status_code == 200
     assert client.get("/static/coverage-map.js").status_code == 200
+
+
+def test_station_and_area_colors(client, db):
+    from app.seed import ensure_station_colors
+    db.add_all([Station(name="Radio Nostalgie", price_per_second_cent=700),
+                Station(name="Radio Energy Österreich", price_per_second_cent=850, map_color="#123456")])
+    db.query(Setting).filter_by(key="station_colors_set").delete()  # der Testserver hat beim Start schon geprüft
+    db.commit()
+    ensure_station_colors(db)
+    assert db.query(Station).filter_by(name="Radio Nostalgie").one().map_color == "#0057b8"
+    assert db.query(Station).filter_by(name="Radio Energy Österreich").one().map_color == "#123456"  # bleibt
+    st = db.query(Station).filter_by(name="Radio Nostalgie").one()
+    st.map_color = ""
+    db.commit()
+    ensure_station_colors(db)  # nur einmal – eine bewusst geleerte Farbe bleibt leer
+    assert db.get(Station, st.id).map_color == ""
+
+    _login(client)
+    token = _csrf(client, "/admin/coverage/new")
+    base = {"csrf": token, "name": "Nostalgie UKW Wien", "technology": "ukw", "states": ["wien"], "center_lat": "",
+            "center_lon": "", "radius_km": "0", "reach_text": "", "sort_order": "1", "active": "on"}
+    assert "gespeichert" in client.post("/admin/coverage/new", data={**base, "color": "#0057B8"}).text
+    assert db.query(CoverageArea).filter_by(name="Nostalgie UKW Wien").one().color == "#0057b8"
+    assert "#RRGGBB" in client.post("/admin/coverage/new", data={**base, "name": "X", "color": "blau"}).text
+    page = client.get(f"/admin/stations/{st.id}").text
+    assert 'name="map_color"' in page and "Nostalgie-Blau" in page
+    r = client.post(f"/admin/stations/{st.id}", data={"csrf": token, "name": "Radio Nostalgie", "kind": "radio",
+                    "price_per_second_cent": "7", "map_color": "#0057b8", "sort_order": "2", "active": "on"})
+    assert "gespeichert" in r.text
+    cat = client.get("/api/catalog").json()
+    assert next(s for s in cat["stations"] if s["name"] == "Radio Nostalgie")["map_color"] == "#0057b8"
+    assert next(a for a in cat["coverage_areas"] if a["name"] == "Nostalgie UKW Wien")["color"] == "#0057b8"
