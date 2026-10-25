@@ -127,11 +127,16 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         package = _load_active(db, Package, {data.package_id}, "Komplettpaket")[data.package_id]
         if prod and package.max_seconds and lengths[prod.spot_length_id].seconds > package.max_seconds:
             raise QuoteError(f"„{package.name}“ gilt für Spots bis {package.max_seconds} Sek.")
-    package_station = None
+    package_stations: list[Station] = []  # gewählter Sender bzw. alle enthaltenen Sender
     if package is not None and package.station_ids:
-        if data.package_station_id not in package.station_ids:
-            raise QuoteError(f"Bitte für „{package.name}“ einen Sender wählen.")
-        package_station = _load_active(db, Station, {data.package_station_id}, "Sender")[data.package_station_id]
+        if package.station_mode == "all":
+            found = {s.id: s for s in db.query(Station).filter(Station.id.in_(package.station_ids),
+                                                               Station.active.is_(True))}
+            package_stations = [found[i] for i in package.station_ids if i in found]
+        else:
+            if data.package_station_id not in package.station_ids:
+                raise QuoteError(f"Bitte für „{package.name}“ einen Sender wählen.")
+            package_stations = [_load_active(db, Station, {data.package_station_id}, "Sender")[data.package_station_id]]
 
     studio_in_package = bool(package and package.includes_studio)
     studio = bool(prod and prod.studio) or studio_in_package
@@ -241,9 +246,9 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         reverse_charge=reverse_charge,
         production=production_out,
         package=QuotePackage(name=package.name, description=package.description, spots=package.spots,
-                             station=package_station.name if package_station else "",
-                             coverage=_coverage_names(db, package.coverage_ids
-                                                      or (package_station.coverage_ids if package_station else [])),
+                             station=" + ".join(s.name for s in package_stations),
+                             coverage=_coverage_names(db, package.coverage_ids or list(dict.fromkeys(
+                                 i for s in package_stations for i in (s.coverage_ids or [])))),
                              includes_studio=package.includes_studio, price_cent=package.price_cent) if package else None,
         lines=out_lines,
         addons=[QuoteAddOn(name=a.name, price_cent=a.price_cent) for a in addons.values()],

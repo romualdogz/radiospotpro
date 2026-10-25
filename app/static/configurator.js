@@ -151,9 +151,10 @@
   const selectedPackage = () => state.bookingMode === "package" ? byId(C.packages, state.packageId) : null;
   // Sender, zwischen denen beim Paket gewählt werden kann (nur aktive Sender aus dem Katalog)
   const packageStationOptions = (p) => (p?.station_ids || []).map((id) => byId(C.stations, id)).filter(Boolean);
-  const packageStation = (p) => {
+  const includesAllStations = (p) => p?.station_mode === "all" && packageStationOptions(p).length > 0;
+  const packageStation = (p) => {  // gewählter Sender – nur bei „Kunde wählt einen der Sender“
     const options = packageStationOptions(p);
-    if (!options.length) return null;
+    if (!options.length || includesAllStations(p)) return null;
     return options.find((s) => s.id === state.packageStations[p.id]) || options[0];
   };
   const packageFits = (p) => !!p && (!p.max_seconds || byId(C.spot_lengths, state.lengthId).seconds <= p.max_seconds);
@@ -514,7 +515,13 @@
       if (station && !entries.get(key).stations.includes(station)) entries.get(key).stations.push(station);
     };
     const pkgStation = packageStation(pkg);
-    if (pkg && pkgStation) {
+    if (pkg && includesAllStations(pkg)) {
+      // alle enthaltenen Sender, jeder in seiner Farbe (gemeinsame Gebiete werden gestreift)
+      for (const st of packageStationOptions(pkg)) {
+        const ids = (pkg.coverage_ids || []).length ? pkg.coverage_ids : st.coverage_ids || [];
+        ids.forEach((id) => add(id, st.map_color, st.name));
+      }
+    } else if (pkg && pkgStation) {
       // Sendegebiete des Pakets haben Vorrang, sonst die des gewählten Senders – immer in der Senderfarbe
       const ids = (pkg.coverage_ids || []).length ? pkg.coverage_ids : pkgStation.coverage_ids || [];
       ids.forEach((id) => add(id, pkgStation.map_color, pkgStation.name));
@@ -606,6 +613,11 @@
   function packageStationChoice(p, selected) {
     const options = packageStationOptions(p);
     if (!options.length) return null;
+    if (includesAllStations(p)) {
+      return h("div", { class: "package-stations" }, h("span", { class: "package-stations-label" }, "Enthalten:"),
+        options.map((s) => h("span", { class: "package-included" },
+          h("i", { class: "cov-dot", style: `background:${s.map_color || "var(--accent)"}` }), s.name)));
+    }
     if (!selected) {
       return h("div", { class: "package-lines package-stations-hint" }, "Sender wählbar: " + options.map((s) => s.name).join(" oder "));
     }
@@ -616,7 +628,7 @@
         type: "button", class: "chip small" + (s.id === current.id ? " sel" : ""), role: "radio",
         "aria-checked": s.id === current.id ? "true" : "false",
         onclick: (e) => { e.stopPropagation(); state.packageStations[p.id] = s.id; render(); scheduleQuote(); },
-      }, s.map_color ? h("i", { class: "cov-dot", style: `background:${s.map_color}` }) : null, s.name)));
+      }, h("i", { class: "cov-dot", style: `background:${s.map_color || "var(--accent)"}` }), s.name)));
   }
 
   function packageCards() {
@@ -783,6 +795,7 @@
           state.vatId.trim() ? [" · ", kv("UID", state.vatId.trim().toUpperCase())] : null),
         h("div", {}, kv("Schaltung", selectedPackage() ? `Komplettpaket „${selectedPackage().name}“`
           + (packageStation(selectedPackage()) ? ` · ${packageStation(selectedPackage()).name}` : "")
+          + (includesAllStations(selectedPackage()) ? ` · ${packageStationOptions(selectedPackage()).map((s) => s.name).join(" + ")}` : "")
           : state.items.map((i) => `${i.spots}× ${byId(C.stations, i.station_id).name}`).join(", "))),
         selectedCoverage().areas.length
           ? h("div", {}, kv("Sendegebiet", [...new Set(selectedCoverage().areas.map((a) => a.name))].join(" · "))) : null,

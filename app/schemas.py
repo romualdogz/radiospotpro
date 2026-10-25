@@ -92,6 +92,7 @@ class PackagePublic(ORMModel):
     includes_studio: bool
     coverage_ids: list[int] = Field(default_factory=list)
     station_ids: list[int] = Field(default_factory=list)
+    station_mode: str = "choose"
 
 
 class CountryPublic(ORMModel):
@@ -195,7 +196,7 @@ class QuoteProduction(BaseModel):
 class QuotePackage(BaseModel):
     name: str
     description: str
-    station: str = Field(default="", description="Gewählter Sender (bei Paketen mit Senderwahl)")
+    station: str = Field(default="", description="Gewählter bzw. enthaltene Sender, z. B. „Radio Energy + Radio Nostalgie“")
     coverage: str = ""
     spots: int
     includes_studio: bool
@@ -466,6 +467,7 @@ class PackageIn(BaseModel):
     airtime_cent: int = Field(default=0, ge=0, description="Basis Werbeabgabe; 0 = gesamter Paketpreis")
     coverage_ids: list[int] = Field(default_factory=list)
     station_ids: list[int] = Field(default_factory=list)
+    station_mode: Literal["choose", "all"] = "choose"
     active: bool = True
     sort_order: int = 0
 

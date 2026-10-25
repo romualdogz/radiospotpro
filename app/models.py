@@ -217,6 +217,8 @@ class Package(Base):
     coverage_ids: Mapped[list] = mapped_column(JSON, default=list)  # Sendegebiete (CoverageArea.id)
     # Sender, zwischen denen der Kunde beim Paket wählt (leer = Paket mit festem Sendeumfang)
     station_ids: Mapped[list] = mapped_column(JSON, default=list)
+    # "choose" = Kunde wählt einen der Sender, "all" = alle angehakten Sender sind im Paket enthalten
+    station_mode: Mapped[str] = mapped_column(String(10), default="choose")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 

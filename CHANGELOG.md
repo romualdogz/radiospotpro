@@ -11,6 +11,10 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Pakete mit mehreren Sendern zugleich** (*Komplettpakete → Senderwahl → „Alle angehakten Sender sind im Paket
+  enthalten“*): keine Auswahl, die Paketkarte zeigt „Enthalten: ● Radio Energy ● Radio Nostalgie“, die Karte jeden
+  Sender in seiner Farbe (gemeinsame Gebiete rot/blau gestreift). Kalkulation und PDF nennen alle Sender.
+  Standard bleibt „Kunde wählt einen der angehakten Sender“.
 - **Zweite Schreibtisch-Verknüpfung „Radiospot im WLAN starten“:** `install-mac.command` legt sie neben
   „Radiospot starten“ an (startet `start-mac-netzwerk.command`, erreichbar für Handy und andere Rechner im WLAN).
 - **Senderwahl bei Komplettpaketen** (*Komplettpakete → Wählbare Sender*): Der Kunde wählt im Paket den Sender,

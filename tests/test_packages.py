@@ -199,3 +199,30 @@ def test_package_coverage_wins_and_dashboard_hint(client, db, cat):
     db.commit()
     assert calculate_quote(db, data).package.coverage == "DAB+ National"
     assert "Paket „Basic“" not in client.get("/admin").text
+
+
+def test_package_includes_all_stations(client, db, cat):
+    from app.models import CoverageArea
+    dab = CoverageArea(name="DAB+ National", technology="dab", states=["wien"])
+    ukw = CoverageArea(name="UKW Wien", technology="ukw", states=["wien"])
+    db.add_all([dab, ukw])
+    db.flush()
+    cat["station"].coverage_ids = [dab.id]
+    nostalgie = Station(name="Radio Nostalgie", price_per_second_cent=700, coverage_ids=[dab.id, ukw.id],
+                        map_color="#0057b8")
+    db.add(nostalgie)
+    db.flush()
+    cat["basic"].station_ids = [cat["station"].id, nostalgie.id]
+    cat["basic"].station_mode = "all"
+    db.commit()
+    r = calculate_quote(db, pq(cat, "basic"))  # keine Senderwahl nötig
+    assert r.package.station == "Radio A + Radio Nostalgie"
+    assert r.package.coverage == "DAB+ National · UKW Wien"
+    assert client.get("/api/catalog").json()["packages"][0]["station_mode"] == "all"
+
+    def csrf(path):
+        return re.search(r'name="csrf" value="([^"]+)"', client.get(path).text).group(1)
+    token = csrf("/admin/login")
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
+    page = client.get(f"/admin/packages/{cat['basic'].id}").text
+    assert 'name="station_mode"' in page and "Alle angehakten Sender sind im Paket enthalten" in page

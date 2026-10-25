@@ -379,8 +379,12 @@ ENTITIES: dict[str, Entity] = {
               help="Bei reinen Stream-Paketen ausschalten"),
             F("station_ids", "Wählbare Sender", "multi", options=lambda db: [
                 (str(s.id), s.name) for s in db.query(Station).order_by(Station.sort_order, Station.id)],
-              help="Der Kunde wählt beim Paket einen dieser Sender (Karte und PDF zeigen dann diesen Sender). "
-                   "Nichts angehakt = Paket mit festem Sendeumfang, z. B. eine Kombi aus mehreren Sendern."),
+              help="Sender dieses Pakets. Nichts angehakt = fester Sendeumfang nur über die Sendegebiete unten."),
+            F("station_mode", "Senderwahl", "select", in_list=False,
+              options=lambda _db: [("choose", "Kunde wählt einen der angehakten Sender"),
+                                   ("all", "Alle angehakten Sender sind im Paket enthalten")],
+              help="„Alle enthalten“: keine Auswahl – die Karte zeigt jeden Sender in seiner Farbe, "
+                   "z. B. Energy rot und Nostalgie blau."),
             F("coverage_ids", "Sendegebiete", "multi", options=_coverage_options, in_list=False,
               help="Werden im Konfigurator auf der Österreich-Karte angezeigt (in der Farbe des gewählten Senders). "
                    "Leer lassen = Sendegebiete des gewählten Senders."),
@@ -437,7 +441,7 @@ def _form_value(entity: Entity, f: F, obj: Any) -> str:
         if f.type == "multi":
             return []
         return {"active": "on", "technology": "ukw", "stackable": "on", "price_factor_bp": "1", "pitch_bp": "1", "rate_bp": "1",
-                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "reverse_charge": "on",
+                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "reverse_charge": "on",
                 **({"vat_rate_bp": "20"} if entity.slug == "countries" else {}),
                 **(_VOICE_FORM_DEFAULTS if entity.slug == "voices" else {})}.get(f.name, "")
     if f.name == "value_raw":  # Rabattwert je nach Art
