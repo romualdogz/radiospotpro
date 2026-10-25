@@ -295,20 +295,25 @@ fi
 ok "Der Konfigurator lässt sich starten"
 
 DESKTOP="$HOME/Desktop"
-LINK="$DESKTOP/Radiospot starten.command"
-if [ -d "$DESKTOP" ] && [ -f "$DIR/start-mac.command" ]; then
-  if [ -L "$LINK" ] && [ "$(readlink "$LINK")" = "$DIR/start-mac.command" ]; then
-    ok "Verknüpfung „Radiospot starten“ auf dem Schreibtisch ist vorhanden"
-  elif yes_no "Verknüpfung „Radiospot starten“ auf dem Schreibtisch anlegen?" J; then
-    rm -f "$LINK"
-    ln -s "$DIR/start-mac.command" "$LINK" && ok "Verknüpfung auf dem Schreibtisch angelegt"
+
+# desktop_link "Name auf dem Schreibtisch" Skript – legt eine Verknüpfung an bzw. setzt sie auf diesen Ordner
+desktop_link() {
+  local name="$1" target="$DIR/$2" link="$DESKTOP/$1.command"
+  [ -d "$DESKTOP" ] && [ -f "$target" ] || return 0
+  if [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ]; then
+    ok "Verknüpfung „$name“ auf dem Schreibtisch ist vorhanden"
+  elif yes_no "Verknüpfung „$name“ auf dem Schreibtisch anlegen?" J; then
+    rm -f "$link"
+    ln -s "$target" "$link" && ok "Verknüpfung „$name“ auf dem Schreibtisch angelegt"
   fi
-fi
+}
+desktop_link "Radiospot starten" start-mac.command
+desktop_link "Radiospot im WLAN starten" start-mac-netzwerk.command
 
 # ----------------------------------------------------------------------------- Fertig
 printf '\n%s%s✔ Installation abgeschlossen%s\n\n' "$B" "$G" "$N"
 info "Starten:   Doppelklick auf „Radiospot starten“ (Schreibtisch) oder start-mac.command"
-info "Im Netzwerk (z. B. fürs Handy):  start-mac-netzwerk.command"
+info "Im WLAN (z. B. fürs Handy):  „Radiospot im WLAN starten“ (Schreibtisch) oder start-mac-netzwerk.command"
 info "Konfigurator:  http://127.0.0.1:8000"
 info "Admin:         http://127.0.0.1:8000/admin"
 if [ "$HAD_DB" = "1" ]; then

@@ -55,7 +55,8 @@ optional Anthropic-/ElevenLabs-Key und E-Mail-Versand), macht einen Selbsttest u
 
 - **Starten:** Doppelklick auf „Radiospot starten“ bzw. `start-mac.command` – der Browser öffnet sich, das
   Terminal-Fenster muss offen bleiben (beenden mit Ctrl + C). Der Mac schläft währenddessen nicht ein.
-- **Im Netzwerk** (Handy, andere Rechner im selben WLAN): `start-mac-netzwerk.command` – zeigt die Adresse an.
+- **Im Netzwerk** (Handy, andere Rechner im selben WLAN): „Radiospot im WLAN starten“ auf dem Schreibtisch bzw.
+  `start-mac-netzwerk.command` – zeigt die Adresse an.
 - **Update:** neuen Ordner drüberkopieren und `install-mac.command` erneut ausführen. Bestehende Werte in der
   `.env`, die Datenbank, Musik und Logos bleiben erhalten; neue Einstellungen werden am Ende der `.env` ergänzt.
 - **Probleme:** Das Protokoll steht in `install.log`. Muss ein Paket übersetzt werden, fehlen evtl. die

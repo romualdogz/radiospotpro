@@ -11,6 +11,8 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Zweite Schreibtisch-Verknüpfung „Radiospot im WLAN starten“:** `install-mac.command` legt sie neben
+  „Radiospot starten“ an (startet `start-mac-netzwerk.command`, erreichbar für Handy und andere Rechner im WLAN).
 - **Senderwahl bei Komplettpaketen** (*Komplettpakete → Wählbare Sender*): Der Kunde wählt im Paket den Sender,
   z. B. Radio Energy oder Radio Nostalgie – Karte (in der Senderfarbe), Kalkulation, Zusammenfassung, PDF und
   Anfrage zeigen den gewählten Sender. Pauschalpreis bleibt gleich. Pakete ohne angehakte Sender haben wie bisher
