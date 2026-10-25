@@ -527,10 +527,10 @@
       const items = [
         ...areas.map((a) => h("li", {},
           h("span", { class: "tech tech-" + a.technology }, TECH[a.technology]?.[0] || a.technology),
-          h("span", {}, h("b", {}, a.name), a.reach_text ? h("small", {}, a.reach_text) : null))),
+          h("span", {}, h("b", {}, a.name), a.reach_text ? h("small", {}, " – " + a.reach_text) : null))),
         ...streams.map((name) => h("li", {},
           h("span", { class: "tech tech-stream" }, "Stream"),
-          h("span", {}, h("b", {}, name), h("small", {}, "online über App & Web – überall empfangbar")))),
+          h("span", {}, h("b", {}, name), h("small", {}, " – online über App & Web, überall empfangbar")))),
       ];
       host.replaceChildren(
         h("h3", { class: "sub" }, "Ihr Sendegebiet"),
@@ -538,7 +538,7 @@
         items.length ? h("ul", { class: "coverage-list" }, items)
           : h("p", { class: "muted" }, "Für diese Auswahl ist noch kein Sendegebiet hinterlegt."),
         h("div", { class: "coverage-legend" },
-          h("span", {}, h("i", { class: "sw sw-dab" }), "DAB+ – leuchtet im ganzen Bundesland"),
+          h("span", {}, h("i", { class: "sw sw-dab" }), "DAB+ – ganzes Bundesland"),
           h("span", {}, h("i", { class: "sw sw-ukw" }), "UKW – rund um den Sender")),
         h("details", { class: "coverage-help" },
           h("summary", {}, "DAB+ oder UKW – was ist der Unterschied?"),
@@ -561,19 +561,20 @@
 
   function packageCards() {
     const seconds = byId(C.spot_lengths, state.lengthId).seconds;
-    return h("div", { class: "voices packages" }, C.packages.map((p) => {
+    return h("div", { class: "packages" }, C.packages.map((p) => {
       const fits = packageFits(p);
       const sel = fits && p.id === state.packageId;
+      const lines = (p.description || "").split("\n").map((l) => l.trim()).filter(Boolean);
       return h("div", { class: "voice option package" + (sel ? " sel" : "") + (fits ? "" : " disabled"),
-        role: "button", tabindex: fits ? "0" : "-1", "aria-disabled": fits ? "false" : "true",
-        onclick: () => { if (!fits) return; state.packageId = p.id; dropStudioAddons(); render(); scheduleQuote(); } },
-        h("div", { class: "voice-top" },
-          h("div", { class: "voice-name" }, p.name),
-          p.badge ? h("div", { class: "voice-badge" }, p.badge) : null),
-        h("div", { class: "package-price" }, money(p.price_cent), h("small", {}, " netto pauschal")),
-        p.description ? h("ul", { class: "package-list" },
-          p.description.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => h("li", {}, l))) : null,
-        fits ? null : h("p", { class: "voice-tag" }, `Nur für Spots bis ${p.max_seconds} Sek. – Ihr Spot hat ${seconds} Sek.`));
+        role: "button", tabindex: fits ? "0" : "-1", "aria-disabled": fits ? "false" : "true", "aria-pressed": sel ? "true" : "false",
+        onclick: () => { if (!fits) return; state.packageId = p.id; dropStudioAddons(); render(); scheduleQuote(); },
+        onkeydown: (e) => { if (fits && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.currentTarget.click(); } } },
+        h("div", { class: "package-head" },
+          h("span", { class: "package-radio", "aria-hidden": "true" }),
+          h("span", { class: "voice-name" }, p.name, p.badge ? h("span", { class: "voice-badge" }, p.badge) : null),
+          h("span", { class: "package-price" }, money(p.price_cent), h("small", {}, "netto pauschal"))),
+        lines.length ? h("div", { class: "package-lines" }, lines.join(" · ")) : null,
+        fits ? null : h("div", { class: "voice-tag" }, `Nur für Spots bis ${p.max_seconds} Sek. – Ihr Spot hat ${seconds} Sek.`));
     }));
   }
 
@@ -601,42 +602,46 @@
         onclick: () => { state.items.splice(idx, 1); render(); scheduleQuote(); } }, "×"),
     ));
     const pkg = selectedPackage();
-    const modes = [{ id: "package", name: "Komplettpaket zum Pauschalpreis" }, { id: "individual", name: "Individuell zusammenstellen" }];
+    const modes = [{ id: "package", name: "Komplettpaket" }, { id: "individual", name: "Individuell" }];
     const individual = [
       rows,
       h("div", { class: "gen-row" }, h("button", { type: "button", class: "btn small ghost",
         onclick: () => { state.items.push(newItem()); render(); scheduleQuote(); } }, "+ Weiteren Sender / Stream")),
     ];
+    const extras = visibleAddons().length ? field("Extras", h("div", { class: "checks" }, visibleAddons().map((a) => h("label", { class: "check" },
+      h("input", { type: "checkbox", checked: state.addonIds.has(a.id), onchange: (e) => {
+        e.target.checked ? state.addonIds.add(a.id) : state.addonIds.delete(a.id); scheduleQuote();
+      } }),
+      h("span", {}, `${a.name} – ${money(a.price_cent)}`, a.description ? h("small", {}, a.description) : null))))) : null;
     return [
       h("h2", {}, "Spot & Buchung"),
       h("p", { class: "hint" }, "Ihr Spot läuft im Radio oder in den Streams der Energy-Gruppe. Text und Hörbeispiel sind kostenlos — Sie zahlen nur die Schaltung und optional den Studiospot."),
       pkg?.includes_studio
-        ? field("Ihr Spot", h("div", { class: "voices" }, h("div", { class: "voice option sel" },
+        ? field("Ihr Spot", h("div", { class: "voices spot-choice" }, h("div", { class: "voice option sel" },
             h("div", { class: "voice-top" },
               h("div", {}, h("div", { class: "voice-name" }, "Studiospot mit echtem Sprecher"),
                 h("div", { class: "voice-tag" }, "Professionell im Studio produziert, zur Freigabe vor Ausstrahlung")),
               h("div", { class: "voice-badge" }, "im Paket inklusive")))))
-        : field("Ihr Spot", h("div", { class: "voices" },
+        : field("Ihr Spot", h("div", { class: "voices spot-choice" },
             option(false, "Spot-Text & Hörbeispiel", "So wie konfiguriert", "gratis"),
             option(true, "Studiospot mit echtem Sprecher", "Professionell im Studio produziert, zur Freigabe vor Ausstrahlung",
               money(C.studio_price_cent) + " netto"))),
-      h("h3", { class: "sub" }, "Schaltung"),
-      C.packages.length ? h("div", { class: "booking-mode" }, chips(modes, state.bookingMode, (mode) => {
-        state.bookingMode = mode;
-        if (mode === "package" && !packageFits(byId(C.packages, state.packageId))) {
-          state.packageId = C.packages.find(packageFits)?.id ?? null;
-        }
-        dropStudioAddons(); render(); scheduleQuote();
-      })) : null,
-      state.bookingMode === "package" ? packageCards() : individual,
-      coverageBlock(),
-      visibleAddons().length ? field("Extras", h("div", { class: "checks" }, visibleAddons().map((a) => h("label", { class: "check" },
-        h("input", { type: "checkbox", checked: state.addonIds.has(a.id), onchange: (e) => {
-          e.target.checked ? state.addonIds.add(a.id) : state.addonIds.delete(a.id); scheduleQuote();
-        } }),
-        h("span", {}, `${a.name} – ${money(a.price_cent)}`, a.description ? h("small", {}, a.description) : null))))) : null,
-      h("div", { class: "summary-box", "data-price": "" }, priceBlock()),
-      h("p", { class: "est" }, "Rechnungsland und UID-Nummer geben Sie im letzten Schritt an."),
+      h("div", { class: "booking-layout" + (coverageBlock() ? "" : " no-map") },
+        h("div", { class: "booking-main" },
+          h("h3", { class: "sub" }, "Schaltung"),
+          C.packages.length ? h("div", { class: "booking-mode" }, chips(modes, state.bookingMode, (mode) => {
+            state.bookingMode = mode;
+            if (mode === "package" && !packageFits(byId(C.packages, state.packageId))) {
+              state.packageId = C.packages.find(packageFits)?.id ?? null;
+            }
+            dropStudioAddons(); render(); scheduleQuote();
+          })) : null,
+          state.bookingMode === "package" ? packageCards() : individual,
+          extras),
+        coverageBlock() ? h("div", { class: "booking-side" }, coverageBlock()) : null,
+        h("div", { class: "booking-price" },
+          h("div", { class: "summary-box", "data-price": "" }, priceBlock()),
+          h("p", { class: "est" }, "Rechnungsland und UID-Nummer geben Sie im letzten Schritt an."))),
     ];
   }
 

@@ -254,10 +254,17 @@ a.btn { display: inline-block; text-decoration: none; }
 
 /* Komplettpakete */
 .booking-mode { margin-bottom: 16px; }
-.package-price { font-family: var(--head); font-weight: 700; font-size: 1.25rem; margin-top: 8px; color: var(--accent); }
-.package-price small { font-family: var(--sans); font-weight: 400; font-size: 0.75rem; color: var(--text-muted); }
-.package-list { margin: 8px 0 0; padding-left: 18px; font-size: 0.85rem; color: var(--text-muted); }
-.package-list li { margin: 2px 0; }
+.packages { display: grid; gap: 8px; margin-bottom: 18px; }
+.voice.package { padding: 10px 12px; }
+.package-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.package .voice-name { font-size: 0.95rem; line-height: 1.25; }
+.package .voice-badge { margin-left: 6px; vertical-align: 1px; }
+.package-radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.package.sel .package-radio { border-color: var(--accent); background: radial-gradient(var(--accent) 42%, transparent 48%); }
+.package-price { font-family: var(--head); font-weight: 700; font-size: 1.05rem; color: var(--accent); text-align: right; white-space: nowrap; }
+.package-price small { display: block; font-family: var(--sans); font-weight: 400; font-size: 0.68rem; color: var(--text-muted); }
+.package-lines { margin: 4px 0 0 26px; font-size: 0.78rem; line-height: 1.35; color: var(--text-muted); }
+.package .voice-tag { margin: 4px 0 0 26px; }
 .voice.option.disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Logo (Admin → Design) */
@@ -287,3 +294,35 @@ a.btn { display: inline-block; text-decoration: none; }
 .coverage-help p { margin: 8px 0 0; font-size: 0.88rem; line-height: 1.45; }
 
 .step [hidden] { display: none !important; }
+
+/* Spot & Buchung: Auswahl links, Karte + Preis rechts (weniger Scrollen) */
+.spot-choice { margin-bottom: 14px; }
+.spot-choice .voice { padding: 10px 14px; }
+/* Desktop: links Auswahl + Preis, rechts Karte (über beide Zeilen). Handy: Auswahl → Karte → Preis */
+.booking-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 24px;
+  grid-template-areas: "main side" "price side"; grid-template-rows: auto 1fr; align-items: start; }
+.booking-main { grid-area: main; }
+.booking-side { grid-area: side; }
+.booking-price { grid-area: price; }
+.booking-layout.no-map { grid-template-areas: "main" "price"; }
+.booking-main > h3.sub:first-child, .booking-side .coverage > h3.sub:first-child { margin-top: 4px; }
+.booking-side { position: sticky; top: 16px; }
+.booking-side .coverage { margin-top: 0; }
+.booking-side .coverage-mapbox { margin-bottom: 10px; }
+.booking-side .coverage-list { gap: 6px; }
+.booking-side .coverage-list small { font-size: 0.74rem; }
+.booking-side .coverage-legend { font-size: 0.74rem; }
+.booking-side .coverage-help { padding: 8px 12px; font-size: 0.9rem; }
+.booking-layout.no-map { grid-template-columns: 1fr; }
+.booking-price .summary-box { margin-top: 6px; margin-bottom: 8px; }
+.booking-layout .booking-mode .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.booking-layout .booking-mode .chip { text-align: center; }
+.booking-side .coverage-list li { align-items: baseline; }
+.booking-side .coverage-list b { display: inline; }
+.booking-side .coverage-list small { display: inline; }
+.booking-layout .booking-row { grid-template-columns: 1fr 0.6fr auto; }
+.booking-layout .booking-row > .field:first-child { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .booking-layout, .booking-layout.no-map { grid-template-columns: 1fr; grid-template-areas: "main" "side" "price"; gap: 8px; }
+  .booking-side { position: static; margin-bottom: 14px; }
+}

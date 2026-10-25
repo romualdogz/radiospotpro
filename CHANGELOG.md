@@ -11,6 +11,10 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **„Spot & Buchung“ mit weniger Scrollen:** Am Computer links die Schaltung (Komplettpaket / Individuell),
+  Extras und Preis, rechts daneben die Reichweiten-Karte, die beim Scrollen sichtbar bleibt. Kompaktere
+  Paketkarten (Name und Preis in einer Zeile, Leistungen als kurze Zeile), Umschalter als zwei gleich breite
+  Knöpfe. Etwa 40 % weniger Höhe; am Handy Reihenfolge Auswahl → Karte → Preis.
 - **Überschrift und Untertitel im Admin einstellbar** (*Design → Texte & Überschrift*): Text der großen
   Überschrift („Ihr Radiospot, angehört, bevor er läuft.“), Untertitel oben rechts (auch im PDF) und die
   Größe der Überschrift per Regler (60–170 %). Leer = Standardtext; Farbvorlagen lassen die Texte unverändert.
