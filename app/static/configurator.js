@@ -130,7 +130,8 @@
   }
 
   function canAdvance() {
-    if (state.step === 1) return !!(state.firma.trim() && state.botschaft.trim() && state.cta.trim());
+    // Eigener Spot-Text reicht – Firma, Kernbotschaft und Call-to-Action braucht nur der KI-Vorschlag
+    if (state.step === 1) return !!(state.script.trim() || (state.firma.trim() && state.botschaft.trim() && state.cta.trim()));
     if (state.step === 3 && state.bookingMode === "package") return packageFits(selectedPackage());
     if (state.step === 4) {
       return !state.sent && ["name", "street", "zip", "city", "phone", "email"].every((k) => state[k].trim())
@@ -139,7 +140,11 @@
     return true;
   }
 
-  function refreshNav() { btnNext.disabled = !canAdvance(); }
+  function refreshNav() {
+    btnNext.disabled = !canAdvance();
+    const hint = document.getElementById("textHint");
+    if (hint) hint.hidden = !btnNext.disabled;
+  }
 
   // ------------------------------------------------------------------ Komplettpakete
   const selectedPackage = () => state.bookingMode === "package" ? byId(C.packages, state.packageId) : null;
@@ -334,6 +339,9 @@
         status) : null,
       field("Spot-Text", scriptBox),
       est,
+      h("p", { class: "hint", id: "textHint", hidden: true },
+        "Zum Weiterklicken: Spot-Text selbst schreiben – oder Firma, Kernbotschaft und Call-to-Action ausfüllen " +
+        "und den Text mit KI erstellen lassen."),
     ];
   }
 

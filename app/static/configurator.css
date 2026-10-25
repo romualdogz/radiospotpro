@@ -285,3 +285,5 @@ a.btn { display: inline-block; text-decoration: none; }
 .coverage-help { margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--bg-field); }
 .coverage-help summary { cursor: pointer; font-weight: 600; }
 .coverage-help p { margin: 8px 0 0; font-size: 0.88rem; line-height: 1.45; }
+
+.step [hidden] { display: none !important; }

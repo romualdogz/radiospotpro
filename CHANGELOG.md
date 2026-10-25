@@ -43,6 +43,9 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 - **`start-mac-netzwerk.command`:** wie oben, aber im lokalen Netzwerk erreichbar (zeigt die Adresse an).
 
 ### Behoben
+- **Eigener Spot-Text:** Wer in Schritt 2 den Text selbst schreibt, kann jetzt weiterklicken – Firma,
+  Kernbotschaft und Call-to-Action sind nur noch für den KI-Vorschlag nötig. Ist „Weiter“ gesperrt, steht
+  darunter ein Hinweis, was fehlt.
 - Sehr kurze Hörproben (unter 2 Sekunden) bekamen kein Wasserzeichen – jetzt liegt es dann in der Mitte.
 - **Im WLAN nicht erreichbar:** Lief noch das normale Fenster (nur am Mac erreichbar), wich
   `start-mac-netzwerk.command` unbemerkt auf Port 8001 aus. Jetzt kommt ein klarer Hinweis, das andere
