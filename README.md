@@ -95,7 +95,7 @@ Tests: `pytest`
 | **Rabatte** | Prozent oder Fixbetrag, mit Bedingungen (s. u.) |
 | **Länder** | Rechnungsländer (Dropdown im Formular) mit MwSt.-Satz und Option „mit UID Nettorechnung“ |
 | **Rechtstexte** | AGB und Datenschutzerklärung – Pflicht-Häkchen im Checkout, per Klick einblendbar, eigene Seiten `/agb` und `/datenschutz`; Zustimmung (Zeitpunkt + Textversion) wird je Anfrage gespeichert |
-| **Design** | Farben (Seite, Formular, Akzente) und Schriften (Google Fonts oder Systemschrift) des Konfigurators, Farbvorlagen, Vorschau |
+| **Design** | Farben (Seite, Formular, Akzente) und Schriften (Google Fonts oder Systemschrift) des Konfigurators, Farbvorlagen, Vorschau; Text und Größe der Überschrift, Untertitel oben rechts |
 | **Logo** (unter *Design*) | Logo als PNG, JPG, WebP oder SVG hochladen (max. 2 MB), Höhe einstellen, optional auch im PDF (nur PNG/JPG/WebP). Ersetzt den Schriftzug im Konfigurator und auf AGB/Datenschutz. Alternativ das Bild einfach in den Ordner `media/logos` legen – es wird automatisch verwendet, solange im Admin kein anderes Logo gespeichert ist |
 | **Preis-Einstellungen** | Preis Studiospot, Werbeabgabe, Mindestbestellwert, Währung (auch für die Verkaufsleitung) |
 | **Einstellungen** | PDF-Firmenangaben, Wasserzeichen, Mastering (nur Administrator) |

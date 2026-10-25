@@ -38,6 +38,13 @@ FONTS = [
 SYSTEM_FONT = "system"
 FONT_DEFAULTS = {"font_body": "IBM Plex Sans", "font_heading": "Space Grotesk"}
 
+# Texte im Kopf des Konfigurators: Schlüssel → (Bezeichnung, Standard, max. Länge)
+TEXTS = {
+    "hero_title": ("Überschrift", "Ihr Radiospot, angehört, bevor er läuft.", 120),
+    "tagline": ("Untertitel oben rechts (auch im PDF)", "sound so(u)lutions — Wien", 80),
+}
+HERO_SIZE_DEFAULT, HERO_SIZE_MIN, HERO_SIZE_MAX = 100, 60, 170  # Größe der Überschrift in %
+
 PRESETS: dict[str, dict[str, str]] = {
     "onaircraft Rot (Standard)": {k: v[1] for k, v in COLORS.items()},
     "Dunkel": {
@@ -60,7 +67,8 @@ _FONT_NAME = re.compile(r"[A-Za-z0-9 ]{2,40}")
 
 def get_theme(db: Session) -> dict[str, str]:
     stored = {s.key[6:]: s.value for s in db.query(Setting).filter(Setting.key.like("theme_%"))}
-    theme = {k: v[1] for k, v in COLORS.items()} | FONT_DEFAULTS
+    theme = ({k: v[1] for k, v in COLORS.items()} | FONT_DEFAULTS | {k: v[1] for k, v in TEXTS.items()}
+             | {"hero_size": str(HERO_SIZE_DEFAULT)})
     theme.update({k: v for k, v in stored.items() if k in theme})
     return theme
 
@@ -78,6 +86,16 @@ def validate(values: dict[str, str]) -> dict[str, str]:
         if value != SYSTEM_FONT and not _FONT_NAME.fullmatch(value):
             raise ValueError("Schriftart: nur Buchstaben, Ziffern und Leerzeichen (Name wie bei Google Fonts)")
         clean[key] = value
+    for key, (label, default, max_len) in TEXTS.items():
+        value = " ".join(str(values.get(key) or "").split())  # keine Zeilenumbrüche/Mehrfach-Leerzeichen
+        if len(value) > max_len:
+            raise ValueError(f"{label}: höchstens {max_len} Zeichen")
+        clean[key] = value or default
+    try:
+        size = int(str(values.get("hero_size") or HERO_SIZE_DEFAULT).strip().rstrip("%"))
+    except ValueError as e:
+        raise ValueError("Größe der Überschrift: bitte eine ganze Zahl in Prozent angeben") from e
+    clean["hero_size"] = str(min(HERO_SIZE_MAX, max(HERO_SIZE_MIN, size)))
     return clean
 
 
@@ -118,6 +136,8 @@ def css(theme: dict[str, str]) -> str:
 }}
 header.top {{ border-bottom-color: color-mix(in srgb, var(--page-text) 28%, transparent); }}
 .wordmark, .hero h1 {{ color: var(--page-text); }}
+.hero h1 {{ font-size: calc(clamp(1.9rem, 4.4vw, 2.9rem) * {int(t.get('hero_size', HERO_SIZE_DEFAULT)) / 100:g});
+           overflow-wrap: break-word; }}
 .wordmark span {{ color: var(--logo-accent); }}
 .tag, .hero p {{ color: color-mix(in srgb, var(--page-text) 88%, transparent); }}
 .wave i {{ background: var(--page-text); }}

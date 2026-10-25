@@ -11,6 +11,9 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 25.10.2026
 
 ### Neu
+- **Überschrift und Untertitel im Admin einstellbar** (*Design → Texte & Überschrift*): Text der großen
+  Überschrift („Ihr Radiospot, angehört, bevor er läuft.“), Untertitel oben rechts (auch im PDF) und die
+  Größe der Überschrift per Regler (60–170 %). Leer = Standardtext; Farbvorlagen lassen die Texte unverändert.
 - **Reichweiten-Karte DAB+ vs. UKW:** Im Konfigurator (Schritt „Buchung“) zeigt eine Österreich-Karte das
   Sendegebiet der aktuellen Auswahl – DAB+ lässt die Bundesländer in der Akzentfarbe aufleuchten, UKW-Sender
   leuchten als Kreis um den Standort. Dazu Liste mit Reichweiten-Texten, Legende und die Erklärung

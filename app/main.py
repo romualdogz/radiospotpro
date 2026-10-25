@@ -82,7 +82,7 @@ def configurator(request: Request, db: Session = Depends(get_db)):
     design = theme.get_theme(db)
     return admin_ui.templates.TemplateResponse(request, "configurator.html", {
         "fonts_url": theme.fonts_url(design), "theme_version": theme.version(design),
-        "logo": branding.get_logo(db)})
+        "logo": branding.get_logo(db), "design": design})
 
 
 @app.get("/agb", response_class=HTMLResponse, include_in_schema=False)
@@ -93,7 +93,7 @@ def legal_page(request: Request, db: Session = Depends(get_db)):
     design = theme.get_theme(db)
     return admin_ui.templates.TemplateResponse(request, "legal.html", {
         "text": text, "fonts_url": theme.fonts_url(design), "theme_version": theme.version(design),
-        "logo": branding.get_logo(db)})
+        "logo": branding.get_logo(db), "design": design})
 
 
 @app.get("/media/logo/{name}", include_in_schema=False)

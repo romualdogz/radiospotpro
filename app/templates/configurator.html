@@ -19,13 +19,13 @@
   <div class="wrap top-inner">
     {% if logo %}<img class="logo" src="{{ logo.url }}" alt="onaircraft" style="height: {{ logo.height }}px">
     {% else %}<div class="wordmark">on<span>air</span>craft</div>{% endif %}
-    <div class="tag">sound so(u)lutions — Wien</div>
+    <div class="tag">{{ design.tagline }}</div>
   </div>
 </header>
 
 <div class="wrap">
   <section class="hero">
-    <h1>Ihr Radiospot, angehört, bevor er läuft.</h1>
+    <h1>{{ design.hero_title }}</h1>
     <div class="wave" id="wave"></div>
   </section>
 

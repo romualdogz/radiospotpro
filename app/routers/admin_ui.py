@@ -629,7 +629,8 @@ def _design_context(db: Session) -> dict:
     for key, (label, default, group) in theme.COLORS.items():
         groups.setdefault(group, []).append((key, label, default))
     return {"color_groups": groups, "fonts": theme.FONTS, "system_font": theme.SYSTEM_FONT,
-            "presets": theme.PRESETS, "logo": branding.get_logo(db),
+            "presets": theme.PRESETS, "logo": branding.get_logo(db), "texts": theme.TEXTS,
+            "hero_size_limits": (theme.HERO_SIZE_MIN, theme.HERO_SIZE_DEFAULT, theme.HERO_SIZE_MAX),
             "logo_limits": (branding.HEIGHT_MIN, branding.HEIGHT_DEFAULT, branding.HEIGHT_MAX)}
 
 
@@ -648,7 +649,7 @@ async def design_save(request: Request, user=Depends(admin_only), db: Session = 
         current = theme.get_theme(db)
         theme.save_theme(db, {**current, **preset})
         return redirect("/admin/design", f"Farbvorlage „{action[7:]}“ übernommen.", request)
-    values = {k: str(form.get(k, "")) for k in [*theme.COLORS, *theme.FONT_DEFAULTS]}
+    values = {k: str(form.get(k, "")) for k in [*theme.COLORS, *theme.FONT_DEFAULTS, *theme.TEXTS, "hero_size"]}
     for key in theme.FONT_DEFAULTS:  # eigene Google-Font statt Auswahl
         custom = str(form.get(f"{key}_custom", "")).strip()
         if values[key] == "custom":

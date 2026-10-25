@@ -106,8 +106,9 @@ def quote_request_pdf(req_id: int, token: str, db: Session = Depends(get_db)):
 
 
 def pdf_bytes(req: QuoteRequest, db: Session) -> bytes:
-    return pdf.build_request_pdf(req, get_settings(db)["company_info"], theme.get_theme(db)["accent"],
-                                 branding.pdf_image_path(branding.get_logo(db)))
+    design = theme.get_theme(db)
+    return pdf.build_request_pdf(req, get_settings(db)["company_info"], design["accent"],
+                                 branding.pdf_image_path(branding.get_logo(db)), design["tagline"])
 
 
 def _pdf_response(req: QuoteRequest, db: Session) -> Response:

@@ -125,7 +125,8 @@ def _logo(path, max_w=70 * mm, max_h=14 * mm):
     return img
 
 
-def build_request_pdf(req: QuoteRequest, company_info: str, accent: str = "#e4002b", logo_path=None) -> bytes:
+def build_request_pdf(req: QuoteRequest, company_info: str, accent: str = "#e4002b", logo_path=None,
+                      tagline: str = "sound so(u)lutions — Wien") -> bytes:
     """accent: Akzentfarbe aus Admin → Design (Linie oben, Logo-Akzent); logo_path: Logo-Bild (PNG/JPG/WebP)."""
     buf = BytesIO()
 
@@ -149,7 +150,7 @@ def build_request_pdf(req: QuoteRequest, company_info: str, accent: str = "#e400
 
     logo = _logo(logo_path) if logo_path else None
     story.append(logo or Paragraph(f"on<font color='{accent}'>air</font>craft", BRAND))
-    story.append(_p("sound so(u)lutions — Wien", SMALL))
+    story.append(_p(tagline, SMALL))
     story.append(Spacer(1, 10 * mm))
     story.append(_p(f"Kostenaufstellung zur Anfrage Nr. {req.id}", H1))
     story.append(_p(f"vom {req.created_at.strftime('%d.%m.%Y')} · unverbindlich", SMALL))

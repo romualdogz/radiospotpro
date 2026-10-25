@@ -75,3 +75,34 @@ def test_pdf_uses_accent(db):
     req = SimpleNamespace(id=1, created_at=datetime(2026, 10, 24), customer_name="E", company="", street="", zip_code="",
                           city="", email="e@example.com", phone="", message="", brief={}, configuration={}, quote={})
     assert build_request_pdf(req, "x", "#003366").startswith(b"%PDF")
+
+
+def test_hero_texts_and_size(client, db):
+    import re
+    from app import theme
+    t = re.search(r'name="csrf" value="([^"]+)"', client.get("/admin/login").text).group(1)
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": t})
+    page = client.get("/admin/design").text
+    assert 'name="hero_title"' in page and 'name="hero_size"' in page
+    assert "Ihr Radiospot, angehört, bevor er läuft." in client.get("/").text
+
+    token = re.search(r'name="csrf" value="([^"]+)"', page).group(1)
+    form = {**theme.get_theme(db), "csrf": token, "action": "save",
+            "hero_title": "AD-BOOST: Dein Radiospot\nin Minuten", "tagline": "Radio Energy Österreich", "hero_size": "130"}
+    r = client.post("/admin/design", data=form)
+    assert "Design gespeichert" in r.text
+    home = client.get("/").text
+    assert "<h1>AD-BOOST: Dein Radiospot in Minuten</h1>" in home and "Radio Energy Österreich" in home
+    assert "Radio Energy Österreich" in client.get("/agb").text
+    assert "* 1.3)" in client.get("/theme.css").text
+
+    r = client.post("/admin/design", data={**form, "hero_title": "x" * 121})
+    assert "höchstens 120 Zeichen" in r.text
+    client.post("/admin/design", data={**form, "hero_title": "", "hero_size": "999"})
+    d = theme.get_theme(db)
+    assert d["hero_title"] == "Ihr Radiospot, angehört, bevor er läuft." and d["hero_size"] == "170"
+
+    client.post("/admin/design", data={"csrf": token, "action": "preset:Dunkel"})  # Vorlage lässt Texte stehen
+    assert theme.get_theme(db)["tagline"] == "Radio Energy Österreich"
+    client.post("/admin/design", data={"csrf": token, "action": "reset"})
+    assert theme.get_theme(db)["hero_size"] == "100"
