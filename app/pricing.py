@@ -242,8 +242,8 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         production=production_out,
         package=QuotePackage(name=package.name, description=package.description, spots=package.spots,
                              station=package_station.name if package_station else "",
-                             coverage=_coverage_names(db, package_station.coverage_ids if package_station
-                                                      else package.coverage_ids),
+                             coverage=_coverage_names(db, package.coverage_ids
+                                                      or (package_station.coverage_ids if package_station else [])),
                              includes_studio=package.includes_studio, price_cent=package.price_cent) if package else None,
         lines=out_lines,
         addons=[QuoteAddOn(name=a.name, price_cent=a.price_cent) for a in addons.values()],

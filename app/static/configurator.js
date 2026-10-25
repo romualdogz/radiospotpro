@@ -515,7 +515,9 @@
     };
     const pkgStation = packageStation(pkg);
     if (pkg && pkgStation) {
-      (pkgStation.coverage_ids || []).forEach((id) => add(id, pkgStation.map_color, pkgStation.name));
+      // Sendegebiete des Pakets haben Vorrang, sonst die des gewählten Senders – immer in der Senderfarbe
+      const ids = (pkg.coverage_ids || []).length ? pkg.coverage_ids : pkgStation.coverage_ids || [];
+      ids.forEach((id) => add(id, pkgStation.map_color, pkgStation.name));
     } else if (pkg) {
       (pkg.coverage_ids || []).forEach((id) => add(id, "", null));
     } else {

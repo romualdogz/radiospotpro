@@ -382,7 +382,8 @@ ENTITIES: dict[str, Entity] = {
               help="Der Kunde wählt beim Paket einen dieser Sender (Karte und PDF zeigen dann diesen Sender). "
                    "Nichts angehakt = Paket mit festem Sendeumfang, z. B. eine Kombi aus mehreren Sendern."),
             F("coverage_ids", "Sendegebiete", "multi", options=_coverage_options, in_list=False,
-              help="Für Pakete ohne Senderwahl: werden im Konfigurator auf der Österreich-Karte angezeigt"),
+              help="Werden im Konfigurator auf der Österreich-Karte angezeigt (in der Farbe des gewählten Senders). "
+                   "Leer lassen = Sendegebiete des gewählten Senders."),
             F("airtime_cent", "Davon Radio-Sendezeit (€) – Basis der Werbeabgabe", "money", in_list=False,
               help="0 = Werbeabgabe auf den gesamten Paketpreis. Bei Paketen mit Studiospot hier nur den Sendezeit-Anteil eintragen"),
             F("sort_order", "Sortierung", "int"),
@@ -565,6 +566,22 @@ def logout(request: Request, csrf: str = Form("")):
 
 # --------------------------------------------------------------------------- Dashboard & Einstellungen
 
+def _without_coverage(db: Session) -> list[tuple[str, str]]:
+    """Aktive Radiosender und Pakete, für die die Reichweiten-Karte nichts anzeigen kann."""
+    if not db.query(CoverageArea).count():
+        return []
+    stations = db.query(Station).filter(Station.active.is_(True)).order_by(Station.sort_order, Station.id).all()
+    with_cov = {s.id for s in stations if s.coverage_ids}
+    out = [(f"Sender „{s.name}“", f"/admin/stations/{s.id}") for s in stations
+           if s.kind == "radio" and not s.coverage_ids]
+    for p in db.query(Package).filter(Package.active.is_(True)).order_by(Package.sort_order, Package.id):
+        if p.coverage_ids:
+            continue
+        if not p.station_ids or not any(i in with_cov for i in p.station_ids):
+            out.append((f"Paket „{p.name}“", f"/admin/packages/{p.id}"))
+    return out
+
+
 @router.get("", response_class=HTMLResponse)
 def dashboard(request: Request, user=Depends(admin_page), db: Session = Depends(get_db)):
     if user.role != "admin":
@@ -579,6 +596,7 @@ def dashboard(request: Request, user=Depends(admin_page), db: Session = Depends(
                   mail_enabled=mailer.is_configured(), mail_from=mailer.config().sender,
                   voices_without_id=[v for v in db.query(Voice).filter(Voice.active.is_(True))
                                      .order_by(Voice.sort_order, Voice.id) if not v.has_tts],
+                  without_coverage=_without_coverage(db),
                   flash=pop_flash(request))
 
 

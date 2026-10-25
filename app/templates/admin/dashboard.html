@@ -8,6 +8,15 @@
   {% endfor %}
   <a class="tile highlight" href="/admin/requests"><strong>{{ open_requests }}</strong><span>neue Anfragen</span></a>
 </div>
+{% if without_coverage %}
+<section class="card">
+  <h2>Reichweiten-Karte</h2>
+  <p class="error">Ohne Sendegebiet – die Karte bleibt im Konfigurator dunkel:
+    {% for label, url in without_coverage %}<a href="{{ url }}">{{ label }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
+  <p class="help">Beim Sender oder Paket unter „Sendegebiete“ die passenden Gebiete anhaken
+    (Gebiete selbst unter <a href="/admin/coverage">Schaltung → Sendegebiete</a>).</p>
+</section>
+{% endif %}
 {% if legal_placeholders %}
 <section class="card">
   <h2>Rechtstexte</h2>

@@ -173,3 +173,29 @@ def test_admin_package_station_field(client, db, cat):
         "station_ids": [str(cat["station"].id)], "ad_tax_applies": "on", "sort_order": "9", "active": "on"})
     assert "gespeichert" in r.text
     assert db.query(Package).filter_by(name="Wahl").one().station_ids == [cat["station"].id]
+
+
+def test_package_coverage_wins_and_dashboard_hint(client, db, cat):
+    from app.models import CoverageArea
+    dab = CoverageArea(name="DAB+ National", technology="dab", states=["wien"])
+    db.add(dab)
+    db.flush()
+    nostalgie = Station(name="Radio Nostalgie", price_per_second_cent=700, map_color="#0057b8")  # ohne Gebiete
+    db.add(nostalgie)
+    db.flush()
+    cat["basic"].station_ids = [nostalgie.id]
+    db.commit()
+    data = pq(cat, "basic").model_copy(update={"package_station_id": nostalgie.id})
+    assert calculate_quote(db, data).package.coverage == ""
+
+    def csrf(path):
+        return re.search(r'name="csrf" value="([^"]+)"', client.get(path).text).group(1)
+    token = csrf("/admin/login")
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
+    page = client.get("/admin").text
+    assert "Ohne Sendegebiet" in page and "Sender „Radio Nostalgie“" in page and "Paket „Basic“" in page
+
+    cat["basic"].coverage_ids = [dab.id]  # Gebiet am Paket → gilt auch mit Senderwahl
+    db.commit()
+    assert calculate_quote(db, data).package.coverage == "DAB+ National"
+    assert "Paket „Basic“" not in client.get("/admin").text
