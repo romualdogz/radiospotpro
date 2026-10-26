@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from starlette.concurrency import run_in_threadpool
 
-from .. import audio, branding, fonts, mailer, music_mix, theme, watermark
+from .. import audio, branding, fonts, mailer, music_mix, theme, watermark, wheel
 from ..config import BASE_DIR
 from ..database import get_db
 from ..models import (
@@ -496,7 +496,8 @@ class _Forbidden(Exception):
 
 ROLES = {"admin": "Administrator", "sales": "Verkaufsleitung"}
 # Bereiche, die die Verkaufsleitung sehen und bearbeiten darf – alles andere nur Admins
-SALES_SECTIONS = {"stations", "coverage", "time-slots", "packages", "addons", "discounts", "countries", "prices", "account"}
+SALES_SECTIONS = {"stations", "coverage", "time-slots", "packages", "addons", "discounts", "countries", "prices",
+                  "wheel", "account"}
 
 
 def can(user, section: str) -> bool:
@@ -840,6 +841,35 @@ def watermark_audio(user=Depends(admin_only), db: Session = Depends(get_db)):
 def prices_form(request: Request, user=Depends(section_page("prices")), db: Session = Depends(get_db)):
     return render(request, "admin/prices.html", user=user, cfg=get_settings(db),
                   error=None, flash=pop_flash(request), has_packages=_active_packages(db))
+
+
+@router.get("/wheel", response_class=HTMLResponse)
+def wheel_form(request: Request, user=Depends(section_page("wheel")), db: Session = Depends(get_db)):
+    return _render_wheel(request, user, db)
+
+
+def _render_wheel(request: Request, user, db: Session, error=None, cfg=None):
+    cfg = cfg or wheel.get_config(db)
+    rows = cfg.segments + [{"label": "", "percent": 0, "weight": 0}] * (wheel.MAX_SEGMENTS - len(cfg.segments))
+    return render(request, "admin/wheel.html", user=user, wheel=cfg, rows=rows, error=error,
+                  flash=None if error else pop_flash(request), max_percent=wheel.MAX_PERCENT)
+
+
+@router.post("/wheel")
+async def wheel_save(request: Request, user=Depends(section_page("wheel")), db: Session = Depends(get_db)):
+    form = await request.form()
+    check_csrf(request, form.get("csrf"))
+    segments = [{"label": l, "percent": p, "weight": w} for l, p, w in
+                zip(form.getlist("label"), form.getlist("percent"), form.getlist("weight"))]
+    try:
+        hours = int(str(form.get("valid_hours") or "72"))
+        wheel.save_config(db, form.get("enabled") == "on", form.get("stackable") == "on", hours, segments)
+    except ValueError as e:
+        msg = str(e) if "invalid literal" not in str(e) else "Gültigkeit: bitte eine ganze Zahl (Stunden) angeben"
+        draft = wheel.WheelConfig(enabled=form.get("enabled") == "on", stackable=form.get("stackable") == "on",
+                                  valid_hours=72, segments=[s for s in segments if str(s["label"]).strip()][:wheel.MAX_SEGMENTS])
+        return _render_wheel(request, user, db, error=msg, cfg=draft)
+    return redirect("/admin/wheel", "Glücksrad gespeichert.", request)
 
 
 def _active_packages(db: Session) -> int:

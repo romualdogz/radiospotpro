@@ -103,6 +103,25 @@ class CountryPublic(ORMModel):
     reverse_charge: bool
 
 
+class WheelSegmentPublic(BaseModel):
+    label: str
+    percent: int
+
+
+class WheelPublic(BaseModel):
+    segments: list[WheelSegmentPublic]
+    valid_hours: int
+
+
+class WheelSpinOut(BaseModel):
+    index: int = Field(description="Feld, auf dem das Rad stehen bleibt (0 = erstes Feld)")
+    label: str
+    percent: int
+    token: str | None = Field(default=None, description="Gewinn-Token für QuoteIn.wheel_token (nur bei Gewinn)")
+    valid_hours: int
+    repeat: bool = Field(description="True = in den letzten 24 h schon gedreht, gleiches Ergebnis")
+
+
 class Catalog(BaseModel):
     currency: str
     countries: list[CountryPublic]
@@ -124,6 +143,7 @@ class Catalog(BaseModel):
     packages: list[PackagePublic] = Field(default_factory=list)
     individual_booking: bool = Field(default=True, description="„Individuell“ (Buchung nach Sekunden) verfügbar")
     earliest_start: date | None = Field(default=None, description="Frühester Kampagnenbeginn (heute + Vorlaufzeit)")
+    wheel: WheelPublic | None = Field(default=None, description="Rabatt-Glücksrad, falls aktiv")
     coverage_areas: list[CoverageAreaPublic] = Field(default_factory=list)
 
 
@@ -167,6 +187,7 @@ class QuoteIn(BaseModel):
     items: list[QuoteItemIn] = Field(default_factory=list, max_length=50, description="Schaltung (optional)")
     addon_ids: list[int] = Field(default_factory=list, max_length=50)
     promo_code: str | None = Field(default=None, max_length=60)
+    wheel_token: str | None = Field(default=None, max_length=200, description="Gewinn-Token vom Glücksrad")
     country: str = Field(default="AT", pattern=r"^[A-Z]{2}$", description="Rechnungsland (ISO-Code) – bestimmt die MwSt.")
     vat_id: str | None = Field(default=None, max_length=20,
                                description="UID-Nummer; bei Ländern mit Reverse Charge → Nettorechnung")
@@ -265,6 +286,7 @@ class QuoteOut(BaseModel):
         description="null = kein Code, 'applied' = angewendet, 'invalid' = unbekannt/Bedingung nicht erfüllt, "
         "'superseded' = gültig, aber ein besserer Rabatt wurde gewählt"
     )
+    wheel_status: str | None = Field(default=None, description="Glücksrad-Gewinn: applied | superseded | invalid")
     meets_minimum_order: bool
     min_order_cent: int
 

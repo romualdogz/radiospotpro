@@ -11,6 +11,17 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Rabatt-Glücksrad** (*Preise → Glücksrad*, auch für die Verkaufsleitung; standardmäßig aus): Im letzten
+  Schritt dreht der Kunde einmal am Rad und gewinnt ggf. einen Rabatt auf den Gesamtbetrag (auch bei
+  Komplettpaketen). Bis zu 12 Felder mit Beschriftung, Rabatt (0–50 %, 0 = Niete) und Gewichtung; der Admin zeigt
+  die Chance je Feld, die Gewinnchance und den durchschnittlichen Rabatt pro Dreh, dazu eine Vorschau mit
+  „Probedrehen“. Einstellbar: Gültigkeit des Gewinns (Standard 72 Stunden) und ob er mit anderen Rabatten
+  kombinierbar ist (Standard: nein – der bessere Rabatt gilt).
+- **Fälschungssicher:** Wo das Rad stehen bleibt, entscheidet der Server; der Gewinn ist ein signiertes Token, das bei
+  der Preisberechnung geprüft wird. Neu laden hilft nicht – dieselbe IP-Adresse bekommt 24 Stunden lang dasselbe
+  Ergebnis (die IP liegt dafür nur im Arbeitsspeicher, nicht in der Datenbank). Wird das Rad abgeschaltet oder das
+  gewonnene Feld entfernt, verfällt der Gewinn. Der Rabatt erscheint als „Glücksrad-Rabatt … %“ in Preis,
+  Anfrage und PDF. Im Spielmodus gibt es Konfetti, und der geheime Erfolg „Sparfuchs“ wird freigeschaltet.
 - **Spielmodus mit mehr Action:** Erfolge als große Abzeichen (60 px, am Handy 50 px) mit Namen darunter und
   farbigem Ring; gesperrte grau und gestrichelt, sie wackeln beim Drüberfahren. Beim Freischalten springt das
   Abzeichen auf, ein Funkenkranz sprüht, „+XP“ steigt auf und es leuchtet ein paar Sekunden. Dazu ein dickerer

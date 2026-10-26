@@ -26,7 +26,7 @@
     studio: false, items: [], bookingMode: "individual", packageId: null,
     packageStations: {},  // Paket-ID → gewählter Sender (bei Paketen mit Senderwahl)
     startDate: "", endDate: "",  // Kampagnenzeitraum (JJJJ-MM-TT)
-    promo: "", promoOpen: false, country: "AT", vatId: "",
+    promo: "", promoOpen: false, wheel: null, country: "AT", vatId: "",
     name: "", company: null, street: "", zip: "", city: "", email: "", phone: "", nachricht: "",
     acceptTerms: false, acceptPrivacy: false,
     quote: null, sent: null, demo: null,
@@ -200,6 +200,7 @@
       items: pkg ? [] : state.items.map((i) => ({ ...i, spot_length_id: state.lengthId })),
       addon_ids: [...state.addonIds],
       promo_code: state.promo.trim() || null,
+      wheel_token: state.wheel?.token || null,
       country: state.country,
       vat_id: state.vatId.trim() || null,
     };
@@ -230,6 +231,8 @@
     const promoMsg = { applied: "Gutscheincode angewendet ✔",
       invalid: "Gutscheincode ungültig oder Bedingungen nicht erfüllt",
       superseded: "Gutscheincode gültig – ein besserer Rabatt wurde automatisch gewählt" }[q.promo_code_status];
+    const wheelMsg = { superseded: "Glücksrad-Gewinn gültig – ein anderer Rabatt ist für Sie günstiger und wurde angewendet",
+      invalid: "Der Glücksrad-Gewinn ist abgelaufen" }[q.wheel_status];
     return h("div", {},
       h("table", { class: "price-table" },
         q.package ? row(`Komplettpaket „${q.package.name}“`, money(q.package.price_cent), "",
@@ -250,6 +253,7 @@
       h("p", { class: "price" }, money(q.gross_cent), h("small", {},
         q.reverse_charge ? "Gesamt netto (Reverse Charge) · unverbindlich" : "Gesamt inkl. Steuern · unverbindlich")),
       promoMsg ? h("p", { class: q.promo_code_status === "invalid" ? "error-text" : "muted" }, promoMsg) : null,
+      wheelMsg ? h("p", { class: "muted" }, wheelMsg) : null,
       !q.meets_minimum_order ? h("p", { class: "error-text" }, `Mindestbestellwert: ${money(q.min_order_cent)} netto`) : null,
     );
   }
@@ -901,6 +905,50 @@
         " gelesen und stimme der Verarbeitung meiner Daten zur Bearbeitung der Anfrage zu. *"));
   }
 
+  // Rabatt-Glücksrad: einmal drehen, das Ergebnis bestimmt der Server (signiertes Gewinn-Token)
+  function wheelBlock() {
+    if (!C.wheel || !window.DiscountWheel) return null;
+    const best = Math.max(...C.wheel.segments.map((s) => s.percent));
+    const box = h("div", { class: "wheel-box" });
+    const message = (r) => {
+      const won = r.percent > 0;
+      return h("div", { class: "wheel-result" + (won ? " won" : "") },
+        h("span", { class: "wheel-result-icon" }, won ? "🎉" : "🍀"),
+        h("div", {},
+          h("b", {}, won ? `Gewonnen: ${r.percent} % Rabatt!` : "Diesmal leider kein Rabatt"),
+          h("small", {}, won
+            ? `${r.repeat ? "Sie haben heute schon gedreht. " : ""}Der Rabatt wird automatisch abgezogen – gültig ${r.valid_hours} Stunden.`
+            : `${r.repeat ? "Sie haben heute schon gedreht. " : ""}Trotzdem viel Erfolg mit Ihrem Spot!`)));
+    };
+    if (state.wheel) {
+      box.append(message(state.wheel));
+      return box;
+    }
+    const host = h("div", { class: "wheel-host" });
+    const status = h("span", { class: "gen-status" });
+    const btn = h("button", { type: "button", class: "btn wheel-btn", onclick: async () => {
+      btn.disabled = true; status.textContent = "";
+      try {
+        const r = await api("/api/wheel/spin", {});
+        btn.textContent = "Das Rad dreht …";
+        await wheel.spinTo(r.index);
+        state.wheel = r;
+        box.querySelector(".wheel-actions").replaceChildren(message(r));
+        document.dispatchEvent(new CustomEvent("radiospot:wheel", { detail: { percent: r.percent } }));
+        if (r.token) scheduleQuote();
+      } catch (e) {
+        status.textContent = e.message; btn.disabled = false;
+      }
+    } }, "Jetzt drehen!");
+    box.append(
+      h("div", { class: "wheel-intro" }, h("b", {}, "🎡 Glücksrad"),
+        h("span", {}, ` Einmal drehen und bis zu ${best} % Rabatt auf Ihre Buchung gewinnen.`)),
+      host,
+      h("div", { class: "wheel-actions" }, btn, status));
+    const wheel = window.DiscountWheel.render(host, C.wheel.segments);
+    return box;
+  }
+
   // Gutscheincode: zugeklappt hinter einem Link, damit Kunden ohne Code nicht danach suchen.
   // Offen, sobald ein Code eingetragen ist (z. B. beim Zurückblättern).
   function promoBlock(promoInput) {
@@ -957,6 +1005,7 @@
           ? h("div", {}, kv("Sendegebiet", [...new Set(selectedCoverage().areas.map((a) => a.name))].join(" · "))) : null,
         h("div", { "data-price": "", style: "margin-top:12px" }, priceBlock()),
       ),
+      wheelBlock(),
       promoBlock(promoInput),
       h("div", { style: "height:20px" }),
       field("Spot-Text (final)", input("script", { multiline: true, class: "script-box" })),

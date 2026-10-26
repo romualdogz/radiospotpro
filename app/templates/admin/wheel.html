@@ -1,0 +1,83 @@
+{% extends "admin/base.html" %}
+{% block title %}Glücksrad{% endblock %}
+{% block content %}
+<h1>Rabatt-Glücksrad</h1>
+<div class="design-layout">
+  <form method="post" action="/admin/wheel" class="card form" id="wheelForm">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label class="check"><input type="checkbox" name="enabled" {{ 'checked' if wheel.enabled }}>
+      Glücksrad im Konfigurator anzeigen</label>
+    <small class="help">Kunden drehen im letzten Schritt einmal am Rad. Wo es stehen bleibt, entscheidet der Server –
+      Neuladen bringt 24 Stunden lang dasselbe Ergebnis.</small>
+
+    <h2>Felder des Rads</h2>
+    <p class="help">{{ 2 }} bis {{ rows | length }} Felder. Rabatt 0 = Niete. Die <b>Gewichtung</b> bestimmt, wie oft ein
+      Feld kommt: ein Feld mit 20 kommt doppelt so oft wie eines mit 10. Leere Zeilen werden ignoriert.
+      Kurze Beschriftungen (bis ca. 12 Zeichen) sind auf dem Rad am besten lesbar.</p>
+    <table class="wheel-table">
+      <thead><tr><th>Beschriftung</th><th>Rabatt %</th><th>Gewichtung</th><th class="num">Chance</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr data-row>
+          <td><input name="label" value="{{ r.label }}" maxlength="20" placeholder="{{ 'z. B. 5 %' if loop.first else '' }}"></td>
+          <td><input name="percent" value="{{ r.percent if r.label else '' }}" inputmode="numeric" size="3"></td>
+          <td><input name="weight" value="{{ r.weight if r.label else '' }}" inputmode="numeric" size="4"></td>
+          <td class="num" data-chance>–</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="wheel-stats" id="wheelStats"></p>
+
+    <h2>Gewinn</h2>
+    <label>Gewinn gültig (Stunden)
+      <input name="valid_hours" value="{{ wheel.valid_hours }}" type="number" min="1" max="720"></label>
+    <small class="help">So lange gilt der gewonnene Rabatt, wenn der Kunde die Anfrage erst später absendet.</small>
+    <label class="check"><input type="checkbox" name="stackable" {{ 'checked' if wheel.stackable }}>
+      Mit anderen Rabatten kombinierbar</label>
+    <small class="help">Aus (empfohlen): Der Glücksrad-Rabatt gilt nur, wenn er allein besser ist als die anderen
+      Rabatte zusammen. Er gilt immer auf den Gesamtbetrag (auch bei Komplettpaketen), höchstens {{ max_percent }} %.</small>
+
+    <div class="buttons"><button class="primary">Speichern</button></div>
+  </form>
+
+  <div class="card preview">
+    <div class="head"><h2>Vorschau</h2><button type="button" id="wheelTest">Probedrehen</button></div>
+    <div id="wheelPreview"></div>
+    <p class="help" id="wheelTestResult">Probedrehen hier zählt nicht – es zeigt nur, wie das Rad aussieht und sich dreht.</p>
+  </div>
+</div>
+<script src="/static/wheel.js"></script>
+<script>
+  const rows = [...document.querySelectorAll("[data-row]")];
+  const read = () => rows.map((r) => ({
+    row: r, label: r.querySelector("[name=label]").value.trim(),
+    percent: parseInt(r.querySelector("[name=percent]").value, 10) || 0,
+    weight: parseInt(r.querySelector("[name=weight]").value, 10) || 0,
+  })).filter((s) => s.label);
+  let wheel = null, segs = [];
+  function update() {
+    segs = read();
+    const total = segs.reduce((a, s) => a + s.weight, 0);
+    rows.forEach((r) => { r.querySelector("[data-chance]").textContent = "–"; });
+    segs.forEach((s) => { s.row.querySelector("[data-chance]").textContent = total ? (100 * s.weight / total).toFixed(1).replace(".", ",") + " %" : "–"; });
+    const avg = total ? segs.reduce((a, s) => a + s.weight * s.percent, 0) / total : 0;
+    const win = total ? 100 * segs.filter((s) => s.percent > 0).reduce((a, s) => a + s.weight, 0) / total : 0;
+    document.getElementById("wheelStats").textContent = segs.length < 2 ? "Mindestens zwei Felder ausfüllen."
+      : `Gewinnchance ${win.toFixed(0)} % · durchschnittlich ${avg.toFixed(1).replace(".", ",")} % Rabatt pro Dreh`;
+    if (segs.length >= 2) wheel = DiscountWheel.render(document.getElementById("wheelPreview"), segs);
+  }
+  rows.forEach((r) => r.addEventListener("input", update));
+  document.getElementById("wheelTest").addEventListener("click", async () => {
+    if (!wheel) return;
+    const total = segs.reduce((a, s) => a + s.weight, 0);
+    let pick = Math.random() * total, index = 0;
+    for (; index < segs.length - 1; index++) { pick -= segs[index].weight; if (pick < 0) break; }
+    const out = document.getElementById("wheelTestResult");
+    out.textContent = "Dreht …";
+    await wheel.spinTo(index);
+    out.textContent = `Probedrehen: „${segs[index].label}“` + (segs[index].percent ? ` – ${segs[index].percent} % Rabatt` : " – Niete");
+  });
+  update();
+</script>
+{% endblock %}

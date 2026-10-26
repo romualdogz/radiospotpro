@@ -38,6 +38,7 @@ from sqlalchemy.orm import Session
 from .models import AddOn, Country, CoverageArea, Package, Discount, DiscountKind, DiscountScope, MusicStyle, SpotLength, Station, TimeSlot, Voice
 from .schemas import AppliedDiscount, QuoteAddOn, QuoteIn, QuoteLine, QuoteOut, QuotePackage, QuoteProduction
 from .settings_store import get_settings
+from . import wheel
 
 
 class QuoteError(ValueError):
@@ -221,7 +222,10 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
     stackable: list[tuple[Discount, int]] = []
     exclusive: list[tuple[Discount, int]] = []
     promo_matched = False
-    candidates = db.query(Discount).filter(Discount.active.is_(True)).order_by(Discount.sort_order, Discount.id)
+    candidates = list(db.query(Discount).filter(Discount.active.is_(True)).order_by(Discount.sort_order, Discount.id))
+    wheel_discount = wheel.discount_from_token(db, data.wheel_token)
+    if wheel_discount is not None:
+        candidates.insert(0, wheel_discount)
     for d in candidates:
         base = _discount_base(d, lines, airtime, production_total, addon_total, package_total)
         if not _is_eligible(d, today=today, total_spots=total_spots, base=base, promo_code=promo):
@@ -263,6 +267,11 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
     if promo and promo_matched and not promo_applied:
         # Code ist gültig, aber ein besserer exklusiver/kombinierter Rabatt wurde gewählt.
         promo_status = "superseded"
+
+    wheel_status = None
+    if data.wheel_token:
+        wheel_status = ("invalid" if wheel_discount is None
+                        else "applied" if any(d is wheel_discount for d, _ in chosen) else "superseded")
 
     discount_total = subtotal - remaining
     net = remaining
@@ -309,6 +318,7 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
         vat_cent=vat,
         gross_cent=net + ad_tax + vat,
         promo_code_status=promo_status,
+        wheel_status=wheel_status,
         meets_minimum_order=net >= cfg["min_order_cent"],
         min_order_cent=cfg["min_order_cent"],
     )

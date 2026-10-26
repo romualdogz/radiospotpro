@@ -167,3 +167,10 @@ ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--border); }
 ul.plain li:last-child { border-bottom: 0; }
 .thumb.t-game-on .t-panel { background-image: linear-gradient(90deg, #ffd23f 65%, transparent 65%);
   background-size: 100% 4px; background-repeat: no-repeat; }
+
+/* Glücksrad */
+.wheel-table input { width: 100%; }
+.wheel-table td { padding: 4px 6px; }
+.wheel-table td:nth-child(2), .wheel-table td:nth-child(3) { width: 90px; }
+.wheel-table .num { text-align: right; white-space: nowrap; width: 70px; color: var(--muted); }
+.wheel-stats { font-weight: 600; margin-top: 8px; }

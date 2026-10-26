@@ -164,6 +164,8 @@
     setTimeout(() => plus.remove(), 1400);
   }
 
+  document.addEventListener("radiospot:wheel", (e) => { if (e.detail.percent > 0) confetti(160); });
+
   document.addEventListener("radiospot:update", (e) => {
     relabel();
     const s = e.detail;

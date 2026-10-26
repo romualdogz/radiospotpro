@@ -31,7 +31,7 @@ Die Fußzeile (Adresse, UID …) stellst du unter *Einstellungen → Firmenangab
 | Rolle | Darf |
 |---|---|
 | **Administrator** | alles, inkl. Anfragen, Design, Rechtstexte, Einstellungen und Benutzer |
-| **Verkaufsleitung** | nur Sender & Streams (Sekundenpreise), Zeitschienen, Komplettpakete, Zusatzleistungen, Rabatte, Länder & MwSt. und *Preis-Einstellungen* (Studiospot, Werbeabgabe, Mindestbestellwert) – alles andere ist gesperrt, auch per direktem Link und über die JSON-API |
+| **Verkaufsleitung** | nur Sender & Streams (Sekundenpreise), Zeitschienen, Komplettpakete, Zusatzleistungen, Rabatte, Länder & MwSt., *Preis-Einstellungen* (Studiospot, Werbeabgabe, Mindestbestellwert) und das Glücksrad – alles andere ist gesperrt, auch per direktem Link und über die JSON-API |
 
 Jeder Benutzer kann unter *Mein Konto* sein eigenes Passwort ändern. Der letzte Administrator kann nicht
 gelöscht oder herabgestuft werden.
@@ -94,6 +94,7 @@ Tests: `pytest`
 | **Komplettpakete** | Pakete zum Pauschalpreis (netto) mit Artikelnummer, Schaltungen und Laufzeit in Tagen (Kunde wählt nur den Beginn), optionaler Senderwahl (*Wählbare Sender*), Leistungsliste, Badge, Anzahl Ausstrahlungen, optional „Studiospot inklusive“ und max. Spotlänge; Sendezeit-Anteil als Basis der Werbeabgabe. Drei Beispielpakete werden einmalig **inaktiv** angelegt – Preise anpassen und auf „aktiv“ stellen |
 | **Zusatzleistungen** | optionale Extras mit Fixpreis, z. B. Express-Produktion; „Nur mit Studiospot“ blendet sie nur bei gewähltem Studiospot ein |
 | **Rabatte** | Prozent oder Fixbetrag, mit Bedingungen (s. u.) |
+| **Glücksrad** | Rabatt-Glücksrad im letzten Schritt: Felder, Rabatte, Gewichtung, Gültigkeit; Ergebnis bestimmt der Server |
 | **Länder** | Rechnungsländer (Dropdown im Formular) mit MwSt.-Satz und Option „mit UID Nettorechnung“ |
 | **Rechtstexte** | AGB und Datenschutzerklärung – Pflicht-Häkchen im Checkout, per Klick einblendbar, eigene Seiten `/agb` und `/datenschutz`; Zustimmung (Zeitpunkt + Textversion) wird je Anfrage gespeichert |
 | **Design** | Farben (Seite, Formular, Akzente) und Schriften (Google Fonts, lokal vom eigenen Server ausgeliefert, oder Systemschrift) des Konfigurators, Farbvorlagen, Layout-Varianten (Klassisch, ENERGY Neon, Studio, Kompakt) und Anordnung der Elemente mit Live-Vorschau für Desktop/Handy; Text und Größe der Überschrift, Untertitel oben rechts |

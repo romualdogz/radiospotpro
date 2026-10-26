@@ -569,3 +569,21 @@ body.lay-skin-neon {
   text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .link-button:hover { color: var(--accent-2); }
 .promo .promo-row { animation: demo-text .25s ease-out; }
+
+/* Rabatt-Glücksrad (Schritt „Anfrage“) */
+.wheel-box { margin: 4px 0 18px; padding: 18px; border-radius: 14px; border: 2px dashed var(--accent);
+  background: radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 70%), var(--bg-field); }
+.wheel-intro { text-align: center; margin-bottom: 10px; font-size: 0.95rem; }
+.wheel-intro b { font-family: var(--head); font-size: 1.05rem; }
+.wheel-host { max-width: 300px; margin: 0 auto; }
+.wheel-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; }
+.wheel-btn { font-size: 1.05rem; padding: 13px 30px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent); }
+.wheel-btn:not(:disabled) { animation: game-pulse 2.2s ease-in-out infinite; }
+.wheel-result { display: flex; align-items: center; gap: 12px; text-align: left; animation: game-pop .6s cubic-bezier(.2,1.6,.4,1); }
+.wheel-result-icon { font-size: 2.2rem; line-height: 1; }
+.wheel-result b { display: block; font-family: var(--head); font-size: 1.1rem; }
+.wheel-result.won b { color: var(--accent); }
+.wheel-result small { color: var(--text-muted); }
+.wheel-box:has(> .wheel-result) { border-style: solid; padding: 14px 18px; }
+@media (prefers-reduced-motion: reduce) { .wheel-btn, .wheel-result { animation: none !important; } }

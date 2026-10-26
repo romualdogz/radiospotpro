@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from .. import ai, audio, branding, music_mix, pdf, theme, watermark as wm_store
+from .. import ai, audio, branding, music_mix, pdf, theme, watermark as wm_store, wheel
 from ..database import get_db
 from ..models import (
     AddOn, Country, CoverageArea, LanguageStyle, Package, LegalText, MusicStyle, Occasion, QuoteRequest, SpotLength, Station, TimeSlot, Tonality, Voice,
@@ -18,6 +18,7 @@ from ..models import (
 from ..pricing import QuoteError, calculate_quote
 from ..schemas import (
     Catalog, DemoAudioIn, LegalTextOut, QuoteIn, QuoteOut, QuoteRequestCreated, QuoteRequestIn, ScriptOut, ScriptRequestIn,
+    WheelPublic, WheelSegmentPublic, WheelSpinOut,
 )
 from ..settings_store import get_settings
 
@@ -53,7 +54,24 @@ def catalog(db: Session = Depends(get_db)):
         individual_booking=individual_booking_available(db),
         earliest_start=date.today() + timedelta(days=cfg["booking_lead_days"]),
         coverage_areas=_active(db, CoverageArea),
+        wheel=_wheel_public(db),
     )
+
+
+def _wheel_public(db: Session) -> WheelPublic | None:
+    cfg = wheel.get_config(db)
+    if not cfg.enabled:
+        return None
+    return WheelPublic(segments=[WheelSegmentPublic(label=s["label"], percent=s["percent"]) for s in cfg.segments],
+                      valid_hours=cfg.valid_hours)
+
+
+@router.post("/wheel/spin", response_model=WheelSpinOut, summary="Glücksrad drehen (Ergebnis bestimmt der Server)")
+def wheel_spin(request: Request, db: Session = Depends(get_db)):
+    try:
+        return wheel.spin(db, request.client.host if request.client else "unknown")
+    except ValueError as e:
+        raise HTTPException(404, str(e)) from e
 
 
 def individual_booking_available(db: Session) -> bool:

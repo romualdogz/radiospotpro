@@ -15,7 +15,7 @@
     {% for group, items in nav_groups.items() %}
       <span class="nav-group">{{ group }}:
         {% for e in items %}<a href="/admin/{{ e.slug }}">{{ e.title }}</a>{% endfor %}
-        {% if group == "Preise" %}<a href="/admin/prices">Preis-Einstellungen</a>{% endif %}
+        {% if group == "Preise" %}<a href="/admin/prices">Preis-Einstellungen</a><a href="/admin/wheel">Glücksrad</a>{% endif %}
       </span>
     {% endfor %}
     {% if can('legal') %}<a href="/admin/legal">Rechtstexte</a>{% endif %}
