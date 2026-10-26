@@ -71,7 +71,8 @@ PRESETS["ENERGY Neon"] = {
 # am <body> gesetzt (z. B. lay-steps-side), die Regeln stehen am Ende von configurator.css.
 LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
     "skin": ("Stil", {"classic": "Klassisch – Karte mit Schatten", "neon": "Neon – Leuchtrahmen & Raster",
-                      "flat": "Flach – ohne Rahmen", "arcade": "Arcade – Retro-Computerspiel mit Pixelschrift"},
+                      "flat": "Flach – ohne Rahmen", "arcade": "Arcade – Retro-Computerspiel mit Pixelschrift",
+                      "esport": "E-Sport – Gaming-Look, Spieler-Seitenleiste mit Missionen"},
              "classic"),
     "width": ("Breite", {"narrow": "Schmal (880 px)", "wide": "Breit (1200 px)"}, "narrow"),
     "hero": ("Überschrift", {"left": "Groß, linksbündig", "center": "Groß, zentriert",
@@ -84,7 +85,7 @@ LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
     "game": ("Spielmodus", {"off": "Aus", "on": "An – Punkte, Level, Erfolge & Konfetti"}, "off"),
 }
 # Stile mit eigener Überschriften-Schrift (lokal unter app/static/fonts, siehe scripts/fetch_fonts.py)
-SKINS_WITH_FONT = {"arcade": "Press Start 2P"}
+SKINS_WITH_FONT = {"arcade": "Press Start 2P", "esport": "Oswald"}
 SKIN_FONTS = {"Press Start 2P": "400"}  # Schrift → verfügbare Schnitte
 LAYOUT_DEFAULTS = {f"layout_{k}": v[2] for k, v in LAYOUT.items()}
 
@@ -107,6 +108,11 @@ VARIANTS: dict[str, dict] = {
                "colors": "Arcade",
                "layout": {"skin": "arcade", "width": "narrow", "hero": "center", "steps": "dots",
                           "header": "split", "caps": "upper", "wave": "off", "game": "on"}},
+    "Energy Gaming": {"description": "E-Sport-Look in Energy-Rot: Spieler-Seitenleiste mit Level & Missionen, "
+                                     "schräge Kanten, Spielmodus an.",
+                      "colors": "Energy Gaming",
+                      "layout": {"skin": "esport", "width": "wide", "hero": "left", "steps": "dots",
+                                 "header": "split", "caps": "upper", "wave": "off", "game": "on"}},
     "Kompakt": {"description": "Wenig Kopfbereich, Punkte-Navigation – schnell beim Formular.", "colors": None,
                 "layout": {"skin": "classic", "width": "narrow", "hero": "compact", "steps": "dots",
                            "header": "center", "caps": "normal", "wave": "off"}},
@@ -117,6 +123,13 @@ PRESETS["Arcade"] = {
     "field_bg": "#211e52", "line": "#4a46a8", "text": "#f4f4ff", "text_muted": "#aaa7e6",
     "accent": "#ff2bd6", "accent_soft": "#3d1450", "accent_2": "#00e5ff", "button_text": "#ffffff",
     "success": "#39ff14", "danger": "#ff5c5c",
+}
+
+PRESETS["Energy Gaming"] = {
+    "page_bg": "#e2001a", "page_text": "#ffffff", "logo_accent": "#0d0d0d", "panel_bg": "#141416",
+    "field_bg": "#1f1f23", "line": "#36363d", "text": "#f5f5f7", "text_muted": "#a3a3ad",
+    "accent": "#e4002b", "accent_soft": "#3a0b12", "accent_2": "#ff4d5e", "button_text": "#ffffff",
+    "success": "#2ee66b", "danger": "#ff6b6b",
 }
 
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")

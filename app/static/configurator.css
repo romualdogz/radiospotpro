@@ -736,3 +736,140 @@ body.lay-skin-arcade::after {  /* Röhrenbildschirm: Zeilen + dunkle Ecken */
   .lay-skin-arcade .game-badge-label { font-size: 0.38rem; }
   .lay-skin-arcade .btn { font-size: 0.58rem; padding: 12px 14px; }
 }
+
+/* ======================================================================
+   Stil „E-Sport“ (Variante „Energy Gaming“) – Gaming-Look in Energy-Rot/Schwarz.
+   Andere Anordnung: links Spieler-Seitenleiste (Level, XP, Abzeichen, Missionen), rechts das Spielfeld.
+   ====================================================================== */
+body.lay-skin-esport {
+  --cut: 18px;
+  --head: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
+  background:
+    linear-gradient(112deg, transparent 0 58%, rgba(0,0,0,.20) 58% 66%, transparent 66% 69%, rgba(0,0,0,.12) 69% 71%, transparent 71%),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.07) 0 2px, transparent 2px 16px),
+    radial-gradient(ellipse at 15% 0%, rgba(255,255,255,.18), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+.lay-skin-esport .wordmark { font-family: var(--head); font-weight: 700; font-size: 1.3rem; letter-spacing: .02em; text-transform: uppercase; }
+.lay-skin-esport .tag { font-family: var(--head); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; }
+.lay-skin-esport .hero { padding: 40px 0 34px; position: relative; }
+.lay-skin-esport .hero::before { content: "SEASON 01 · RADIOSPOT"; display: inline-block; margin-bottom: 14px; padding: 5px 14px 5px 12px;
+  font: 600 .78rem var(--head); letter-spacing: .18em; color: #fff; background: #0d0d0d;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.lay-skin-esport .hero h1 { font-family: var(--head); font-weight: 700; text-transform: uppercase; letter-spacing: .01em;
+  font-size: clamp(2.3rem, 6vw, 4.2rem) !important; line-height: .98; max-width: 16ch; transform: skewX(-6deg); transform-origin: left;
+  text-shadow: 4px 4px 0 #0d0d0d; }
+.lay-skin-esport.lay-hero-center .hero h1 { transform-origin: center; }
+.lay-skin-esport .hero::after { content: "ON AIR"; position: absolute; right: 0; bottom: 18px; pointer-events: none;
+  font: 700 clamp(5rem, 13vw, 10rem)/1 var(--head); letter-spacing: .02em; color: transparent; transform: skewX(-8deg);
+  -webkit-text-stroke: 2px rgba(255,255,255,.35); }
+@media (max-width: 899px) { .lay-skin-esport .hero::after { display: none; } }
+
+/* Spielfeld: dunkel, abgeschrägte Ecken, roter Balken oben */
+.lay-skin-esport .panel { border: 0; border-radius: 0; box-shadow: none; background: transparent;
+  filter: drop-shadow(0 24px 40px rgba(0,0,0,.45)); overflow: visible; }
+@media (min-width: 900px) {
+  .lay-skin-esport .panel { display: grid; grid-template-columns: 300px minmax(0, 1fr); grid-template-rows: auto 1fr auto;
+    grid-template-areas: "hud step" "nav step" "nav actions"; }
+  .lay-skin-esport .panel > .game-hud { grid-area: hud; }
+  .lay-skin-esport .panel > .dial { grid-area: nav; }
+  .lay-skin-esport .panel > #stepHost { grid-area: step; min-width: 0; }
+  .lay-skin-esport .panel > .row-actions { grid-area: actions; }
+  /* Seitenleiste */
+  .lay-skin-esport .game-hud, .lay-skin-esport .dial { background: #0b0b0c; border: 0; }
+  .lay-skin-esport .game-hud { clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, 0 100%, 0 var(--cut)); padding: 22px 20px 16px; }
+  .lay-skin-esport .dial { padding: 6px 20px 24px; clip-path: polygon(0 0, 100% 0, 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut))); }
+  .lay-skin-esport .panel > #stepHost, .lay-skin-esport .panel > .row-actions { background: var(--bg-panel); margin-left: 10px; }
+  .lay-skin-esport .panel > #stepHost { border-top: 5px solid var(--accent); clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .lay-skin-esport .panel > .row-actions { margin-top: 0; padding-top: 4px;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%); }
+  .lay-skin-esport.lay-game-off .panel { grid-template-areas: "nav step" "nav step" "nav actions"; }
+  .lay-skin-esport.lay-game-off .dial { clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); padding-top: 24px; }
+
+  /* Schritte als Missionsliste */
+  body.lay-skin-esport .dial-row { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+  body.lay-skin-esport .dial-row::before { content: "MISSIONEN"; font: 600 .75rem var(--head); letter-spacing: .2em; color: #8a8a93;
+    padding: 10px 0 6px; border-top: 1px solid #26262b; }
+  body.lay-skin-esport .freq { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; column-gap: 12px;
+    align-items: center; text-align: left; padding: 9px 10px; background: #151518; position: relative;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px); transition: background .2s; }
+  body.lay-skin-esport .freq::before { grid-row: 1 / 3; width: 34px; height: 34px; border-radius: 0; border: 0;
+    font: 700 .95rem var(--head); background: #26262b; color: #8a8a93; box-shadow: none;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+  body.lay-skin-esport .dial-row .freq .fname { font: 600 .95rem var(--head) !important; letter-spacing: .06em; color: #f5f5f7;
+    text-transform: uppercase; margin: 0; }
+  body.lay-skin-esport .dial-row .freq::after { all: unset; grid-column: 2; font: 500 .66rem var(--head); letter-spacing: .14em; color: #6d6d75;
+    content: "GESPERRT"; position: static; }
+  body.lay-skin-esport .dial-row .freq:not(:disabled):not(.active):not(.done)::after { content: "BEREIT"; color: #a3a3ad; }
+  body.lay-skin-esport .dial-row .freq.done::after { content: "✓ ABGESCHLOSSEN"; color: var(--success); }
+  body.lay-skin-esport .freq.done::before { background: var(--success); color: #0b0b0c; }
+  body.lay-skin-esport .freq.active { background: linear-gradient(90deg, var(--accent), #8f0019); }
+  body.lay-skin-esport .freq.active::before { background: #fff; color: var(--accent); box-shadow: none; }
+  body.lay-skin-esport .dial-row .freq.active::after { content: "▶ AKTIV"; color: #fff; }
+  body.lay-skin-esport .freq:not(:disabled):hover:not(.active) { background: #1f1f24; }
+
+  /* Spielerkarte (Spielmodus) in der Seitenleiste */
+  .lay-skin-esport .game-hud-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .lay-skin-esport .game-badges { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 12px; }
+  .lay-skin-esport .game-badge-icon { width: 48px; height: 48px; font-size: 1.5rem; }
+  .lay-skin-esport .game-badge-label { font-size: .6rem; }
+  .lay-skin-esport .game-mission { font-size: .82rem; }
+}
+.lay-skin-esport .game-hud { color: #f5f5f7; }
+.lay-skin-esport .game-hud::before { content: "SPIELER"; display: block; font: 600 .72rem var(--head); letter-spacing: .2em; color: #8a8a93; margin-bottom: 8px; }
+.lay-skin-esport .game-level-no { border-radius: 0; font-family: var(--head); font-size: .85rem; letter-spacing: .08em; box-shadow: none;
+  background: var(--accent); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); padding: 5px 14px; }
+.lay-skin-esport .game-level-name { font-family: var(--head); font-weight: 700; font-size: 1.5rem; text-transform: uppercase; letter-spacing: .02em; }
+.lay-skin-esport .game-xp { font-family: var(--head); font-size: .95rem; letter-spacing: .06em; color: #fff; }
+.lay-skin-esport .game-meter { border-radius: 0; height: 10px; background: #26262b; transform: skewX(-20deg); box-shadow: none; }
+.lay-skin-esport .game-meter-fill { border-radius: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.lay-skin-esport .game-mission { color: #d4d4da; }
+.lay-skin-esport .game-mission-label { color: var(--accent-2); }
+.lay-skin-esport .game-badge-icon { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  box-shadow: none; background: linear-gradient(135deg, var(--accent), #6d0011); border: 0; }
+.lay-skin-esport .game-badge.locked .game-badge-icon { background: #1d1d21; border: 0; opacity: .55; }
+.lay-skin-esport .game-badge-label { color: #e4e4e9; font-family: var(--head); letter-spacing: .04em; text-transform: uppercase; }
+.lay-skin-esport .game-toast { border-radius: 0; border-left: 6px solid var(--accent); background: #0b0b0c;
+  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px); }
+.lay-skin-esport .game-toast-text b { font-family: var(--head); text-transform: uppercase; letter-spacing: .04em; font-size: 1.15rem; }
+.lay-skin-esport .game-toast-text small { color: var(--accent-2); }
+
+/* Inhalte */
+.lay-skin-esport .step h2 { font-family: var(--head); font-weight: 700; font-size: 2rem; letter-spacing: .01em; text-transform: uppercase; }
+.lay-skin-esport .step h2::before { content: "// "; color: var(--accent); }
+.lay-skin-esport .step h3.sub { font-family: var(--head); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: .95rem; }
+.lay-skin-esport .field > label { font-family: var(--head); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; color: #a3a3ad; }
+.lay-skin-esport .field input, .lay-skin-esport .field textarea, .lay-skin-esport .field select,
+.lay-skin-esport .period input[type=date] { border-radius: 0; border-width: 0 0 2px; background: #1b1b1f; }
+.lay-skin-esport .field input:focus, .lay-skin-esport .field textarea:focus { border-color: var(--accent); outline: none; }
+.lay-skin-esport .chip { border-radius: 0; border: 0; background: #23232a; color: #f5f5f7; font-family: var(--head); font-size: .95rem;
+  letter-spacing: .06em; text-transform: uppercase; padding: 10px 22px; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  transition: background .15s, transform .15s; }
+.lay-skin-esport .chip:hover { background: #2f2f37; transform: translateY(-2px); }
+.lay-skin-esport .chip.sel { background: var(--accent); color: #fff; }
+.lay-skin-esport .voice, .lay-skin-esport .summary-box { border-radius: 0; border: 1px solid #2a2a30; background: #18181c;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.lay-skin-esport .voice.sel { border-color: var(--accent); box-shadow: inset 5px 0 0 var(--accent); background: #211015; }
+.lay-skin-esport .voice-name { font-family: var(--head); text-transform: uppercase; letter-spacing: .04em; font-size: 1.05rem; }
+.lay-skin-esport .voice-badge { border-radius: 0; font-family: var(--head); letter-spacing: .06em; }
+.lay-skin-esport .package-price, .lay-skin-esport .price { font-family: var(--head); font-weight: 700; color: #fff; }
+.lay-skin-esport .price { font-size: 2.2rem; }
+.lay-skin-esport .price::first-letter { color: var(--accent); }
+.lay-skin-esport .coverage-map { border-radius: 0; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+.lay-skin-esport .btn { border-radius: 0; font-family: var(--head); font-weight: 600; font-size: 1.05rem; letter-spacing: .1em;
+  text-transform: uppercase; padding: 13px 30px; clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  transition: filter .15s, transform .15s; }
+.lay-skin-esport .btn:not(:disabled):hover { filter: brightness(1.15); transform: translateX(2px); }
+.lay-skin-esport .btn.ghost { background: #26262b; color: #f5f5f7; border: 0; }
+.lay-skin-esport #btnNext:not(:disabled)::after { content: " »"; }
+.lay-skin-esport .btn.small { font-size: .85rem; padding: 8px 18px; }
+.lay-skin-esport footer { font-family: var(--head); text-transform: uppercase; letter-spacing: .1em; }
+.lay-skin-esport .wheel-box { border-radius: 0; border: 0; background: #18181c; clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px); }
+@media (max-width: 899px) {
+  .lay-skin-esport .panel { background: var(--bg-panel); overflow: hidden; clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+  .lay-skin-esport .game-hud { background: #0b0b0c; }
+  .lay-skin-esport .hero h1 { font-size: 2.2rem !important; }
+  .lay-skin-esport .step h2 { font-size: 1.5rem; }
+  .lay-skin-esport .game-badges { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

@@ -176,3 +176,8 @@ ul.plain li:last-child { border-bottom: 0; }
 .wheel-stats { font-weight: 600; margin-top: 8px; }
 .thumb.t-skin-arcade .t-panel { border-radius: 0; box-shadow: 0 0 0 2px #00e5ff, 4px 4px 0 2px #000; }
 .thumb.t-skin-arcade .t-hero { border-radius: 0; box-shadow: 2px 2px 0 var(--t-accent); }
+.thumb.t-skin-esport { background: repeating-linear-gradient(-45deg, rgba(0,0,0,.08) 0 2px, transparent 2px 8px), var(--t-bg); }
+.thumb.t-skin-esport .t-panel { flex-direction: row; border-radius: 0; background: var(--t-panel);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.thumb.t-skin-esport .t-steps { width: 28%; height: auto; background: repeating-linear-gradient(180deg, var(--t-accent) 0 5px, #333 5px 8px, transparent 8px 12px); }
+.thumb.t-skin-esport .t-hero { transform: skewX(-10deg); height: 12px; }

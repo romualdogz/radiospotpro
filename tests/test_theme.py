@@ -197,3 +197,13 @@ def test_arcade_variant_loads_pixel_font(client, db):
     assert "lay-skin-arcade" in page and "lay-game-on" in page
     assert "font-family: 'Press Start 2P'" in client.get("/fonts.css").text
     assert "--bg: #0b0a1f" in client.get("/theme.css").text
+
+
+def test_energy_gaming_variant(client, db):
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    client.post("/admin/design", data={"csrf": token, "action": "variant:Energy Gaming", "with_colors": "on"})
+    page = client.get("/").text
+    assert "lay-skin-esport" in page and "lay-game-on" in page and "lay-width-wide" in page
+    assert "font-family: 'Oswald'" in client.get("/fonts.css").text
+    assert "--bg: #e2001a" in client.get("/theme.css").text

@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Design-Variante „Energy Gaming“** (*Design → Layout-Varianten*, mit Farbvorlage „Energy Gaming“): E-Sport-Look in
+  Energy-Rot und Schwarz mit **anderer Anordnung** – links eine Spieler-Seitenleiste (Level, XP-Balken, nächste Mission,
+  Abzeichen und die fünf Schritte als Missionsliste mit Status „Abgeschlossen / Aktiv / Bereit / Gesperrt“), rechts das
+  Spielfeld. Große schräge Überschrift in „Oswald“ mit „SEASON 01“-Plakette und „ON AIR“-Schriftzug, abgeschrägte Ecken,
+  schräge Knöpfe und Auswahl-Kacheln, „WEITER »“. Am Handy alles untereinander. Auch als Stil „E-Sport“ einzeln wählbar.
 - **Nach Updates keine alten Dateien mehr im Browser:** JS- und CSS-Dateien werden mit einer Versionskennung geladen
   (`?v=…`), die sich bei jeder Änderung ändert. Vorher konnte der Browser z. B. noch die alte Glücksrad-Datei zeigen
   (Rad statt Spielautomat), bis man den Zwischenspeicher leerte.
