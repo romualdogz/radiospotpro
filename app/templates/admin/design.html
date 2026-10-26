@@ -104,7 +104,8 @@
           <input name="{{ key }}" value="{{ design[key] }}" maxlength="{{ max_len }}" placeholder="{{ default }}">
         </label>
       {% endfor %}
-      <small class="help">Leer lassen = Standardtext. Die Überschrift steht groß über dem Konfigurator.</small>
+      <small class="help">Leer lassen = Standardtext. Die Überschrift steht groß über dem Konfigurator. Die Level-Namen
+        erscheinen nur im Spielmodus (ab 0, 150, 350 und 600 XP), z. B. „Newcomer, Sound-Talent, Studio-Star, Radiolegende“.</small>
       <label><span>Größe der Überschrift: <output id="heroSizeOut">{{ design.hero_size }}</output> %</span>
         <input type="range" name="hero_size" min="{{ hero_size_limits[0] }}" max="{{ hero_size_limits[2] }}" step="5"
                value="{{ design.hero_size }}" oninput="document.getElementById('heroSizeOut').textContent = this.value">

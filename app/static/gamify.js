@@ -21,10 +21,11 @@
     { id: "onair", icon: "🔴", title: "ON AIR!", task: "Anfrage absenden", xp: 200, party: true,
       test: (s) => s.sent },
   ];
-  const LEVELS = [
-    { xp: 0, name: "Newcomer" }, { xp: 150, name: "Jingle-Profi" },
-    { xp: 350, name: "Studio-Star" }, { xp: 600, name: "Radiolegende" },
-  ];
+  // Level-Namen kommen aus Admin → Design → Texte („Spielmodus: Namen der 4 Level“)
+  const DEFAULT_NAMES = ["Newcomer", "Sound-Talent", "Studio-Star", "Radiolegende"];
+  const names = (document.getElementById("radiospot-configurator")?.dataset.gameLevels || "")
+    .split(",").map((n) => n.trim()).filter(Boolean);
+  const LEVELS = [0, 150, 350, 600].map((xp, i) => ({ xp, name: names[i] || DEFAULT_NAMES[i] }));
   const MAX_XP = ACHIEVEMENTS.reduce((sum, a) => sum + a.xp, 0);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const unlocked = new Set();

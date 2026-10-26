@@ -11,6 +11,8 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Level-Namen im Spielmodus selbst einstellbar** (*Design → Texte & Überschrift → „Spielmodus: Namen der 4 Level“*,
+  mit Komma getrennt). Standard jetzt: Newcomer → **Sound-Talent** (statt „Jingle-Profi“) → Studio-Star → Radiolegende.
 - **Design-Variante „Energy Gaming“** (*Design → Layout-Varianten*, mit Farbvorlage „Energy Gaming“): E-Sport-Look in
   Energy-Rot und Schwarz mit **anderer Anordnung** – links eine Spieler-Seitenleiste (Level, XP-Balken, nächste Mission,
   Abzeichen und die fünf Schritte als Missionsliste mit Status „Abgeschlossen / Aktiv / Bereit / Gesperrt“), rechts das

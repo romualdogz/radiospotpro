@@ -207,3 +207,12 @@ def test_energy_gaming_variant(client, db):
     assert "lay-skin-esport" in page and "lay-game-on" in page and "lay-width-wide" in page
     assert "font-family: 'Oswald'" in client.get("/fonts.css").text
     assert "--bg: #e2001a" in client.get("/theme.css").text
+
+
+def test_game_level_names_configurable(client, db):
+    assert 'data-game-levels="Newcomer, Sound-Talent, Studio-Star, Radiolegende"' in client.get("/").text
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    client.post("/admin/design", data=_form(theme.get_theme(db), csrf=token, action="save",
+                                            game_levels="Rookie, Hitmaker, Headliner, Legende"))
+    assert 'data-game-levels="Rookie, Hitmaker, Headliner, Legende"' in client.get("/").text

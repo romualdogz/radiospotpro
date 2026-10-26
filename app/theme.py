@@ -41,6 +41,8 @@ FONT_DEFAULTS = {"font_body": "IBM Plex Sans", "font_heading": "Space Grotesk"}
 TEXTS = {
     "hero_title": ("Überschrift", "Ihr Radiospot, angehört, bevor er läuft.", 120),
     "tagline": ("Untertitel oben rechts (auch im PDF)", "sound so(u)lutions — Wien", 80),
+    "game_levels": ("Spielmodus: Namen der 4 Level (mit Komma getrennt)",
+                    "Newcomer, Sound-Talent, Studio-Star, Radiolegende", 120),
 }
 HERO_SIZE_DEFAULT, HERO_SIZE_MIN, HERO_SIZE_MAX = 100, 60, 170  # Größe der Überschrift in %
 
