@@ -187,3 +187,13 @@ def test_game_mode_variant(client, db):
     page = client.get("/").text
     assert "lay-game-on" in page and "/static/gamify.js" in page
     assert client.get("/static/gamify.js").status_code == 200
+
+
+def test_arcade_variant_loads_pixel_font(client, db):
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    client.post("/admin/design", data={"csrf": token, "action": "variant:Arcade", "with_colors": "on"})
+    page = client.get("/").text
+    assert "lay-skin-arcade" in page and "lay-game-on" in page
+    assert "font-family: 'Press Start 2P'" in client.get("/fonts.css").text
+    assert "--bg: #0b0a1f" in client.get("/theme.css").text

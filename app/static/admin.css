@@ -174,3 +174,5 @@ ul.plain li:last-child { border-bottom: 0; }
 .wheel-table td:nth-child(2), .wheel-table td:nth-child(3) { width: 90px; }
 .wheel-table .num { text-align: right; white-space: nowrap; width: 70px; color: var(--muted); }
 .wheel-stats { font-weight: 600; margin-top: 8px; }
+.thumb.t-skin-arcade .t-panel { border-radius: 0; box-shadow: 0 0 0 2px #00e5ff, 4px 4px 0 2px #000; }
+.thumb.t-skin-arcade .t-hero { border-radius: 0; box-shadow: 2px 2px 0 var(--t-accent); }

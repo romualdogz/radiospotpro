@@ -57,7 +57,7 @@ def _get(url: str, limit: int) -> bytes:
     return data
 
 
-def download(family: str, folder: Path | None = None, url_prefix: str | None = None) -> Path:
+def download(family: str, folder: Path | None = None, url_prefix: str | None = None, weights: str = WEIGHTS) -> Path:
     """Lädt die Schrift einmalig (vom Server aus) und legt font.css + woff2-Dateien ab.
 
     Ohne Angabe landet sie in media/fonts/. Wirft ValueError mit verständlicher Meldung.
@@ -65,7 +65,7 @@ def download(family: str, folder: Path | None = None, url_prefix: str | None = N
     s = slug(family)
     folder = folder or CUSTOM_DIR / s
     url_prefix = url_prefix or f"/media/fonts/{s}"
-    api = (f"https://fonts.googleapis.com/css2?family={family.replace(' ', '+')}:wght@{WEIGHTS}"
+    api = (f"https://fonts.googleapis.com/css2?family={family.replace(' ', '+')}:wght@{weights}"
            f"&display=swap")
     try:
         css = _get(api, 512 * 1024).decode("utf-8")

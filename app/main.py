@@ -98,7 +98,9 @@ def _design(request: Request, db: Session) -> tuple[dict, str]:
 
 def _page_context(request: Request, db: Session) -> dict:
     design, preview_qs = _design(request, db)
-    return {"fonts_url": theme.fonts_url(design), "theme_version": theme.version(design) + preview_qs,
+    fonts_url = theme.fonts_url(design)
+    return {"fonts_url": fonts_url + preview_qs if fonts_url else None,
+            "theme_version": theme.version(design) + preview_qs,
             "logo": branding.get_logo(db), "design": design, "body_class": theme.body_class(design)}
 
 
@@ -128,9 +130,11 @@ def logo_file(name: str):
 
 
 @app.get("/fonts.css", include_in_schema=False)
-def fonts_css(db: Session = Depends(get_db)):
-    css = fonts.css_for(theme.families(theme.get_theme(db)))
-    return Response(css, media_type="text/css", headers={"Cache-Control": "public, max-age=86400"})
+def fonts_css(request: Request, db: Session = Depends(get_db)):
+    design, preview_qs = _design(request, db)  # Live-Vorschau im Admin kann eine andere Schrift brauchen
+    css = fonts.css_for(theme.families(design))
+    return Response(css, media_type="text/css",
+                    headers={"Cache-Control": "no-store" if preview_qs else "public, max-age=86400"})
 
 
 @app.get("/theme.css", include_in_schema=False)

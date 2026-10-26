@@ -618,3 +618,120 @@ body.lay-skin-neon {
 .radio-hint { font-size: 0.88rem; color: var(--text-muted); font-style: italic; }
 .wheel-launcher b { font: inherit; }
 .wheel-dialog:has(.radio-host) { width: min(520px, 100%); }
+
+/* ======================================================================
+   Stil „Arcade“ – Retro-Computerspiel: Pixelschrift, Neon, Röhrenbildschirm, harte Pixel-Schatten
+   ====================================================================== */
+body.lay-skin-arcade {
+  --pix: 'Press Start 2P', ui-monospace, monospace;
+  --neon-c: #00e5ff; --neon-y: #ffe600; --neon-g: #39ff14;
+  background:
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 72% 9%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 38% 62%, #ffe600 50%, transparent 51%), radial-gradient(1px 1px at 88% 44%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 82%, #00e5ff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 60% 30%, #fff 50%, transparent 51%),
+    linear-gradient(transparent 58%, color-mix(in srgb, var(--page-accent) 18%, transparent) 100%),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--page-accent) 14%, transparent) 0 1px, transparent 1px 64px) 0 100% / 100% 34% no-repeat,
+    var(--bg);
+  background-attachment: fixed;
+}
+body.lay-skin-arcade::after {  /* Röhrenbildschirm: Zeilen + dunkle Ecken */
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3000;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.45) 100%);
+}
+.lay-skin-arcade .wordmark { font-family: var(--pix); font-size: 0.85rem; letter-spacing: 0; }
+.lay-skin-arcade .tag { font-family: var(--pix); font-size: 0.55rem; color: var(--neon-c); }
+.lay-skin-arcade .hero h1 { font-family: var(--pix); font-weight: 400; line-height: 1.45; letter-spacing: 0;
+  font-size: clamp(1.1rem, 3.2vw, 1.9rem) !important; max-width: 22ch;
+  color: #fff; text-shadow: 3px 3px 0 var(--page-accent), 6px 6px 0 #000; }
+.lay-skin-arcade .hero::after { content: "▶ PRESS START"; display: block; margin-top: 18px; font-family: var(--pix);
+  font-size: 0.7rem; color: var(--neon-y); animation: arcade-blink 1.1s steps(1) infinite; }
+.lay-skin-arcade.lay-hero-center .hero::after { text-align: center; }
+.lay-skin-arcade.lay-hero-hidden .hero::after, .lay-skin-arcade.lay-hero-compact .hero::after { display: none; }
+@keyframes arcade-blink { 50% { opacity: 0; } }
+
+/* Spielfeld: Pixel-Rahmen statt runder Karte */
+.lay-skin-arcade .panel { border-radius: 0; border: 4px solid var(--neon-c);
+  box-shadow: 0 0 0 4px #000, 10px 10px 0 4px #000, 0 0 30px color-mix(in srgb, var(--neon-c) 45%, transparent); }
+.lay-skin-arcade .step h2 { font-family: var(--pix); font-weight: 400; font-size: 0.95rem; line-height: 1.5;
+  color: var(--neon-y); text-shadow: 2px 2px 0 #000; text-align: center; }
+.lay-skin-arcade .step h2 + .hint { text-align: center; }
+.lay-skin-arcade .step h3.sub, .lay-skin-arcade .field > label, .lay-skin-arcade .field label:first-child {
+  font-family: var(--pix); font-size: 0.6rem; line-height: 1.6; letter-spacing: 0; color: var(--neon-c); }
+.lay-skin-arcade .dial { border-bottom: 4px solid var(--line); }
+.lay-skin-arcade .fname { font-family: var(--pix); font-size: 0.5rem !important; letter-spacing: 0; }
+.lay-skin-arcade .freq::before { border-radius: 0 !important; font-family: var(--pix) !important; font-size: 0.6rem !important; }
+.lay-skin-arcade .freq:not(:last-child)::after { height: 4px !important; top: 12px !important;
+  background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 10px) !important; }
+.lay-skin-arcade .freq.done::after { background: repeating-linear-gradient(90deg, var(--neon-g) 0 6px, transparent 6px 10px) !important; }
+.lay-skin-arcade .freq.done::before { border-color: var(--neon-g) !important; color: var(--neon-g) !important; }
+.lay-skin-arcade .freq.active::before { box-shadow: 0 0 0 4px #000, 0 0 16px var(--accent) !important;
+  animation: arcade-bounce .8s steps(2) infinite; }
+@keyframes arcade-bounce { 50% { transform: translateY(-3px); } }
+
+/* Eingabefelder, Chips, Karten: eckig mit hartem Schatten */
+.lay-skin-arcade .field input, .lay-skin-arcade .field textarea, .lay-skin-arcade .field select,
+.lay-skin-arcade .period input[type=date], .lay-skin-arcade .summary-box, .lay-skin-arcade .voice,
+.lay-skin-arcade .coverage-help { border-radius: 0; border-width: 2px; }
+.lay-skin-arcade .field input:focus, .lay-skin-arcade .field textarea:focus { box-shadow: 0 0 0 2px var(--neon-c); outline: none; }
+.lay-skin-arcade .chip { border-radius: 0; border-width: 2px; box-shadow: 3px 3px 0 #000; transition: transform .08s, box-shadow .08s; }
+.lay-skin-arcade .chip:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000; }
+.lay-skin-arcade .chip.sel { background: var(--accent); color: #fff; border-color: #fff; }
+.lay-skin-arcade .chip.sel::before { content: "▶ "; }
+.lay-skin-arcade .voice.sel { border-color: var(--neon-y); box-shadow: 4px 4px 0 #000, 0 0 14px color-mix(in srgb, var(--neon-y) 40%, transparent); }
+.lay-skin-arcade .voice-name { font-family: var(--pix); font-size: 0.68rem; line-height: 1.5; }
+.lay-skin-arcade .voice-badge, .lay-skin-arcade .badge { border-radius: 0; }
+.lay-skin-arcade .package-price, .lay-skin-arcade .price { font-family: var(--pix); font-weight: 400; color: var(--neon-y); }
+.lay-skin-arcade .price { font-size: 1.2rem; text-shadow: 3px 3px 0 #000; }
+.lay-skin-arcade .package-price { font-size: 0.75rem; }
+.lay-skin-arcade .coverage-mapbox .coverage-map { border-radius: 0; border: 2px solid var(--line); }
+
+/* Knöpfe: Arcade-Tasten, die beim Klick „einrasten“ */
+.lay-skin-arcade .btn { border-radius: 0; font-family: var(--pix); font-weight: 400; font-size: 0.65rem; line-height: 1.4;
+  padding: 14px 18px; text-transform: uppercase; letter-spacing: 0; border: 3px solid #fff;
+  box-shadow: 5px 5px 0 #000; transition: transform .06s, box-shadow .06s; }
+.lay-skin-arcade .btn:not(:disabled):hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 #000; }
+.lay-skin-arcade .btn:not(:disabled):active { transform: translate(5px, 5px); box-shadow: 0 0 0 #000; }
+.lay-skin-arcade .btn.ghost { border-color: var(--line); background: var(--bg-field); }
+.lay-skin-arcade #btnNext:not(:disabled) { background: var(--neon-g); color: #0b0a1f; border-color: #fff; }
+.lay-skin-arcade #btnNext:not(:disabled)::after { content: " ▶"; }
+.lay-skin-arcade footer { font-family: var(--pix); font-size: 0.5rem; line-height: 2; border-top: 2px dashed currentColor; }
+
+/* Spielmodus im Arcade-Stil: Punkteanzeige wie am Automaten */
+.lay-skin-arcade .game-hud { background: #000; border-bottom: 4px solid var(--line); }
+.lay-skin-arcade .game-level-no { border-radius: 0; font-family: var(--pix); font-weight: 400; font-size: 0.6rem;
+  background: var(--neon-y); color: #000; box-shadow: 3px 3px 0 var(--accent); }
+.lay-skin-arcade .game-level-name { font-family: var(--pix); font-size: 0.75rem; color: #fff; }
+.lay-skin-arcade .game-xp { font-family: var(--pix); font-weight: 400; font-size: 0.7rem; color: var(--neon-g); }
+.lay-skin-arcade .game-xp::before { content: "SCORE "; color: #fff; }
+.lay-skin-arcade .game-meter { border-radius: 0; height: 18px; border: 2px solid #fff; background: #111; box-shadow: none; }
+.lay-skin-arcade .game-meter-fill { border-radius: 0;
+  background: repeating-linear-gradient(90deg, var(--neon-g) 0 10px, transparent 10px 13px); }
+.lay-skin-arcade .game-mission { font-family: var(--pix); font-size: 0.55rem; line-height: 1.8; color: #fff; }
+.lay-skin-arcade .game-mission-label { color: var(--neon-y); }
+.lay-skin-arcade .game-badge-icon { border-radius: 0; box-shadow: 0 0 0 3px var(--neon-y), 5px 5px 0 3px #000; background: #111; }
+.lay-skin-arcade .game-badge.locked .game-badge-icon { border: 3px dashed var(--line); box-shadow: none; }
+.lay-skin-arcade .game-badge-label { font-family: var(--pix); font-size: 0.42rem; line-height: 1.6; color: #fff; }
+.lay-skin-arcade .game-toast { border-radius: 0; border: 3px solid var(--neon-y); box-shadow: 6px 6px 0 #000; }
+.lay-skin-arcade .game-toast-text b, .lay-skin-arcade .game-toast-text small { font-family: var(--pix); font-weight: 400; }
+.lay-skin-arcade .game-toast-text b { font-size: 0.7rem; line-height: 1.6; }
+.lay-skin-arcade .game-toast-text small { font-size: 0.5rem; }
+.lay-skin-arcade .wheel-box { border-radius: 0; border-style: solid; border-width: 3px; }
+.lay-skin-arcade .wheel-btn { border-radius: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .lay-skin-arcade .hero::after, .lay-skin-arcade .freq.active::before { animation: none !important; }
+}
+.lay-skin-arcade .game-level-no, .lay-skin-arcade .game-xp { white-space: nowrap; }
+@media (max-width: 560px) {
+  .lay-skin-arcade .top-inner { flex-wrap: wrap; gap: 6px; }
+  .lay-skin-arcade .tag { font-size: 0.45rem; }
+  .lay-skin-arcade .game-xp { font-size: 0.55rem; }
+  .lay-skin-arcade .game-xp::before { content: ""; }
+  .lay-skin-arcade .game-level-name { font-size: 0.62rem; }
+  .lay-skin-arcade .fname { font-size: 0.4rem !important; }
+  .lay-skin-arcade .game-toast { min-width: 0; padding: 10px 12px; }
+  .lay-skin-arcade .game-toast-text b { font-size: 0.6rem; }
+  .lay-skin-arcade .hero h1 { font-size: 1.05rem !important; }
+  .lay-skin-arcade .game-badge-label { font-size: 0.38rem; }
+  .lay-skin-arcade .btn { font-size: 0.58rem; padding: 12px 14px; }
+}

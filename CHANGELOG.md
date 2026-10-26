@@ -11,6 +11,15 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Design-Entwurf „Arcade“** (*Design → Layout-Varianten → Arcade*, mit Farbvorlage „Arcade“): Retro-Computerspiel
+  mit Pixelschrift „Press Start 2P“ (lokal mitgeliefert, OFL), Sternenhimmel und Neon-Raster, Röhrenbildschirm-Effekt
+  (Zeilen, dunkle Ecken), blinkendem „▶ PRESS START“, Spielfeld mit Pixelrahmen und harten Schatten, eckigen Chips mit
+  ▶-Markierung, Arcade-Tasten, die beim Klick einrasten, grünem „WEITER ▶“, Level-Kästchen statt Punkten und Preisen
+  in Pixelschrift. Spielmodus im Automaten-Look: SCORE-Anzeige, Blockbalken, eckige Abzeichen und Meldungen.
+  Auch einzeln wählbar als Stil „Arcade“.
+
+### Behoben
+- Admin-Live-Vorschau lädt jetzt auch Schriften, die nur die Vorschau braucht (vorher fehlte z. B. die Pixelschrift).
 - **Glücksrad im Analog-Radio-Design** (*Glücksrad → Darstellung → „Analog-Radio“*): Röhrenradio aus Holz mit
   Lautsprecher-Stoff, beleuchteter Senderskala (88–108 MHz) und Sendersuchknopf. Die Felder des Rads sind die
   „Sender“ auf der Skala (höchster Rabatt mit ★). Der Kunde dreht am Knopf (mit Maus oder Finger im Kreis ziehen)
