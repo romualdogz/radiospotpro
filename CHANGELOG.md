@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Glücksrad als Spielautomat** (*Glücksrad → Darstellung → „Spielautomat“*): roter Automat mit „JACKPOT“-Leuchtschild
+  und Lauflichtern, drei Walzen mit Gewinnlinie und Hebel. Der Kunde zieht am Hebel (nach unten ziehen oder antippen),
+  die Walzen laufen und stoppen nacheinander. Gewinn = dreimal dasselbe Feld auf der Linie (z. B. „5 % | 5 % | 5 %“,
+  Gewinnlinie blinkt), Niete = gemischte Symbole (🍒 📻 🔔 ⭐ 🎵 🍋). Passt besonders zum Design „Arcade“ (Pixelschrift
+  im Leuchtschild). Eingebettet und als Pop-up („🎰 Glücksautomat“), Auslosung weiter beim Server.
 - **Design-Entwurf „Arcade“** (*Design → Layout-Varianten → Arcade*, mit Farbvorlage „Arcade“): Retro-Computerspiel
   mit Pixelschrift „Press Start 2P“ (lokal mitgeliefert, OFL), Sternenhimmel und Neon-Raster, Röhrenbildschirm-Effekt
   (Zeilen, dunkle Ecken), blinkendem „▶ PRESS START“, Spielfeld mit Pixelrahmen und harten Schatten, eckigen Chips mit

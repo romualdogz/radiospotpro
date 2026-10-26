@@ -27,7 +27,8 @@ DEFAULT_SEGMENTS = [  # Bezeichnung, Rabatt in %, Gewichtung (relative Häufigke
 ]
 # Anzeige: eingebettet im letzten Schritt oder als Pop-up beim Öffnen eines Schritts
 MODES = {"inline": "Eingebettet im letzten Schritt („Anfrage“)", "popup": "Als Pop-up"}
-STYLES = {"wheel": "Glücksrad (Drehrad mit Zeiger)", "radio": "Analog-Radio (Sendersuchknopf drehen)"}
+STYLES = {"wheel": "Glücksrad (Drehrad mit Zeiger)", "radio": "Analog-Radio (Sendersuchknopf drehen)",
+          "slot": "Spielautomat (Hebel ziehen, drei Walzen)"}
 POPUP_STEPS = {"0": "beim Start (Schritt 1)", "3": "bei „Buchung“ (Schritt 4)", "4": "bei „Anfrage“ (Schritt 5)"}
 DEFAULTS = {"wheel_enabled": "0", "wheel_stackable": "0", "wheel_valid_hours": "72",
             "wheel_mode": "inline", "wheel_popup_step": "4", "wheel_style": "wheel",

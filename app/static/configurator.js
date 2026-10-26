@@ -925,14 +925,15 @@
       box.append(message(state.wheel));
       return box;
     }
-    const radio = C.wheel.style === "radio";
+    const radio = C.wheel.style === "radio" || C.wheel.style === "slot";  // mit eigenem Bedienelement
+    const slot = C.wheel.style === "slot";
     const host = h("div", { class: "wheel-host" + (radio ? " radio-host" : "") });
     const status = h("span", { class: "gen-status" });
     let busy = false;
     const spin = async () => {
       if (busy) return;
       busy = true; btn.disabled = true; status.textContent = "";
-      if (radio) { wheel.setBusy(true); hint.textContent = "Sender wird gesucht …"; }
+      if (radio) { wheel.setBusy(true); hint.textContent = slot ? "Die Walzen laufen …" : "Sender wird gesucht …"; }
       try {
         const r = await api("/api/wheel/spin", {});
         btn.textContent = "Das Rad dreht …";
@@ -946,14 +947,17 @@
         if (r.token) scheduleQuote();
       } catch (e) {
         status.textContent = e.message; btn.disabled = false; busy = false;
-        if (radio) { wheel.setBusy(false); hint.textContent = "Am Knopf drehen – oder einfach antippen"; }
+        if (radio) { wheel.setBusy(false); hint.textContent = idleHint; }
       }
     };
     const btn = h("button", { type: "button", class: "btn wheel-btn", hidden: radio, onclick: spin }, "Jetzt drehen!");
-    const hint = h("span", { class: "radio-hint" }, "Am Knopf drehen – oder einfach antippen");
+    const idleHint = slot ? "Am Hebel ziehen – oder einfach antippen" : "Am Knopf drehen – oder einfach antippen";
+    const hint = h("span", { class: "radio-hint" }, idleHint);
     box.append(
-      h("div", { class: "wheel-intro" }, h("b", {}, radio ? "📻 Glücksradio" : "🎡 Glücksrad"),
-        h("span", {}, radio
+      h("div", { class: "wheel-intro" }, h("b", {}, slot ? "🎰 Glücksautomat" : radio ? "📻 Glücksradio" : "🎡 Glücksrad"),
+        h("span", {}, slot
+          ? ` Ziehen Sie am Hebel – drei Gleiche gewinnen bis zu ${best} % Rabatt.`
+          : radio
           ? ` Drehen Sie am Sendersuchknopf und finden Sie Ihren Sender mit bis zu ${best} % Rabatt.`
           : ` Einmal drehen und bis zu ${best} % Rabatt auf Ihre Buchung gewinnen.`)),
       host,
@@ -970,9 +974,8 @@
   root.append(wheelLauncher);  // im Konfigurator-Element, damit Farben aus dem Design gelten
   const wheelPopupMode = () => !!(C?.wheel && C.wheel.mode === "popup" && window.DiscountWheel);
   function refreshWheelLauncher() {
-    if (C?.wheel?.style === "radio") {  // Beschriftung passend zur Darstellung
-      wheelLauncher.firstChild.textContent = "📻"; wheelLauncher.lastChild.textContent = " Glücksradio";
-    }
+    const label = { radio: ["📻", " Glücksradio"], slot: ["🎰", " Glücksautomat"] }[C?.wheel?.style];
+    if (label) [wheelLauncher.firstChild.textContent, wheelLauncher.lastChild.textContent] = label;  // passend zur Darstellung
     wheelLauncher.hidden = !(wheelPopupMode() && state.wheelPopupShown && !state.wheel && !state.sent && !wheelOverlay);
   }
   function openWheelPopup() {

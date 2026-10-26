@@ -264,9 +264,169 @@
     };
   }
 
+  // ------------------------------------------------------------------ Variante „Spielautomat“
+  // Drei Walzen mit Gewinnlinie und Hebel. Gewinn = dreimal dasselbe Feld auf der Linie,
+  // Niete = gemischte Symbole. Hebel ziehen (oder antippen) ruft opts.onTune() auf.
+  const SLOT_STYLE = `
+.slot { position: relative; max-width: 420px; margin: 0 auto; padding: 0 44px 0 0; user-select: none; -webkit-user-select: none; }
+.slot-cabinet { position: relative; border-radius: 22px 22px 14px 14px; padding: 14px 14px 16px;
+  background: linear-gradient(180deg, #e8233a, #9c0f22); border: 4px solid #2a0a10;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.35), inset 0 -6px 12px rgba(0,0,0,.35), 0 14px 30px rgba(0,0,0,.4); }
+.slot-marquee { position: relative; margin: -2px 0 12px; padding: 8px 10px; border-radius: 12px; text-align: center;
+  background: #1a0610; border: 3px solid #ffd23f; box-shadow: inset 0 0 14px rgba(255,210,63,.35); }
+.slot-marquee b { font: 400 1rem/1.2 'Press Start 2P', var(--head, system-ui), monospace; color: #ffd23f; letter-spacing: .06em;
+  text-shadow: 0 0 8px rgba(255,210,63,.8), 2px 2px 0 #b0002a; }
+.slot-bulbs { position: absolute; inset: 3px; pointer-events: none; border-radius: 9px;
+  background: radial-gradient(circle, #fff6b0 2px, transparent 2.6px) 0 0 / 16px 100%;
+  -webkit-mask: linear-gradient(#000 0 4px, transparent 4px calc(100% - 4px), #000 calc(100% - 4px));
+          mask: linear-gradient(#000 0 4px, transparent 4px calc(100% - 4px), #000 calc(100% - 4px)); }
+.slot.spinning .slot-bulbs, .slot.won .slot-bulbs { animation: slot-chase .25s steps(2) infinite; }
+@keyframes slot-chase { 50% { background-position: 8px 0; } }
+.slot-window { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px;
+  border-radius: 10px; background: #2a0a10; box-shadow: inset 0 4px 10px rgba(0,0,0,.7); }
+.slot-reel { position: relative; height: 162px; overflow: hidden; border-radius: 6px;
+  background: linear-gradient(#bdbdbd, #fff 22%, #fff 78%, #bdbdbd); }
+.slot-strip { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+.slot-cell { height: 54px; display: grid; place-items: center; font: 800 15px/1 var(--head, system-ui, sans-serif);
+  color: #b0002a; white-space: nowrap; padding: 0 4px; text-align: center; }
+.slot-cell.emoji { font-size: 28px; }
+.slot-cell.miss { color: #8a8a8a; font-size: 12px; font-weight: 700; }
+.slot-cell.jackpot { color: #c47a00; }
+.slot-cell.jackpot::after { content: "★"; margin-left: 3px; }
+.slot-payline { position: absolute; left: 4px; right: 4px; top: 50%; height: 3px; margin-top: -1.5px; pointer-events: none;
+  background: rgba(208,20,26,.75); box-shadow: 0 0 6px rgba(208,20,26,.8); }
+.slot-payline::before, .slot-payline::after { content: ""; position: absolute; top: -7px; border: 8px solid transparent; }
+.slot-payline::before { left: -6px; border-left-color: #ffd23f; }
+.slot-payline::after { right: -6px; border-right-color: #ffd23f; }
+.slot.won .slot-payline { animation: slot-flash .3s steps(2) 6; }
+@keyframes slot-flash { 50% { background: #ffd23f; box-shadow: 0 0 14px #ffd23f; } }
+.slot-tray { margin-top: 12px; height: 18px; border-radius: 0 0 10px 10px; background: linear-gradient(#2a0a10, #4a1520);
+  box-shadow: inset 0 4px 6px rgba(0,0,0,.6); }
+.slot-lever { position: absolute; right: 0; top: 70px; width: 44px; height: 170px; border: 0; padding: 0; background: none;
+  cursor: grab; touch-action: none; }
+.slot-lever:focus-visible { outline: 3px solid #ffd23f; outline-offset: 4px; border-radius: 8px; }
+.slot-lever-base { position: absolute; left: 0; bottom: 18px; width: 22px; height: 46px; border-radius: 0 10px 10px 0;
+  background: linear-gradient(90deg, #8a8a8a, #e6e6e6, #8a8a8a); }
+.slot-lever-arm { position: absolute; left: 14px; bottom: 38px; width: 10px; height: 118px; border-radius: 5px;
+  transform-origin: 50% 100%; background: linear-gradient(90deg, #9a9a9a, #f4f4f4, #9a9a9a); transition: transform .12s; }
+.slot-lever-arm::after { content: ""; position: absolute; left: 50%; top: -16px; width: 32px; height: 32px; margin-left: -16px;
+  border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff8a9a, #d0141a 55%, #6d0610);
+  box-shadow: 0 4px 8px rgba(0,0,0,.4); }
+.slot-lever.wiggle .slot-lever-arm { animation: slot-hint 3s ease-in-out infinite; }
+@keyframes slot-hint { 0%, 75%, 100% { transform: rotateX(0); } 82% { transform: scaleY(.82); } 90% { transform: scaleY(1.03); } }
+.slot-lever.pulled .slot-lever-arm { transform: scaleY(-.55); }
+@media (prefers-reduced-motion: reduce) { .slot-bulbs, .slot-payline, .slot-lever-arm { animation: none !important; } }
+@media (max-width: 420px) { .slot { padding-right: 38px; } .slot-cell { font-size: 13px; } .slot-cell.miss { font-size: 10px; }
+  .slot-marquee b { font-size: .8rem; } }
+`;
+  const FILLERS = ["🍒", "📻", "🔔", "⭐", "🎵", "🍋"];
+
+  function renderSlot(host, segments, opts = {}) {
+    if (!document.getElementById("discount-slot-style")) {
+      const s = document.createElement("style");
+      s.id = "discount-slot-style";
+      s.textContent = SLOT_STYLE;
+      document.head.appendChild(s);
+    }
+    const div = (cls, text) => { const d = document.createElement("div"); d.className = cls; if (text != null) d.textContent = text; return d; };
+    const best = Math.max(...segments.map((s) => s.percent));
+    const CELL = 54;
+    const slot = div("slot");
+    const cab = div("slot-cabinet");
+    const marquee = div("slot-marquee");
+    const title = document.createElement("b"); title.textContent = opts.title || "JACKPOT";
+    marquee.append(div("slot-bulbs"), title);
+    const win = div("slot-window");
+    win.setAttribute("role", "img");
+    win.setAttribute("aria-label", "Spielautomat mit drei Walzen: " + segments.map((s) => s.label).join(", "));
+    const wins = segments.map((s, i) => ({ ...s, i })).filter((s) => s.percent > 0);
+    // Walzen-Inhalt: alle Gewinnfelder + Füllsymbole, gemischt, je Walze anders
+    const cellFor = (sym) => {
+      if (typeof sym === "string") return div("slot-cell emoji", sym);
+      return div("slot-cell" + (sym.percent === best ? " jackpot" : ""), sym.label);
+    };
+    const reels = [0, 1, 2].map((r) => {
+      const base = [...wins, ...FILLERS].sort(() => Math.random() - 0.5);
+      const reel = div("slot-reel");
+      const strip = div("slot-strip");
+      reel.append(strip);
+      win.append(reel);
+      return { reel, strip, base, pos: Math.floor(Math.random() * base.length), r };
+    });
+    const fill = (rl, items) => { rl.strip.replaceChildren(...items.map(cellFor)); };
+    reels.forEach((rl) => {  // Startbild: drei Zeilen sichtbar
+      const n = rl.base.length;
+      fill(rl, [rl.base[(rl.pos + n - 1) % n], rl.base[rl.pos], rl.base[(rl.pos + 1) % n]]);
+    });
+    win.append(div("slot-payline"));
+    cab.append(marquee, win, div("slot-tray"));
+    const lever = document.createElement("button");
+    lever.type = "button";
+    lever.className = "slot-lever wiggle";
+    lever.setAttribute("aria-label", "Hebel ziehen – startet den Spielautomaten");
+    const arm = div("slot-lever-arm");
+    lever.append(div("slot-lever-base"), arm);
+    slot.append(cab, lever);
+    host.replaceChildren(slot);
+
+    let busy = false, startY = null;
+    const fire = () => {
+      if (busy) return;
+      lever.classList.remove("wiggle"); lever.classList.add("pulled");
+      setTimeout(() => lever.classList.remove("pulled"), 380);
+      opts.onTune && opts.onTune();
+    };
+    lever.addEventListener("pointerdown", (e) => { if (!busy) { startY = e.clientY; lever.setPointerCapture(e.pointerId); } });
+    lever.addEventListener("pointermove", (e) => {
+      if (startY == null) return;
+      const d = Math.max(0, Math.min(90, e.clientY - startY));
+      arm.style.transform = `scaleY(${1 - d / 60})`;
+      if (d > 45) { startY = null; arm.style.transform = ""; fire(); }
+    });
+    lever.addEventListener("pointerup", () => { if (startY != null) { arm.style.transform = ""; startY = null; fire(); } });
+    lever.addEventListener("keydown", (e) => { if (e.key === "ArrowDown") { e.preventDefault(); fire(); } });
+    lever.addEventListener("click", (e) => { if (e.detail === 0) fire(); });  // Enter/Leertaste
+
+    return {
+      el: slot,
+      setBusy(v) { busy = v; lever.disabled = v; },
+      spinTo(index) {
+        busy = true; lever.disabled = true;
+        slot.classList.remove("won"); slot.classList.add("spinning");
+        const seg = segments[index];
+        // Ergebnis auf der Gewinnlinie: Gewinn → 3× dasselbe Feld, Niete → drei verschiedene Füllsymbole
+        const shuffled = [...FILLERS].sort(() => Math.random() - 0.5);
+        const targets = seg.percent > 0 ? [0, 1, 2].map(() => wins.find((w) => w.i === index)) : shuffled.slice(0, 3);
+        const done = reels.map((rl, k) => {
+          const loops = reduceMotion ? 0 : 8 + k * 4;
+          const items = [];
+          for (let i = 0; i < loops; i++) items.push(rl.base[(rl.pos + i) % rl.base.length]);
+          items.push(targets[k], rl.base[(rl.pos + loops + 3) % rl.base.length]);
+          const prev = rl.base[(rl.pos + rl.base.length - 1) % rl.base.length];
+          fill(rl, [prev, ...items]);
+          rl.pos = (rl.pos + loops + 1) % rl.base.length;
+          const dist = (items.length - 2) * CELL;  // Ziel landet in der mittleren Zeile
+          const ms = reduceMotion ? 50 : 1900 + k * 650;
+          const anim = rl.strip.animate([
+            { transform: "translateY(0)" },
+            { transform: `translateY(${-dist - 10}px)`, offset: 0.92 },
+            { transform: `translateY(${-dist}px)` },
+          ], { duration: ms, easing: "cubic-bezier(.25,.1,.25,1)", fill: "forwards" });
+          return anim.finished;
+        });
+        return Promise.all(done).then(() => {
+          slot.classList.remove("spinning");
+          if (seg.percent > 0) slot.classList.add("won");
+        });
+      },
+    };
+  }
+
   window.DiscountWheel = {
     render(host, segments, opts = {}) {
-      return opts.style === "radio" ? renderRadio(host, segments, opts) : render(host, segments);
+      if (opts.style === "radio") return renderRadio(host, segments, opts);
+      if (opts.style === "slot") return renderSlot(host, segments, opts);
+      return render(host, segments);
     },
   };
 })();
