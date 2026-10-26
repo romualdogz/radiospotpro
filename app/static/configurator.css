@@ -500,7 +500,7 @@ body.lay-skin-neon {
 .game-mission-icon { font-size: 1.5rem; line-height: 1; animation: game-float 2.4s ease-in-out infinite; }
 .game-mission-label { color: var(--text-muted); font-weight: 600; }
 @keyframes game-float { 50% { transform: translateY(-4px) rotate(-6deg); } }
-.game-badges { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.game-badges { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
 .game-badge { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: help;
   text-align: center; }
 .game-badge-icon { position: relative; width: 60px; height: 60px; display: grid; place-items: center; border-radius: 50%;

@@ -165,7 +165,6 @@
     document.dispatchEvent(new CustomEvent("radiospot:update", { detail: {
       step: state.step, maxReached: state.maxReached, steps: STEPS.length,
       scriptLength: state.script.trim().length, demo: !!state.demo,
-      discounts: state.quote?.discounts?.length || 0,
       contact: !!(state.name.trim() && state.email.trim()), sent: !!state.sent,
     } }));
   }

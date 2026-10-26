@@ -11,6 +11,8 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Spielmodus:** Der geheime Erfolg „Sparfuchs“ wurde entfernt – es gibt jetzt sieben Erfolge (700 XP); die Level
+  bleiben gleich (Radiolegende ab 600 XP).
 - **Glücksrad als Pop-up** (*Glücksrad → Anzeige*): wahlweise eingebettet im letzten Schritt (wie bisher) oder als
   Pop-up beim Start, bei „Buchung“ oder bei „Anfrage“. Das Pop-up kommt einmal pro Besuch, lässt sich mit ×, Esc
   oder Klick daneben schließen; dann bleibt unten links ein kleiner „🎡 Glücksrad“-Knopf zum Wiederöffnen. Nach dem

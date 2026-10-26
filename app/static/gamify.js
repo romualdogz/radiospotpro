@@ -16,8 +16,6 @@
       test: (s) => s.demo },
     { id: "plan", icon: "📡", title: "Sendeplan steht", task: "Sender, Paket und Zeitraum festlegen", xp: 100,
       test: (s) => s.maxReached >= 4 },
-    { id: "deal", icon: "🦊", title: "Sparfuchs", task: "Einen Rabatt ergattern (geheimer Erfolg)", xp: 75, secret: true,
-      test: (s) => s.discounts > 0 },
     { id: "contact", icon: "📇", title: "Fast on air", task: "Kontaktdaten eintragen", xp: 50,
       test: (s) => s.contact },
     { id: "onair", icon: "🔴", title: "ON AIR!", task: "Anfrage absenden", xp: 200, party: true,
@@ -54,9 +52,8 @@
   const badgeEls = {};
   for (const a of ACHIEVEMENTS) {  // Abzeichen: großes Icon im Kreis, darunter der Name
     const b = el("div", "game-badge locked");
-    b.append(el("span", "game-badge-icon", a.secret ? "❔" : a.icon),
-      el("span", "game-badge-label", a.secret ? "Geheim" : a.title));
-    b.title = a.secret ? "Geheimer Erfolg" : `${a.title} – ${a.task} (+${a.xp} XP)`;
+    b.append(el("span", "game-badge-icon", a.icon), el("span", "game-badge-label", a.title));
+    b.title = `${a.title} – ${a.task} (+${a.xp} XP)`;
     badgeEls[a.id] = b;
     badges.append(b);
   }
@@ -86,7 +83,7 @@
     const next = LEVELS[idx + 1];
     countUp();
     xpText.title = next ? `noch ${next.xp - xp} XP bis „${next.name}“` : "Höchstes Level erreicht!";
-    const todo = ACHIEVEMENTS.find((a) => !a.secret && !unlocked.has(a.id));
+    const todo = ACHIEVEMENTS.find((a) => !unlocked.has(a.id));
     const text = el("span", "game-mission-text");
     text.append(el("span", "game-mission-label", todo ? "Nächste Mission: " : "Alle Missionen erfüllt!"), todo ? todo.task : "");
     mission.replaceChildren(el("span", "game-mission-icon", todo ? todo.icon : "🏆"), text);
