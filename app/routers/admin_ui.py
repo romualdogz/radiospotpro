@@ -603,7 +603,7 @@ def _without_coverage(db: Session) -> list[tuple[str, str]]:
 @router.get("", response_class=HTMLResponse)
 def dashboard(request: Request, user=Depends(admin_page), db: Session = Depends(get_db)):
     if user.role != "admin":
-        return redirect("/admin/prices")
+        return _sales_home(request, user, db)
     counts = {slug: db.query(e.model).count() for slug, e in ENTITIES.items()}
     open_requests = db.query(QuoteRequest).filter(QuoteRequest.status == "neu").count()
     from .. import ai
@@ -615,6 +615,35 @@ def dashboard(request: Request, user=Depends(admin_page), db: Session = Depends(
                   voices_without_id=[v for v in db.query(Voice).filter(Voice.active.is_(True))
                                      .order_by(Voice.sort_order, Voice.id) if not v.has_tts],
                   without_coverage=_without_coverage(db),
+                  flash=pop_flash(request))
+
+
+SALES_TILES = {  # Startseite der Verkaufsleitung: Bereich → kurze Erklärung
+    "packages": "Pauschalpakete mit Preis, Laufzeit und Sendern",
+    "stations": "Radiosender und Streams mit Sekundenpreisen",
+    "time-slots": "Zeitschienen und Aufschläge",
+    "coverage": "Sendegebiete für die Reichweiten-Karte",
+    "addons": "Zusatzleistungen wie Express-Produktion",
+    "discounts": "Mengen-, Aktions- und Gutscheinrabatte",
+    "countries": "Länder und Mehrwertsteuersätze",
+}
+
+
+def _sales_home(request: Request, user, db: Session):
+    tiles = []
+    for slug, info in SALES_TILES.items():
+        e = ENTITIES[slug]
+        total = db.query(e.model).count()
+        active = (db.query(e.model).filter(e.model.active.is_(True)).count()
+                  if hasattr(e.model, "active") else total)
+        tiles.append({"slug": slug, "title": e.title, "info": info, "total": total, "active": active})
+    packages = db.query(Package).order_by(Package.sort_order, Package.id).all()
+    today = date.today()
+    discounts = [d for d in db.query(Discount).filter(Discount.active.is_(True)).order_by(Discount.sort_order, Discount.id)
+                 if (d.valid_until is None or d.valid_until >= today)]
+    return render(request, "admin/sales_home.html", user=user, tiles=tiles, cfg=get_settings(db),
+                  packages=[p for p in packages if p.active], inactive_packages=[p for p in packages if not p.active],
+                  discounts=discounts, without_coverage=_without_coverage(db), today=today,
                   flash=pop_flash(request))
 
 

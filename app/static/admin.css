@@ -154,3 +154,14 @@ fieldset.multi label.check { margin-top: 4px; font-weight: 500; }
   border: 0; border-radius: 0; height: 820px; }
 .variant .buttons { flex-wrap: wrap; gap: 6px; }
 .variant .buttons button { flex: 1 1 auto; padding: 6px 10px; }
+
+/* Startseite der Verkaufsleitung */
+.sales-tiles { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.sales-tiles .tile { display: flex; flex-direction: column; gap: 4px; }
+.sales-tiles .tile small.help { font-weight: 400; }
+.sales-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1000px) { .sales-grid { grid-template-columns: 1fr; } }
+.sales-grid .num { text-align: right; white-space: nowrap; }
+ul.plain { list-style: none; padding: 0; margin: 0; }
+ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--border); }
+ul.plain li:last-child { border-bottom: 0; }

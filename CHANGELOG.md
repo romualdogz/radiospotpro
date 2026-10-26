@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Startseite für die Verkaufsleitung:** Nach dem Login landet die Verkaufsleitung nicht mehr direkt in den
+  Preis-Einstellungen, sondern auf einer eigenen Übersicht: Kacheln für alle ihre Bereiche (mit Anzahl aktiv/
+  inaktiv und kurzer Erklärung), „Zu erledigen“ (kein aktives Paket, Sender/Pakete ohne Sendegebiet), Tabelle
+  der aktiven Komplettpakete (Art.-Nr., Preis, Schaltungen, Laufzeit, empfohlene Laufzeit), „Preise auf einen
+  Blick“ und die aktiven Rabatte. Erreichbar auch über „Radiospot Admin“ oben links.
 - **Fortschrittsanzeige beim Erstellen der Hörprobe:** Balken mit Prozent und wechselnden, lustigen Texten
   passend zum Arbeitsschritt – „Jetzt wird mal eingesprochen …“, „Es wird gemixt …“, „Es wird gemastert …“,
   „Gleich ist es soweit …“ (ohne Musik: „Es wird geschnitten …“). Dauert es länger, kommen Sprüche wie

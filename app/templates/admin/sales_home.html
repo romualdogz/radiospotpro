@@ -1,0 +1,86 @@
+{% extends "admin/base.html" %}
+{% block title %}Start{% endblock %}
+{% block content %}
+<h1>Willkommen, {{ user.username }}</h1>
+<p class="help">Hier pflegst du Pakete, Sender, Preise und Rabatte des Radiospot-Konfigurators.
+  Änderungen gelten sofort für neue Anfragen im <a href="/" target="_blank">Konfigurator ↗</a>.</p>
+
+<div class="tiles sales-tiles">
+  {% for t in tiles %}
+  <a class="tile" href="/admin/{{ t.slug }}">
+    <strong>{{ t.active }}</strong>
+    <span><b>{{ t.title }}</b>{% if t.total != t.active %} <small>({{ t.total - t.active }} inaktiv)</small>{% endif %}</span>
+    <small class="help">{{ t.info }}</small>
+  </a>
+  {% endfor %}
+  <a class="tile" href="/admin/prices">
+    <strong>€</strong><span><b>Preis-Einstellungen</b></span>
+    <small class="help">Studiospot, Werbeabgabe, Mindestbestellwert, Vorlaufzeit</small>
+  </a>
+</div>
+
+{% if without_coverage or not packages %}
+<section class="card">
+  <h2>Zu erledigen</h2>
+  <ul>
+    {% if not packages %}<li>Es ist noch <b>kein Komplettpaket aktiv</b> –
+      <a href="/admin/packages">Komplettpakete</a> anlegen oder aktivieren.</li>{% endif %}
+    {% if without_coverage %}<li>Ohne Sendegebiet (Karte bleibt im Konfigurator dunkel):
+      {% for label, url in without_coverage %}<a href="{{ url }}">{{ label }}</a>{{ ", " if not loop.last }}{% endfor %}</li>{% endif %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="sales-grid">
+  <section class="card">
+    <div class="head"><h2>Aktive Komplettpakete</h2><a href="/admin/packages/new">+ Neues Paket</a></div>
+    {% if packages %}
+    <table>
+      <thead><tr><th>Art.-Nr.</th><th>Paket</th><th class="num">Preis netto</th><th class="num">Schaltungen</th>
+        <th class="num">Laufzeit</th><th class="num">Empfohlen</th></tr></thead>
+      <tbody>
+      {% for p in packages %}
+        <tr>
+          <td>{{ p.article_no or "–" }}</td>
+          <td><a href="/admin/packages/{{ p.id }}">{{ p.name }}</a>{% if p.badge %} <span class="badge">{{ p.badge }}</span>{% endif %}</td>
+          <td class="num">{{ p.price_cent | eur }}</td>
+          <td class="num">{{ p.spots or "–" }}</td>
+          <td class="num">{{ (p.duration_days ~ " Tage") if p.duration_days else "frei" }}</td>
+          <td class="num">{{ (p.recommended_days ~ " Tage") if p.recommended_days else "–" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="help">Keine aktiven Pakete.</p>{% endif %}
+    {% if inactive_packages %}<p class="help">Inaktiv (im Konfigurator nicht sichtbar):
+      {% for p in inactive_packages %}<a href="/admin/packages/{{ p.id }}">{{ p.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+  </section>
+
+  <div>
+    <section class="card">
+      <div class="head"><h2>Preise auf einen Blick</h2><a href="/admin/prices">Ändern</a></div>
+      <table class="brief">
+        <tr><th>Studiospot</th><td>{{ cfg.studio_price_cent | eur }} netto</td></tr>
+        <tr><th>Werbeabgabe</th><td>{{ cfg.ad_tax_rate_bp | pct }} auf Sendezeit</td></tr>
+        <tr><th>Mindestbestellwert</th><td>{{ (cfg.min_order_cent | eur) if cfg.min_order_cent else "keiner" }}</td></tr>
+        <tr><th>Vorlaufzeit</th><td>{{ cfg.booking_lead_days }} Tage</td></tr>
+        <tr><th>Individuelle Buchung</th><td>{{ "angeboten" if cfg.individual_booking else "abgeschaltet – nur Pakete" }}</td></tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>Aktive Rabatte</h2><a href="/admin/discounts">Alle</a></div>
+      {% if discounts %}
+      <ul class="plain">
+        {% for d in discounts %}
+          <li><a href="/admin/discounts/{{ d.id }}">{{ d.name }}</a> –
+            {{ (d.value | pct) if d.kind.value == "percent" else (d.value | eur) }}
+            {% if d.promo_code %}<span class="badge">Code {{ d.promo_code }}</span>{% endif %}
+            {% if d.valid_until %}<small class="help">bis {{ d.valid_until | de_date }}</small>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="help">Keine aktiven Rabatte.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

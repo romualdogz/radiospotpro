@@ -28,7 +28,11 @@ def _sales_user(client, db):
 
 def test_sales_can_edit_countries_and_prices(client, db):
     _sales_user(client, db)
-    assert client.get("/admin", follow_redirects=False).headers["location"] == "/admin/prices"
+    home = client.get("/admin", follow_redirects=False)
+    assert home.status_code == 200 and "Willkommen, verkauf" in home.text
+    assert "Preise auf einen Blick" in home.text and "Aktive Komplettpakete" in home.text
+    assert 'href="/admin/packages"' in home.text and 'href="/admin/settings"' not in home.text
+    assert "/admin/requests" not in home.text and "KI-Textvorschlag" not in home.text  # kein Admin-Dashboard
     page = client.get("/admin/prices").text
     assert "Länder" in page and "Design" not in page and "Anfragen" not in page
     token = _csrf(client, "/admin/prices")
