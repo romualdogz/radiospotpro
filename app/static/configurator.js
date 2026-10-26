@@ -157,6 +157,17 @@
     btnNext.disabled = !canAdvance();
     const hint = document.getElementById("textHint");
     if (hint) hint.hidden = !btnNext.disabled;
+    emitUpdate();
+  }
+
+  // Zwischenstand für Erweiterungen (z. B. Spielmodus, gamify.js) – reine Info, ohne Kundendaten
+  function emitUpdate() {
+    document.dispatchEvent(new CustomEvent("radiospot:update", { detail: {
+      step: state.step, maxReached: state.maxReached, steps: STEPS.length,
+      scriptLength: state.script.trim().length, demo: !!state.demo,
+      discounts: state.quote?.discounts?.length || 0,
+      contact: !!(state.name.trim() && state.email.trim()), sent: !!state.sent,
+    } }));
   }
 
   // ------------------------------------------------------------------ Komplettpakete
@@ -203,6 +214,7 @@
     if (seq !== quoteSeq) return;
     state.quote = q;
     document.querySelectorAll("[data-price]").forEach((el) => el.replaceChildren(priceBlock()));
+    emitUpdate();
   }
 
   function priceBlock() {
@@ -514,6 +526,7 @@
             tonality_id: state.tonalityId, spot_length_id: state.lengthId });
         if (state.demo) URL.revokeObjectURL(state.demo.url);
         state.demo = { key: demoKey(), url };
+        emitUpdate();
         progress.done();
         await new Promise((r) => setTimeout(r, 700));  // „Fertig“ kurz zeigen
         showPlayer(url);

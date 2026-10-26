@@ -11,6 +11,12 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Spielmodus (optional)** – neue Variante **„Spielerisch“** bzw. *Anordnung → Spielmodus*: Über dem Konfigurator
+  eine Punkteleiste mit Level (Newcomer → Jingle-Profi → Studio-Star → Radiolegende), XP-Balken, „Nächste
+  Mission“ und acht Erfolgen zum Freischalten (u. a. „Wortakrobat“, „Erste Hörprobe“, „Sendeplan steht“,
+  geheimer Erfolg „Sparfuchs“ bei einem Rabatt, „ON AIR!“ beim Absenden). Erfolgs- und Level-Meldungen,
+  Konfetti bei Hörprobe und Anfrage, verspielte Animationen. Läuft nur im Browser, speichert nichts;
+  bei „Bewegung reduzieren“ ohne Animationen. Standard: aus.
 - **„Zurück zur Startseite“** nach dem Absenden der Anfrage (neben „Kostenaufstellung als PDF“): öffnet den
   Konfigurator leer ab Schritt 1 – die abgeschickte Anfrage bleibt gespeichert.
 - **Startseite für die Verkaufsleitung:** Nach dem Login landet die Verkaufsleitung nicht mehr direkt in den

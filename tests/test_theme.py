@@ -177,3 +177,13 @@ def test_layout_preview_only_for_admins(client, db):
     assert "lay-skin-neon" in page and "preset=ENERGY+Neon" in page
     assert "--accent: #e6007e" in client.get("/theme.css?preset=ENERGY+Neon").text
     assert "lay-skin-classic" in client.get("/").text  # nichts gespeichert
+
+
+def test_game_mode_variant(client, db):
+    assert "gamify.js" not in client.get("/").text  # standardmäßig aus
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    client.post("/admin/design", data={"csrf": token, "action": "variant:Spielerisch"})
+    page = client.get("/").text
+    assert "lay-game-on" in page and "/static/gamify.js" in page
+    assert client.get("/static/gamify.js").status_code == 200

@@ -80,6 +80,7 @@ LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
     "header": ("Kopfzeile", {"split": "Logo links, Untertitel rechts", "center": "Logo zentriert"}, "split"),
     "caps": ("Schreibweise der Überschriften", {"normal": "Normal", "upper": "GROSSBUCHSTABEN"}, "normal"),
     "wave": ("Wellen-Animation", {"on": "Anzeigen", "off": "Ausblenden"}, "on"),
+    "game": ("Spielmodus", {"off": "Aus", "on": "An – Punkte, Level, Erfolge & Konfetti"}, "off"),
 }
 LAYOUT_DEFAULTS = {f"layout_{k}": v[2] for k, v in LAYOUT.items()}
 
@@ -94,6 +95,10 @@ VARIANTS: dict[str, dict] = {
     "Studio": {"description": "Breit, Schritte als Seitenleiste, kleine Überschrift.", "colors": None,
                "layout": {"skin": "flat", "width": "wide", "hero": "compact", "steps": "side",
                           "header": "split", "caps": "normal", "wave": "off"}},
+    "Spielerisch": {"description": "Spielmodus: Punkte, Level, Erfolge zum Freischalten und Konfetti beim Absenden.",
+                    "colors": None,
+                    "layout": {"skin": "classic", "width": "narrow", "hero": "center", "steps": "dots",
+                               "header": "split", "caps": "normal", "wave": "on", "game": "on"}},
     "Kompakt": {"description": "Wenig Kopfbereich, Punkte-Navigation – schnell beim Formular.", "colors": None,
                 "layout": {"skin": "classic", "width": "narrow", "hero": "compact", "steps": "dots",
                            "header": "center", "caps": "normal", "wave": "off"}},

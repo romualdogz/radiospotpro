@@ -165,3 +165,5 @@ fieldset.multi label.check { margin-top: 4px; font-weight: 500; }
 ul.plain { list-style: none; padding: 0; margin: 0; }
 ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--border); }
 ul.plain li:last-child { border-bottom: 0; }
+.thumb.t-game-on .t-panel { background-image: linear-gradient(90deg, #ffd23f 65%, transparent 65%);
+  background-size: 100% 4px; background-repeat: no-repeat; }

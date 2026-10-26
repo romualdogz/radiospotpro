@@ -473,3 +473,56 @@ body.lay-skin-neon {
 @keyframes demo-stripes { to { background-position: 28px 0; } }
 @keyframes demo-text { from { opacity: 0; transform: translateY(3px); } }
 @media (prefers-reduced-motion: reduce) { .demo-bar-fill, .demo-progress-text { animation: none; } }
+
+/* Spielmodus (gamify.js) */
+.game-hud { padding: 14px 28px 12px; border-bottom: 1px solid var(--line-soft);
+  background: linear-gradient(135deg, var(--accent-soft), transparent 70%); }
+.game-hud.bump { animation: game-bump .45s ease-out; }
+@keyframes game-bump { 30% { transform: scale(1.012); } }
+.game-hud-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.game-level { display: flex; align-items: baseline; gap: 8px; }
+.game-level-no { font: 700 0.72rem var(--head); color: var(--button-text, #fff); background: var(--accent);
+  border-radius: 999px; padding: 3px 9px; letter-spacing: .04em; }
+.game-level-name { font-family: var(--head); font-size: 1.02rem; }
+.game-xp { font: 600 0.85rem var(--head); color: var(--accent); font-variant-numeric: tabular-nums; cursor: help; }
+.game-meter { height: 10px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+.game-meter-fill { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .8s cubic-bezier(.2,.9,.3,1.2);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), #ffd23f); }
+.game-hud-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.game-mission { font-size: 0.84rem; color: var(--text); }
+.game-mission-label { color: var(--text-muted); }
+.game-badges { display: flex; gap: 4px; }
+.game-badge { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; font-size: 0.95rem;
+  background: var(--bg-field); border: 1.5px solid var(--accent); cursor: help; }
+.game-badge.locked { filter: grayscale(1); opacity: .35; border-style: dashed; border-color: var(--line); }
+.game-badge.pop { animation: game-pop .6s cubic-bezier(.2,1.6,.4,1); }
+@keyframes game-pop { 0% { transform: scale(.3) rotate(-30deg); } 100% { transform: none; } }
+.game-hud.finished .game-meter-fill { background: linear-gradient(90deg, #ffd23f, var(--accent), #ffd23f); }
+.game-toasts { position: fixed; right: 16px; bottom: 16px; z-index: 2000; display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none; max-width: calc(100vw - 32px); }
+.game-toast { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; min-width: 240px;
+  background: #141414; color: #fff; box-shadow: 0 12px 34px rgba(0,0,0,.35); border-left: 4px solid #ffd23f;
+  font-family: var(--sans); animation: game-in .45s cubic-bezier(.2,1.4,.4,1); transition: opacity .5s, transform .5s; }
+.game-toast.level-up { border-left-color: #3bceac; }
+.game-toast.out { opacity: 0; transform: translateX(40px); }
+.game-toast-icon { font-size: 1.7rem; }
+.game-toast-text { display: flex; flex-direction: column; line-height: 1.25; }
+.game-toast-text small { font-size: 0.7rem; text-transform: uppercase; letter-spacing: .06em; color: #ffd23f; }
+.game-toast.level-up small { color: #3bceac; }
+.game-toast-text b { font-family: var(--head); font-size: 1rem; }
+.game-toast-xp { font-size: 0.8rem; color: #bbb; }
+@keyframes game-in { from { opacity: 0; transform: translateY(20px) scale(.9); } }
+.game-confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1999; }
+/* Spielerische Details am Konfigurator */
+.lay-game-on .chip, .lay-game-on .voice.option { transition: transform .15s; }
+.lay-game-on .chip:hover, .lay-game-on .voice.option:hover { transform: translateY(-2px); }
+.lay-game-on .chip.sel { animation: game-pop .35s ease-out; }
+.lay-game-on #btnNext:not(:disabled) { animation: game-pulse 2.4s ease-in-out infinite; }
+@keyframes game-pulse { 50% { box-shadow: 0 0 0 6px var(--accent-soft); } }
+@media (prefers-reduced-motion: reduce) {
+  .game-hud.bump, .game-badge.pop, .game-toast, .lay-game-on .chip.sel, .lay-game-on #btnNext { animation: none !important; }
+}
+@media (max-width: 560px) {
+  .game-hud { padding: 12px 16px 10px; }
+  .game-badge { width: 24px; height: 24px; font-size: 0.8rem; }
+}
