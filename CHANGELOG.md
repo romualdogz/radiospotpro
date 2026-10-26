@@ -8,6 +8,15 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 
 ---
 
+## 26.10.2026
+
+### Neu
+- **Empfohlene Laufzeit bei Paketen** (*Komplettpakete → „Empfohlene Laufzeit (Tage)“*): Empfehlung für den
+  Verkauf, getrennt von der festen Laufzeit. Wird gespeichert und im Admin sowie in der Admin-API angezeigt,
+  im Konfigurator noch nicht verwendet – Grundlage für eine spätere Funktion.
+
+---
+
 ## 25.10.2026
 
 ### Neu

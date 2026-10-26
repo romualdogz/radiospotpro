@@ -228,6 +228,8 @@ def _finalize_package(d: dict) -> dict:
     d["article_no"] = d.get("article_no", "").strip()[:40]
     if not 0 <= d.get("duration_days", 0) <= 366:
         raise ValueError("Laufzeit: 0 bis 366 Tage")
+    if not 0 <= d.get("recommended_days", 0) <= 366:
+        raise ValueError("Empfohlene Laufzeit: 0 bis 366 Tage")
     if d["airtime_cent"] > d["price_cent"]:
         raise ValueError("Der Sendezeit-Anteil kann nicht höher als der Paketpreis sein")
     if not 0 <= d["max_seconds"] <= 300:
@@ -380,6 +382,9 @@ ENTITIES: dict[str, Entity] = {
             F("duration_days", "Laufzeit (Tage)", "int",
               help="Der Kunde wählt nur den Beginn, das Ende ergibt sich aus der Laufzeit (z. B. 14 = zwei Wochen). "
                    "0 = Kunde wählt Beginn und Ende selbst."),
+            F("recommended_days", "Empfohlene Laufzeit (Tage)", "int",
+              help="Empfehlung für den Verkauf, z. B. 28 = vier Wochen. Wird gespeichert, im Konfigurator aber "
+                   "noch nicht angezeigt (für eine spätere Funktion). 0 = keine Empfehlung."),
             F("max_seconds", "Für Spots bis … Sek.", "int", in_list=False,
               help="0 = jede Spotlänge. Längere Spots können das Paket nicht wählen"),
             F("includes_studio", "Studiospot inklusive", "bool",
@@ -450,7 +455,7 @@ def _form_value(entity: Entity, f: F, obj: Any) -> str:
         if f.type == "multi":
             return []
         return {"active": "on", "technology": "ukw", "stackable": "on", "price_factor_bp": "1", "pitch_bp": "1", "rate_bp": "1",
-                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "duration_days": "0", "reverse_charge": "on",
+                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "duration_days": "0", "recommended_days": "0", "reverse_charge": "on",
                 **({"vat_rate_bp": "20"} if entity.slug == "countries" else {}),
                 **(_VOICE_FORM_DEFAULTS if entity.slug == "voices" else {})}.get(f.name, "")
     if f.name == "value_raw":  # Rabattwert je nach Art

@@ -219,6 +219,8 @@ class Package(Base):
     # Sender, zwischen denen der Kunde beim Paket wählt (leer = Paket mit festem Sendeumfang)
     station_ids: Mapped[list] = mapped_column(JSON, default=list)
     duration_days: Mapped[int] = mapped_column(Integer, default=0)  # Laufzeit in Tagen, 0 = Zeitraum frei
+    # Empfehlung für den Verkauf (noch nicht im Konfigurator verwendet), 0 = keine Angabe
+    recommended_days: Mapped[int] = mapped_column(Integer, default=0)
     # "choose" = Kunde wählt einen der Sender, "all" = alle angehakten Sender sind im Paket enthalten
     station_mode: Mapped[str] = mapped_column(String(10), default="choose")
     active: Mapped[bool] = mapped_column(Boolean, default=True)

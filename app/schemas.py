@@ -479,6 +479,7 @@ class PackageIn(BaseModel):
     station_ids: list[int] = Field(default_factory=list)
     station_mode: Literal["choose", "all"] = "choose"
     duration_days: int = Field(default=0, ge=0, le=366, description="Laufzeit in Tagen; 0 = Zeitraum frei wählbar")
+    recommended_days: int = Field(default=0, ge=0, le=366, description="Empfohlene Laufzeit für den Verkauf; 0 = keine")
     active: bool = True
     sort_order: int = 0
 

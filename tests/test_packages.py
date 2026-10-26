@@ -309,3 +309,20 @@ def test_booking_period(client, db, cat):
     assert "(14 Tage)" in client.get(f"/admin/requests/{r.json()['id']}").text
     assert 'name="duration_days"' in client.get(f"/admin/packages/{cat['basic'].id}").text
     assert 'name="booking_lead_days"' in client.get("/admin/prices").text
+
+
+def test_recommended_days_stored_for_sales(client, db, cat):
+    def csrf(path):
+        return re.search(r'name="csrf" value="([^"]+)"', client.get(path).text).group(1)
+    token = csrf("/admin/login")
+    client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": token})
+    token = csrf("/admin/packages/new")
+    form = {"csrf": token, "name": "Empfehlung", "price_cent": "990", "spots": "20", "max_seconds": "0",
+            "airtime_cent": "0", "duration_days": "0", "recommended_days": "28", "sort_order": "9", "active": "on"}
+    assert "gespeichert" in client.post("/admin/packages/new", data=form).text
+    p = db.query(Package).filter_by(name="Empfehlung").one()
+    assert p.recommended_days == 28
+    assert "Empfohlene Laufzeit" in client.get("/admin/packages").text
+    assert "0 bis 366" in client.post("/admin/packages/new", data={**form, "name": "X", "recommended_days": "999"}).text
+    assert client.get("/api/admin/packages", auth=("admin", "test-password")).json()[-1]["recommended_days"] == 28
+    assert "recommended_days" not in client.get("/api/catalog").json()["packages"][0]  # noch nicht für Kunden
