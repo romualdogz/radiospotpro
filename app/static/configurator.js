@@ -119,7 +119,7 @@
 
   STEPS.forEach((name, i) => {
     dialRow.append(h("button", { type: "button", class: "freq", onclick: () => { if (i <= state.maxReached) goTo(i); } },
-      `Schritt ${i + 1} von ${STEPS.length}`, h("span", { class: "fname" }, name)));
+      h("span", { class: "fstep" }, `Schritt ${i + 1} von ${STEPS.length}`), h("span", { class: "fname" }, name)));
   });
 
   function renderDial() {

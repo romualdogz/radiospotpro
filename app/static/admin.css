@@ -112,3 +112,45 @@ fieldset.multi label.check { margin-top: 4px; font-weight: 500; }
 .color-field .hex { width: 100px; font-family: ui-monospace, monospace; }
 .color-presets { display: inline-flex; gap: 6px; margin-left: 4px; }
 .color-presets .preset { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
+
+/* Layout-Designer (Design → Layout-Varianten) */
+.variants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 10px 0 6px; }
+.variant { border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.variant.current { border-color: var(--accent); }
+.variant.looking { box-shadow: 0 0 0 2px var(--accent); }
+.variant .buttons { margin-top: auto; padding-top: 6px; }
+.variant .check.small { font-size: .82rem; font-weight: 400; }
+.layout-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+@media (max-width: 560px) { .variants, .layout-options { grid-template-columns: 1fr; } }
+/* Mini-Schema einer Variante */
+.thumb { --w: 70%; height: 96px; border-radius: 6px; background: var(--t-bg); padding: 6px; display: flex;
+  flex-direction: column; gap: 4px; overflow: hidden; border: 1px solid var(--border); }
+.thumb i { display: block; }
+.thumb .t-head { height: 5px; width: 30%; background: var(--t-text); opacity: .7; border-radius: 2px; }
+.thumb.t-header-center .t-head { align-self: center; }
+.thumb .t-hero { height: 9px; width: 55%; background: var(--t-text); border-radius: 2px; }
+.thumb.t-hero-center .t-hero { align-self: center; }
+.thumb.t-hero-compact .t-hero { height: 5px; width: 35%; }
+.thumb.t-hero-hidden .t-hero { display: none; }
+.thumb .t-panel { flex: 1; width: var(--w); align-self: center; background: var(--t-panel); border-radius: 4px; display: flex;
+  flex-direction: column; padding: 4px; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.thumb.t-width-wide { --w: 100%; }
+.thumb.t-skin-neon .t-panel { box-shadow: 0 0 0 1px var(--t-accent), 0 0 10px var(--t-accent); }
+.thumb.t-skin-flat .t-panel { box-shadow: none; }
+.thumb .t-steps { height: 3px; background: linear-gradient(90deg, var(--t-accent) 30%, var(--t-line) 30%); border-radius: 2px; }
+.thumb.t-steps-dots .t-steps { height: 5px; background: radial-gradient(circle, var(--t-accent) 45%, transparent 50%) 0 0 / 25% 100% repeat-x; }
+.thumb.t-steps-side .t-panel { flex-direction: row; }
+.thumb.t-steps-side .t-steps { width: 22%; height: auto; background: repeating-linear-gradient(180deg, var(--t-line) 0 4px, transparent 4px 9px);
+  border-right: 2px solid var(--t-accent); }
+.thumb .t-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.thumb .t-body i { height: 4px; background: var(--t-line); border-radius: 2px; }
+.thumb .t-body i:first-child { width: 40%; background: var(--t-accent); }
+.thumb .t-body i:last-child { width: 70%; }
+.device-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.device-toggle button { border: 0; border-radius: 0; padding: 4px 10px; background: none; }
+.device-toggle button.on { background: var(--accent); color: #fff; }
+.preview-stage { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.preview-stage iframe { position: absolute; top: 0; left: 50%; translate: -50% 0; transform-origin: top center;
+  border: 0; border-radius: 0; height: 820px; }
+.variant .buttons { flex-wrap: wrap; gap: 6px; }
+.variant .buttons button { flex: 1 1 auto; padding: 6px 10px; }

@@ -345,3 +345,117 @@ a.btn { display: inline-block; text-decoration: none; }
 .period input[type=date] { width: 100%; background: var(--bg-field); border: 1px solid var(--line); color: var(--text);
   border-radius: 8px; padding: 10px 12px; font-family: var(--sans); font-size: 0.96rem; }
 .period .field { margin-bottom: 4px; }
+
+/* ======================================================================
+   Layout-Varianten (Admin → Design → Layout). Klassen am <body>: lay-<option>-<wert>
+   ====================================================================== */
+.fstep { display: block; }
+
+/* Breite */
+.lay-width-wide .wrap { max-width: 1240px; }
+
+/* Kopfzeile */
+.lay-header-center .top-inner { flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+
+/* Überschrift */
+.lay-hero-center .hero { text-align: center; }
+.lay-hero-center .hero h1 { max-width: 24ch; margin-left: auto; margin-right: auto; }
+.lay-hero-center .wave { justify-content: center; }
+body.lay-hero-compact .hero { padding: 26px 0 20px; }
+body.lay-hero-compact .hero h1 { font-size: clamp(1.25rem, 2.4vw, 1.6rem); max-width: none; margin: 0; }
+body.lay-hero-compact .wave { display: none; }
+.lay-hero-hidden .hero { padding: 18px 0 0; }
+.lay-hero-hidden .hero h1, .lay-hero-hidden .wave { position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; }
+.lay-wave-off .wave { display: none; }
+.lay-wave-off .hero h1 { margin-bottom: 0; }
+.lay-wave-off:not(.lay-hero-compact):not(.lay-hero-hidden) .hero { padding-bottom: 34px; }
+
+/* Großbuchstaben */
+.lay-caps-upper .hero h1, .lay-caps-upper .step h2, .lay-caps-upper .step h3.sub, .lay-caps-upper .fname {
+  text-transform: uppercase; letter-spacing: 0.02em; }
+.lay-caps-upper .hero h1 { font-weight: 700; }
+
+/* Schritt-Navigation: nummerierte Punkte mit Namen (oben) oder Seitenleiste */
+.lay-steps-dots .dial-row, .lay-steps-side .dial-row { counter-reset: step; }
+.lay-steps-dots .freq, .lay-steps-side .freq { counter-increment: step; }
+.lay-steps-dots .fstep, .lay-steps-side .fstep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.lay-steps-dots .freq::before, .lay-steps-side .freq::before {
+  content: counter(step); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--line); background: var(--bg-panel); color: var(--text-muted);
+  font: 600 0.82rem var(--head); position: relative; z-index: 1; transition: all .25s; }
+.lay-steps-dots .freq.done::before, .lay-steps-side .freq.done::before { border-color: var(--accent); color: var(--accent); }
+.lay-steps-dots .freq.active::before, .lay-steps-side .freq.active::before {
+  background: var(--accent); border-color: var(--accent); color: var(--button-text, #fff);
+  box-shadow: 0 0 0 5px var(--accent-soft); }
+.lay-steps-dots .fname, .lay-steps-side .fname { font-size: 0.78rem; font-weight: 600; margin-top: 0; }
+.lay-steps-dots .freq.active .fname, .lay-steps-side .freq.active .fname { color: var(--accent); }
+
+.lay-steps-dots .track { display: none; }
+.lay-steps-dots .dial { padding: 22px 20px 18px; }
+.lay-steps-dots .dial-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; }
+.lay-steps-dots .freq { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; padding: 0; }
+.lay-steps-dots .freq:not(:last-child)::after {  /* Verbindungslinie zum nächsten Punkt */
+  content: ""; position: absolute; top: 13px; left: calc(50% + 18px); width: calc(100% - 36px); height: 2px;
+  background: var(--line); }
+.lay-steps-dots .freq.done::after { background: var(--accent); }
+
+@media (min-width: 761px) {
+  .lay-steps-side .panel { display: grid; grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-areas: "nav step" "nav actions"; grid-template-rows: 1fr auto; }
+  .lay-steps-side .dial { grid-area: nav; border-bottom: 0; border-right: 1px solid var(--line-soft);
+    padding: 28px 18px; background: color-mix(in srgb, var(--bg-field) 60%, var(--bg-panel)); }
+  .lay-steps-side #stepHost { grid-area: step; min-width: 0; }
+  .lay-steps-side .row-actions { grid-area: actions; }
+  .lay-steps-side .track { display: none; }
+  .lay-steps-side .dial-row { flex-direction: column; gap: 0; margin: 0; position: sticky; top: 16px; }
+  .lay-steps-side .freq { display: flex; align-items: center; gap: 12px; padding: 10px 0; text-align: left; position: relative; }
+  .lay-steps-side .freq:not(:last-child)::after { content: ""; position: absolute; left: 13px; top: calc(50% + 16px);
+    height: calc(100% - 32px); width: 2px; background: var(--line); }
+  .lay-steps-side .freq.done::after { background: var(--accent); }
+  .lay-steps-side .fname { font-size: 0.9rem; }
+}
+@media (max-width: 760px) {  /* Handy: Seitenleiste wird zur Punkte-Leiste oben */
+  .lay-steps-side .track { display: none; }
+  .lay-steps-side .dial-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; }
+  .lay-steps-side .freq { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; }
+}
+@media (max-width: 560px) {
+  .lay-steps-dots .fname, .lay-steps-side .fname { font-size: 0.64rem; }
+}
+
+/* Stil: Flach */
+.lay-skin-flat .panel { box-shadow: none; border-color: transparent; }
+
+/* Stil: Neon – dunkles Raster, Leuchtrahmen in der Akzentfarbe */
+body.lay-skin-neon {
+  --glow: var(--page-accent, #e6007e);
+  background:
+    radial-gradient(900px 520px at 0% 0%, color-mix(in srgb, var(--glow) 26%, transparent), transparent 70%),
+    radial-gradient(800px 600px at 100% 30%, color-mix(in srgb, var(--glow) 18%, transparent), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 48px),
+    var(--bg);
+  background-attachment: fixed;
+}
+.lay-skin-neon header.top { background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(6px); }
+.lay-skin-neon .hero h1 { text-shadow: 0 0 28px color-mix(in srgb, var(--glow) 55%, transparent); }
+.lay-skin-neon .panel {
+  border: 1px solid color-mix(in srgb, var(--glow) 75%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--glow) 25%, transparent),
+              0 0 34px color-mix(in srgb, var(--glow) 38%, transparent),
+              inset 0 0 40px color-mix(in srgb, var(--glow) 8%, transparent);
+}
+.lay-skin-neon .dial { border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.lay-skin-neon .step h2 { text-align: center; font-weight: 700; }
+.lay-skin-neon .step h2 + .hint { text-align: center; }
+.lay-skin-neon .panel .btn:not(.ghost):not(:disabled) {
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 60%, transparent); text-transform: uppercase; letter-spacing: .03em; }
+.lay-skin-neon .chip.sel, .lay-skin-neon .voice.sel {
+  box-shadow: 0 0 0 1px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
+.lay-skin-neon .freq.active::before { box-shadow: 0 0 0 4px var(--accent-soft), 0 0 16px var(--accent); }
+.lay-skin-neon .needle { box-shadow: 0 0 0 4px var(--accent-soft), 0 0 14px var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .lay-skin-neon .panel { animation: neon-breathe 5s ease-in-out infinite; }
+}
+@keyframes neon-breathe { 50% { border-color: color-mix(in srgb, var(--glow) 100%, transparent); } }

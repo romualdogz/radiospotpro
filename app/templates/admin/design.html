@@ -4,6 +4,58 @@
 <h1>Design des Konfigurators</h1>
 <div class="design-layout">
   <div>
+    <form method="post" action="/admin/design" class="card form" id="layoutForm">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <h2>Layout-Varianten</h2>
+      <p class="help">Fertige Bildschirm-Designs. <b>Ansehen</b> zeigt die Variante rechts in der Vorschau
+        (noch nicht gespeichert), <b>Übernehmen</b> schaltet sie für alle Besucher frei.</p>
+      <div class="variants">
+        {% for name, v in variants.items() %}
+          {% set lay = variant_layouts[name] %}
+          {% set pal = presets[v.colors] if v.colors else design %}
+          <div class="variant{{ ' current' if name == current_variant }}"
+               data-variant="{{ name }}" data-layout='{{ lay | tojson }}' data-preset="{{ v.colors or '' }}">
+            <div class="thumb {% for k, val in lay.items() %}t-{{ k[7:] }}-{{ val }} {% endfor %}"
+                 style="--t-bg: {{ pal.page_bg }}; --t-panel: {{ pal.panel_bg }}; --t-accent: {{ pal.accent }};
+                        --t-text: {{ pal.page_text }}; --t-line: {{ pal.line }}" aria-hidden="true">
+              <i class="t-head"></i><i class="t-hero"></i>
+              <div class="t-panel"><i class="t-steps"></i><div class="t-body"><i></i><i></i><i></i></div></div>
+            </div>
+            <b>{{ name }}{% if name == current_variant %} <span class="badge">aktiv</span>{% endif %}</b>
+            <small class="help">{{ v.description }}</small>
+            {% if v.colors %}<label class="check small"><input type="checkbox" name="with_colors" checked
+              form="variant-{{ loop.index }}"> Farben „{{ v.colors }}“ mit übernehmen</label>{% endif %}
+            <div class="buttons">
+              <button type="button" data-look>Ansehen</button>
+              <button class="primary" form="variant-{{ loop.index }}" name="action" value="variant:{{ name }}">Übernehmen</button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <h2>Anordnung im Detail</h2>
+      <p class="help">Einzelne Elemente frei kombinieren – jede Änderung erscheint sofort in der Vorschau.</p>
+      <div class="layout-options">
+        {% for key, (label, choices, default) in layout_options.items() %}
+          <label>{{ label }}
+            <select name="layout_{{ key }}" data-layout-field>
+              {% for value, text in choices.items() %}
+                <option value="{{ value }}" {{ 'selected' if design['layout_' ~ key] == value }}>{{ text }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="buttons">
+        <button class="primary" name="action" value="layout">Layout speichern</button>
+        <button type="button" id="layoutUndo">Vorschau zurücksetzen</button>
+      </div>
+    </form>
+    {% for name in variants %}
+      <form method="post" action="/admin/design" id="variant-{{ loop.index }}" hidden>
+        <input type="hidden" name="csrf" value="{{ csrf }}"></form>
+    {% endfor %}
+
     <form method="post" action="/admin/design/logo" enctype="multipart/form-data" class="card form">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <h2>Logo</h2>
@@ -103,12 +155,64 @@
   </div>
 
   <div class="card preview">
-    <div class="head"><h2>Vorschau</h2><a href="/" target="_blank">In neuem Tab öffnen ↗</a></div>
-    <iframe src="/?admin-preview={{ range(1000000) | random }}" title="Vorschau Konfigurator"></iframe>
-    <small class="help">Zeigt den gespeicherten Stand – nach dem Speichern aktualisiert sich die Vorschau.</small>
+    <div class="head"><h2>Vorschau</h2>
+      <div class="device-toggle" role="group" aria-label="Bildschirmgröße">
+        <button type="button" data-device="1280" class="on">Desktop</button>
+        <button type="button" data-device="390">Handy</button>
+      </div>
+      <a href="/" target="_blank" id="previewOpen">In neuem Tab öffnen ↗</a></div>
+    <div class="preview-stage" id="previewStage">
+      <iframe id="previewFrame" src="/?admin-preview={{ range(1000000) | random }}" title="Vorschau Konfigurator"></iframe>
+    </div>
+    <small class="help" id="previewNote">Zeigt den gespeicherten Stand – nach dem Speichern aktualisiert sich die Vorschau.</small>
   </div>
 </div>
 <script>
+  // Layout-Designer: Live-Vorschau (Query-Parameter gelten nur für eingeloggte Admins, nichts wird gespeichert)
+  const frame = document.getElementById("previewFrame"), stage = document.getElementById("previewStage");
+  const note = document.getElementById("previewNote"), fields = [...document.querySelectorAll("[data-layout-field]")];
+  const saved = Object.fromEntries(fields.map((f) => [f.name, f.value]));
+  let device = 1280, preset = "";
+  function fit() {  // Desktop-Ansicht verkleinert darstellen, damit breite Layouts echt aussehen
+    const scale = Math.min(1, stage.clientWidth / device);
+    frame.style.width = device + "px";
+    frame.style.height = (820 / scale) + "px";
+    frame.style.transform = `scale(${scale})`;
+    stage.style.height = "820px";
+  }
+  function preview() {
+    const params = new URLSearchParams(fields.map((f) => [f.name, f.value]));
+    if (preset) params.set("preset", preset);
+    const changed = preset || fields.some((f) => f.value !== saved[f.name]);
+    frame.src = "/?" + params;
+    document.getElementById("previewOpen").href = frame.src;
+    note.textContent = changed ? "Vorschau – noch nicht gespeichert." : "Zeigt den gespeicherten Stand.";
+  }
+  fields.forEach((f) => f.addEventListener("change", preview));
+  document.querySelectorAll("[data-variant]").forEach((card) => {
+    card.querySelector("[data-look]").addEventListener("click", () => {
+      const layout = JSON.parse(card.dataset.layout);
+      fields.forEach((f) => { f.value = layout[f.name]; });
+      const box = card.querySelector("input[name=with_colors]");
+      preset = card.dataset.preset && (!box || box.checked) ? card.dataset.preset : "";
+      document.querySelectorAll(".variant").forEach((c) => c.classList.toggle("looking", c === card));
+      preview();
+    });
+  });
+  document.getElementById("layoutUndo").addEventListener("click", () => {
+    fields.forEach((f) => { f.value = saved[f.name]; });
+    preset = "";
+    document.querySelectorAll(".variant").forEach((c) => c.classList.remove("looking"));
+    preview();
+  });
+  document.querySelectorAll("[data-device]").forEach((b) => b.addEventListener("click", () => {
+    device = +b.dataset.device;
+    document.querySelectorAll("[data-device]").forEach((x) => x.classList.toggle("on", x === b));
+    fit();
+  }));
+  window.addEventListener("resize", fit);
+  fit();
+
   // Logo-Höhe live in der Vorschau anzeigen
   const heightInput = document.getElementById("logoHeight");
   heightInput.addEventListener("input", () => {

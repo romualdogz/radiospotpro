@@ -11,6 +11,17 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Layout-Designer** (*Design → Layout-Varianten*): vier fertige Bildschirm-Designs zum Wechseln –
+  **Klassisch** (wie bisher), **ENERGY Neon** (dunkel, Magenta-Leuchtrahmen, Raster, zentrierte Großbuchstaben,
+  breit – nach dem Ad-Boost-Mockup, mit passender Farbvorlage), **Studio** (breit, Schritte als Seitenleiste)
+  und **Kompakt** (kleiner Kopfbereich, Punkte-Navigation). Je Variante ein Mini-Schema, „Ansehen“ (nur
+  Vorschau) und „Übernehmen“.
+- **Anordnung im Detail** frei kombinierbar: Stil (Klassisch/Neon/Flach), Breite, Überschrift (groß links,
+  zentriert, klein, ausgeblendet), Schritt-Navigation (Senderskala, nummerierte Punkte, Seitenleiste),
+  Kopfzeile (Logo links oder zentriert), Großbuchstaben, Wellen-Animation.
+- **Live-Vorschau** mit Umschalter **Desktop/Handy**: Änderungen erscheinen sofort, ohne zu speichern
+  (nur für eingeloggte Admins sichtbar). Am Handy wird die Seitenleiste automatisch zur Punkte-Leiste.
+- Farbvorlage **„ENERGY Neon“**.
 - **Empfohlene Laufzeit bei Paketen** (*Komplettpakete → „Empfohlene Laufzeit (Tage)“*): Empfehlung für den
   Verkauf, getrennt von der festen Laufzeit. Wird gespeichert und im Admin sowie in der Admin-API angezeigt,
   im Konfigurator noch nicht verwendet – Grundlage für eine spätere Funktion.

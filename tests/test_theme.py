@@ -145,3 +145,35 @@ def test_hero_texts_and_size(client, db):
     assert theme.get_theme(db)["tagline"] == "Radio Energy Österreich"
     client.post("/admin/design", data={"csrf": token, "action": "reset"})
     assert theme.get_theme(db)["hero_size"] == "100"
+
+
+def test_layout_variant_and_options(client, db):
+    assert "lay-skin-classic" in client.get("/").text and "lay-steps-top" in client.get("/").text
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    r = client.post("/admin/design", data={"csrf": token, "action": "variant:ENERGY Neon", "with_colors": "on"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    page = client.get("/").text
+    assert "lay-skin-neon" in page and "lay-steps-dots" in page and "lay-caps-upper" in page
+    assert "--accent: #e6007e" in client.get("/theme.css").text
+    assert "ENERGY Neon <span class=\"badge\">aktiv</span>" in client.get("/admin/design").text
+    # Einzelne Option ändern, ungültiger Wert fällt auf Standard zurück
+    r = client.post("/admin/design", data={"csrf": token, "action": "layout", **theme.variant_layout("ENERGY Neon"),
+                                           "layout_steps": "side", "layout_width": "riesig"}, follow_redirects=False)
+    page = client.get("/").text
+    assert "lay-steps-side" in page and "lay-width-narrow" in page and "lay-skin-neon" in page
+    # Speichern im Farb-/Schrift-Formular lässt das Layout unverändert
+    client.post("/admin/design", data=_form(theme.get_theme(db), csrf=token, action="save", page_bg="#101010"))
+    assert "lay-steps-side" in client.get("/").text
+
+
+def test_layout_preview_only_for_admins(client, db):
+    q = "/?layout_skin=neon&preset=ENERGY+Neon"
+    assert "lay-skin-neon" not in client.get(q).text  # Besucher: Parameter werden ignoriert
+    assert "#e6007e" not in client.get("/theme.css?preset=ENERGY+Neon").text
+    _login(client)
+    page = client.get(q).text
+    assert "lay-skin-neon" in page and "preset=ENERGY+Neon" in page
+    assert "--accent: #e6007e" in client.get("/theme.css?preset=ENERGY+Neon").text
+    assert "lay-skin-classic" in client.get("/").text  # nichts gespeichert

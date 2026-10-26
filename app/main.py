@@ -6,6 +6,7 @@ Start:  uvicorn app.main:app --reload
     /docs           OpenAPI-Dokumentation
 """
 from contextlib import asynccontextmanager
+from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,7 @@ from .config import BASE_DIR, settings
 from .database import SessionLocal, get_db, upgrade_schema
 from . import branding, fonts, theme
 from .models import LegalText
+from .security import current_admin_or_none
 from .routers import admin_api, admin_ui, public
 from .seed import (
     apply_tonality_presets, attach_demo_music, ensure_admin, ensure_countries, ensure_legal_texts, ensure_example_packages, seed_demo_data, ensure_coverage_areas, ensure_station_colors,
@@ -81,12 +83,28 @@ async def _forbidden(request: Request, exc):
     return admin_ui.forbidden_page(request, exc.user)
 
 
+def _design(request: Request, db: Session) -> tuple[dict, str]:
+    """Gespeichertes Design – für eingeloggte Admins mit Live-Vorschau aus dem Layout-Designer
+    (?preset=…&layout_…=…, wird nicht gespeichert). Liefert zusätzlich den Query-String für /theme.css."""
+    design = theme.get_theme(db)
+    q = request.query_params
+    keys = [k for k in q if k.startswith("layout_") or k == "preset"]
+    if not keys or current_admin_or_none(request, db) is None:
+        return design, ""
+    design.update(theme.PRESETS.get(q.get("preset", ""), {}))
+    design.update(theme.validate_layout({**design, **q}))
+    return design, "&" + urlencode({k: q[k] for k in keys})
+
+
+def _page_context(request: Request, db: Session) -> dict:
+    design, preview_qs = _design(request, db)
+    return {"fonts_url": theme.fonts_url(design), "theme_version": theme.version(design) + preview_qs,
+            "logo": branding.get_logo(db), "design": design, "body_class": theme.body_class(design)}
+
+
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def configurator(request: Request, db: Session = Depends(get_db)):
-    design = theme.get_theme(db)
-    return admin_ui.templates.TemplateResponse(request, "configurator.html", {
-        "fonts_url": theme.fonts_url(design), "theme_version": theme.version(design),
-        "logo": branding.get_logo(db), "design": design})
+    return admin_ui.templates.TemplateResponse(request, "configurator.html", _page_context(request, db))
 
 
 @app.get("/agb", response_class=HTMLResponse, include_in_schema=False)
@@ -94,10 +112,8 @@ def configurator(request: Request, db: Session = Depends(get_db)):
 def legal_page(request: Request, db: Session = Depends(get_db)):
     key = request.url.path.strip("/")
     text = db.query(LegalText).filter_by(key=key).first()
-    design = theme.get_theme(db)
-    return admin_ui.templates.TemplateResponse(request, "legal.html", {
-        "text": text, "fonts_url": theme.fonts_url(design), "theme_version": theme.version(design),
-        "logo": branding.get_logo(db), "design": design})
+    return admin_ui.templates.TemplateResponse(request, "legal.html",
+                                               {"text": text, **_page_context(request, db)})
 
 
 @app.get("/media/logo/{name}", include_in_schema=False)
@@ -118,9 +134,10 @@ def fonts_css(db: Session = Depends(get_db)):
 
 
 @app.get("/theme.css", include_in_schema=False)
-def theme_css(db: Session = Depends(get_db)):
-    return Response(theme.css(theme.get_theme(db)), media_type="text/css",
-                    headers={"Cache-Control": "public, max-age=300"})
+def theme_css(request: Request, db: Session = Depends(get_db)):
+    design, preview_qs = _design(request, db)
+    return Response(theme.css(design), media_type="text/css",
+                    headers={"Cache-Control": "no-store" if preview_qs else "public, max-age=300"})
 
 
 @app.get("/health", include_in_schema=False)

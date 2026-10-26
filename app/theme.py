@@ -60,6 +60,45 @@ PRESETS: dict[str, dict[str, str]] = {
     },
 }
 
+PRESETS["ENERGY Neon"] = {
+    "page_bg": "#0e0e12", "page_text": "#ffffff", "logo_accent": "#e6007e", "panel_bg": "#18181d",
+    "field_bg": "#222228", "line": "#3a3a45", "text": "#f4f4f6", "text_muted": "#a3a3ae",
+    "accent": "#e6007e", "accent_soft": "#3b0b2b", "accent_2": "#ff3fa4", "button_text": "#ffffff",
+    "success": "#5fd39a", "danger": "#ff6b6b",
+}
+
+# Layout & Anordnung: Schlüssel → (Bezeichnung, {Wert: Beschreibung}, Standard). Wird als CSS-Klasse
+# am <body> gesetzt (z. B. lay-steps-side), die Regeln stehen am Ende von configurator.css.
+LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
+    "skin": ("Stil", {"classic": "Klassisch – Karte mit Schatten", "neon": "Neon – Leuchtrahmen & Raster",
+                      "flat": "Flach – ohne Rahmen"}, "classic"),
+    "width": ("Breite", {"narrow": "Schmal (880 px)", "wide": "Breit (1200 px)"}, "narrow"),
+    "hero": ("Überschrift", {"left": "Groß, linksbündig", "center": "Groß, zentriert",
+                             "compact": "Klein", "hidden": "Ausblenden"}, "left"),
+    "steps": ("Schritt-Navigation", {"top": "Oben – Senderskala", "dots": "Oben – Punkte mit Namen",
+                                     "side": "Seitenleiste links"}, "top"),
+    "header": ("Kopfzeile", {"split": "Logo links, Untertitel rechts", "center": "Logo zentriert"}, "split"),
+    "caps": ("Schreibweise der Überschriften", {"normal": "Normal", "upper": "GROSSBUCHSTABEN"}, "normal"),
+    "wave": ("Wellen-Animation", {"on": "Anzeigen", "off": "Ausblenden"}, "on"),
+}
+LAYOUT_DEFAULTS = {f"layout_{k}": v[2] for k, v in LAYOUT.items()}
+
+# Fertige Varianten: Layout (+ optional passende Farbvorlage)
+VARIANTS: dict[str, dict] = {
+    "Klassisch": {"description": "Wie bisher: schmale Karte, Senderskala oben.", "colors": None,
+                  "layout": {}},
+    "ENERGY Neon": {"description": "Dunkel mit Magenta-Leuchtrahmen, zentrierte Großbuchstaben, breit.",
+                    "colors": "ENERGY Neon",
+                    "layout": {"skin": "neon", "width": "wide", "hero": "center", "steps": "dots",
+                               "header": "split", "caps": "upper", "wave": "off"}},
+    "Studio": {"description": "Breit, Schritte als Seitenleiste, kleine Überschrift.", "colors": None,
+               "layout": {"skin": "flat", "width": "wide", "hero": "compact", "steps": "side",
+                          "header": "split", "caps": "normal", "wave": "off"}},
+    "Kompakt": {"description": "Wenig Kopfbereich, Punkte-Navigation – schnell beim Formular.", "colors": None,
+                "layout": {"skin": "classic", "width": "narrow", "hero": "compact", "steps": "dots",
+                           "header": "center", "caps": "normal", "wave": "off"}},
+}
+
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")
 _FONT_NAME = re.compile(r"[A-Za-z0-9 ]{2,40}")
 
@@ -67,7 +106,7 @@ _FONT_NAME = re.compile(r"[A-Za-z0-9 ]{2,40}")
 def get_theme(db: Session) -> dict[str, str]:
     stored = {s.key[6:]: s.value for s in db.query(Setting).filter(Setting.key.like("theme_%"))}
     theme = ({k: v[1] for k, v in COLORS.items()} | FONT_DEFAULTS | {k: v[1] for k, v in TEXTS.items()}
-             | {"hero_size": str(HERO_SIZE_DEFAULT)})
+             | {"hero_size": str(HERO_SIZE_DEFAULT)} | LAYOUT_DEFAULTS)
     theme.update({k: v for k, v in stored.items() if k in theme})
     return theme
 
@@ -95,7 +134,26 @@ def validate(values: dict[str, str]) -> dict[str, str]:
     except ValueError as e:
         raise ValueError("Größe der Überschrift: bitte eine ganze Zahl in Prozent angeben") from e
     clean["hero_size"] = str(min(HERO_SIZE_MAX, max(HERO_SIZE_MIN, size)))
+    clean.update(validate_layout(values))
     return clean
+
+
+def validate_layout(values: dict[str, str]) -> dict[str, str]:
+    """Unbekannte Werte fallen auf den Standard zurück (Formular lässt nur gültige zu)."""
+    clean = {}
+    for key, (_, choices, default) in LAYOUT.items():
+        value = str(values.get(f"layout_{key}") or default)
+        clean[f"layout_{key}"] = value if value in choices else default
+    return clean
+
+
+def variant_layout(name: str) -> dict[str, str]:
+    layout = VARIANTS[name]["layout"]
+    return {f"layout_{k}": layout.get(k, v[2]) for k, v in LAYOUT.items()}
+
+
+def body_class(theme: dict[str, str]) -> str:
+    return " ".join(f"lay-{k}-{theme.get(f'layout_{k}', v[2])}" for k, v in LAYOUT.items())
 
 
 def save_theme(db: Session, values: dict[str, str]) -> None:
@@ -133,6 +191,7 @@ def css(theme: dict[str, str]) -> str:
 :root, :root:not([data-theme="light"]), :root[data-theme="dark"] {{
   --bg: {t['page_bg']}; --page-text: {t['page_text']}; --logo-accent: {t['logo_accent']};
   --sans: {_stack(t['font_body'])}; --head: {_stack(t['font_heading'])};
+  --page-accent: {t['accent']}; --page-panel: {t['panel_bg']};
 }}
 header.top {{ border-bottom-color: color-mix(in srgb, var(--page-text) 28%, transparent); }}
 .wordmark, .hero h1 {{ color: var(--page-text); }}
