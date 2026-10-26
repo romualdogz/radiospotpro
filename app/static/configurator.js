@@ -889,7 +889,9 @@
           studioActive() ? "Sie erhalten den Studiospot zur Freigabe, bevor er läuft." : "Wir melden uns in Kürze bei Ihnen."),
         h("div", { class: "gen-row", style: "margin-top:16px" },
           h("a", { class: "btn", href: API + state.sent.pdf_url, target: "_blank", rel: "noopener" },
-            "Kostenaufstellung als PDF")),
+            "Kostenaufstellung als PDF"),
+          // Neu laden = leerer Konfigurator ab Schritt 1 (die Anfrage ist bereits gespeichert)
+          h("a", { class: "btn ghost", href: location.pathname, id: "btnHome" }, "Zurück zur Startseite")),
       ];
     }
     const v = byId(C.voices, state.voiceId);

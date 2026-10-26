@@ -11,6 +11,8 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **„Zurück zur Startseite“** nach dem Absenden der Anfrage (neben „Kostenaufstellung als PDF“): öffnet den
+  Konfigurator leer ab Schritt 1 – die abgeschickte Anfrage bleibt gespeichert.
 - **Startseite für die Verkaufsleitung:** Nach dem Login landet die Verkaufsleitung nicht mehr direkt in den
   Preis-Einstellungen, sondern auf einer eigenen Übersicht: Kacheln für alle ihre Bereiche (mit Anzahl aktiv/
   inaktiv und kurzer Erklärung), „Zu erledigen“ (kein aktives Paket, Sender/Pakete ohne Sendegebiet), Tabelle
