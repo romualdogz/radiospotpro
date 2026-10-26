@@ -82,7 +82,7 @@
         <label>{{ label }}
           <select name="{{ key }}" onchange="this.parentElement.nextElementSibling.style.display = this.value === 'custom' ? '' : 'none'">
             {% for f in fonts %}<option value="{{ f }}" {{ 'selected' if f == current }} style="font-family: '{{ f }}'">{{ f }}</option>{% endfor %}
-            <option value="{{ system_font }}" {{ 'selected' if current == system_font }}>Systemschrift (ohne Google Fonts)</option>
+            <option value="{{ system_font }}" {{ 'selected' if current == system_font }}>Systemschrift des Geräts</option>
             <option value="custom" {{ 'selected' if is_custom }}>Andere Google-Font …</option>
           </select>
         </label>
@@ -90,8 +90,9 @@
           <input name="{{ key }}_custom" value="{{ current if is_custom else '' }}" placeholder="z. B. Lexend">
         </label>
       {% endfor %}
-      <small class="help">Google Fonts werden von Google-Servern geladen. Wegen der DSGVO kann die
-        „Systemschrift“ die sicherere Wahl sein – oder die Schrift später auf dem eigenen Server ablegen.</small>
+      <small class="help">Alle Schriften werden vom eigenen Server ausgeliefert – Besucher haben keine
+        Verbindung zu Google (DSGVO). Eine „andere Google-Font“ wird beim Speichern einmalig vom Server
+        heruntergeladen und unter <code>media/fonts</code> abgelegt.</small>
 
       <div class="buttons">
         <button class="primary" name="action" value="save">Speichern</button>

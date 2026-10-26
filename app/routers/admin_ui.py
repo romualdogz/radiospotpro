@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from starlette.concurrency import run_in_threadpool
 
-from .. import audio, branding, mailer, music_mix, theme, watermark
+from .. import audio, branding, fonts, mailer, music_mix, theme, watermark
 from ..config import BASE_DIR
 from ..database import get_db
 from ..models import (
@@ -706,7 +706,10 @@ async def design_save(request: Request, user=Depends(admin_only), db: Session = 
         if values[key] == "custom":
             values[key] = custom
     try:
-        theme.save_theme(db, values)
+        clean = theme.validate(values)
+        for family in theme.families(clean):  # eigene Google-Font einmalig auf den Server laden
+            fonts.ensure_local(family)
+        theme.save_theme(db, clean)
     except ValueError as e:
         return render(request, "admin/design.html", user=user, design={**theme.get_theme(db), **values},
                       error=str(e), flash=None, **_design_context(db))

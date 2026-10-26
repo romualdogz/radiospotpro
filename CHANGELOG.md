@@ -15,6 +15,14 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
   Verkauf, getrennt von der festen Laufzeit. Wird gespeichert und im Admin sowie in der Admin-API angezeigt,
   im Konfigurator noch nicht verwendet – Grundlage für eine spätere Funktion.
 
+### Datenschutz
+- **Schriften lokal statt von Google (DSGVO):** Alle 22 Schriften der Auswahl liegen jetzt im Projekt
+  (`app/static/fonts`, je mit Lizenzdatei OFL) und werden über `/fonts.css` vom eigenen Server ausgeliefert.
+  Besucher des Konfigurators und der Seiten AGB/Datenschutz haben keine Verbindung mehr zu Google
+  (keine IP-Übertragung). Das Aussehen bleibt gleich.
+- Eine „andere Google-Font“ im *Design* wird beim Speichern einmalig vom Server heruntergeladen und unter
+  `media/fonts` abgelegt; gibt es sie nicht, erscheint eine Fehlermeldung und nichts wird geändert.
+
 ---
 
 ## 25.10.2026

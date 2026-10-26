@@ -1,6 +1,6 @@
 import re
 
-from app import theme
+from app import fonts, theme
 
 
 def _login(client):
@@ -21,10 +21,34 @@ def test_default_theme_matches_template(client, db):
     assert "--bg: #e2001a" in css and "--accent: #e4002b" in css
     assert "'IBM Plex Sans'" in css and "'Space Grotesk'" in css
     page = client.get("/").text
-    assert "fonts.googleapis.com/css2?family=IBM+Plex+Sans" in page and "/theme.css?v=" in page
+    assert "/fonts.css?v=" in page and "/theme.css?v=" in page
+    assert "googleapis" not in page and "gstatic" not in page  # DSGVO: nichts von Google laden
+    fcss = client.get("/fonts.css").text
+    assert "font-family: 'IBM Plex Sans'" in fcss and "font-family: 'Space Grotesk'" in fcss
+    assert "gstatic" not in fcss
+    for url in set(re.findall(r"url\((/static/fonts/[^)]+)\)", fcss)):
+        r = client.get(url)
+        assert r.status_code == 200 and r.content[:4] == b"wOF2"
 
 
-def test_admin_saves_colors_and_fonts(client, db):
+def test_all_bundled_fonts_present():
+    for family in theme.FONTS:
+        folder = fonts.BUNDLED_DIR / fonts.slug(family)
+        assert (folder / "font.css").is_file() and (folder / "OFL.txt").is_file(), family
+        assert "gstatic" not in (folder / "font.css").read_text()
+
+
+def test_admin_saves_colors_and_fonts(client, db, monkeypatch):
+    loaded = []
+
+    def fake_download(family):  # kein Internet im Test: Download der eigenen Schrift simulieren
+        loaded.append(family)
+        folder = fonts.CUSTOM_DIR / fonts.slug(family)
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "font.css").write_text(f"@font-face {{ font-family: '{family}'; "
+                                         f"src: url(/media/fonts/{fonts.slug(family)}/x.woff2); }}")
+        (folder / "x.woff2").write_bytes(b"wOF2test")
+    monkeypatch.setattr(fonts, "download", fake_download)
     _login(client)
     design = theme.get_theme(db)
     token = _csrf(client, "/admin/design")
@@ -36,7 +60,22 @@ def test_admin_saves_colors_and_fonts(client, db):
     assert "--bg: #003366" in css and "--accent: #ff8800" in css
     assert "--head: 'Montserrat'" in css and "--sans: 'Lexend'" in css
     page = client.get("/").text
-    assert "family=Lexend" in page and "family=Montserrat" in page
+    assert "googleapis" not in page and loaded == ["Lexend"]  # Montserrat ist mitgeliefert
+    fcss = client.get("/fonts.css").text
+    assert "'Lexend'" in fcss and "'Montserrat'" in fcss and "IBM Plex" not in fcss
+    assert client.get("/media/fonts/lexend/x.woff2").content == b"wOF2test"
+
+
+def test_custom_font_download_error_shown(client, db, monkeypatch):
+    def fail(family):
+        raise ValueError(f"„{family}“ gibt es bei Google Fonts nicht (Schreibweise prüfen)")
+    monkeypatch.setattr(fonts, "download", fail)
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    r = client.post("/admin/design", data=_form(theme.get_theme(db), csrf=token, action="save",
+                                                font_body="custom", font_body_custom="Gibtsnicht Sans"))
+    assert "gibt es bei Google Fonts nicht" in r.text
+    assert "--sans: 'IBM Plex Sans'" in client.get("/theme.css").text  # unverändert
 
 
 def test_system_font_loads_no_google_fonts(client, db):
@@ -44,7 +83,7 @@ def test_system_font_loads_no_google_fonts(client, db):
     token = _csrf(client, "/admin/design")
     client.post("/admin/design", data=_form(theme.get_theme(db), csrf=token, action="save",
                                             font_heading="system", font_body="system"))
-    assert "fonts.googleapis.com" not in client.get("/").text
+    assert "/fonts.css" not in client.get("/").text
     assert "--sans: system-ui" in client.get("/theme.css").text
 
 
@@ -79,7 +118,7 @@ def test_pdf_uses_accent(db):
 
 def test_hero_texts_and_size(client, db):
     import re
-    from app import theme
+    from app import fonts, theme
     t = re.search(r'name="csrf" value="([^"]+)"', client.get("/admin/login").text).group(1)
     client.post("/admin/login", data={"username": "admin", "password": "test-password", "csrf": t})
     page = client.get("/admin/design").text

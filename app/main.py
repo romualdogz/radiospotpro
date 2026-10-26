@@ -16,7 +16,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import BASE_DIR, settings
 from .database import SessionLocal, get_db, upgrade_schema
-from . import branding, theme
+from . import branding, fonts, theme
 from .models import LegalText
 from .routers import admin_api, admin_ui, public
 from .seed import (
@@ -63,6 +63,9 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 # Hochgeladene Musik (Vorhörfunktion im Konfigurator)
 settings.media_dir.joinpath("music").mkdir(parents=True, exist_ok=True)
 app.mount("/media/music", StaticFiles(directory=str(settings.media_dir / "music")), name="music")
+# Eigene Google-Fonts aus dem Admin, einmalig vom Server heruntergeladen (keine Verbindung der Besucher zu Google)
+fonts.CUSTOM_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/media/fonts", StaticFiles(directory=str(fonts.CUSTOM_DIR)), name="fonts")
 app.include_router(public.router)
 app.include_router(admin_api.router)
 app.include_router(admin_ui.router)
@@ -106,6 +109,12 @@ def logo_file(name: str):
     return Response(path.read_bytes(), media_type=branding.MEDIA_TYPES.get(path.suffix.lower(), "application/octet-stream"),
                     headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff",
                              "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:"})
+
+
+@app.get("/fonts.css", include_in_schema=False)
+def fonts_css(db: Session = Depends(get_db)):
+    css = fonts.css_for(theme.families(theme.get_theme(db)))
+    return Response(css, media_type="text/css", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/theme.css", include_in_schema=False)

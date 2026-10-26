@@ -5,8 +5,6 @@ ausgeliefert, das nach configurator.css geladen wird und dessen Farben/Schriften
 """
 import hashlib
 import re
-from urllib.parse import quote_plus
-
 from sqlalchemy.orm import Session
 
 from .models import Setting
@@ -29,7 +27,8 @@ COLORS: dict[str, tuple[str, str, str]] = {
     "danger": ("Fehlermeldungen", "#c00024", "Formular"),
 }
 
-# Google Fonts mit den Schnitten 400–700 (werden alle benötigt); "system" = ohne Google Fonts
+# Google Fonts mit den Schnitten 400–700, lokal mitgeliefert (app/static/fonts, siehe fonts.py);
+# "system" = Systemschrift des Geräts
 FONTS = [
     "IBM Plex Sans", "Space Grotesk", "Inter", "Roboto", "Open Sans", "Montserrat", "Poppins", "Raleway",
     "Nunito", "Source Sans 3", "DM Sans", "Work Sans", "Manrope", "Barlow", "Rubik", "Outfit",
@@ -115,12 +114,13 @@ def version(theme: dict[str, str]) -> str:
     return hashlib.sha1(repr(sorted(theme.items())).encode()).hexdigest()[:10]
 
 
+def families(theme: dict[str, str]) -> set[str]:
+    return {theme["font_body"], theme["font_heading"]} - {SYSTEM_FONT}
+
+
 def fonts_url(theme: dict[str, str]) -> str | None:
-    families = {theme["font_body"], theme["font_heading"]} - {SYSTEM_FONT}
-    if not families:
-        return None
-    params = "&".join(f"family={quote_plus(f)}:wght@400;500;600;700" for f in sorted(families))
-    return f"https://fonts.googleapis.com/css2?{params}&display=swap"
+    """Lokale Schriften (/fonts.css) – keine Verbindung der Besucher zu Google."""
+    return f"/fonts.css?v={version(theme)}" if families(theme) else None
 
 
 def _stack(font: str) -> str:
