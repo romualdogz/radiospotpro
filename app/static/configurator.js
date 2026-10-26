@@ -26,7 +26,7 @@
     studio: false, items: [], bookingMode: "individual", packageId: null,
     packageStations: {},  // Paket-ID → gewählter Sender (bei Paketen mit Senderwahl)
     startDate: "", endDate: "",  // Kampagnenzeitraum (JJJJ-MM-TT)
-    promo: "", country: "AT", vatId: "",
+    promo: "", promoOpen: false, country: "AT", vatId: "",
     name: "", company: null, street: "", zip: "", city: "", email: "", phone: "", nachricht: "",
     acceptTerms: false, acceptPrivacy: false,
     quote: null, sent: null, demo: null,
@@ -901,6 +901,20 @@
         " gelesen und stimme der Verarbeitung meiner Daten zur Bearbeitung der Anfrage zu. *"));
   }
 
+  // Gutscheincode: zugeklappt hinter einem Link, damit Kunden ohne Code nicht danach suchen.
+  // Offen, sobald ein Code eingetragen ist (z. B. beim Zurückblättern).
+  function promoBlock(promoInput) {
+    const box = h("div", { class: "promo-row", hidden: !state.promoOpen && !state.promo },
+      field("Gutscheincode", promoInput));
+    const toggle = h("button", { type: "button", class: "link-button promo-toggle", "aria-expanded": String(!box.hidden),
+      hidden: !box.hidden, onclick: () => {
+        state.promoOpen = true;
+        box.hidden = false; toggle.hidden = true; toggle.setAttribute("aria-expanded", "true");
+        promoInput.focus();
+      } }, "Gutscheincode eingeben?");
+    return h("div", { class: "promo" }, toggle, box);
+  }
+
   function stepAnfrage() {
     if (state.company === null) state.company = state.firma;
     if (state.sent) {
@@ -943,7 +957,7 @@
           ? h("div", {}, kv("Sendegebiet", [...new Set(selectedCoverage().areas.map((a) => a.name))].join(" · "))) : null,
         h("div", { "data-price": "", style: "margin-top:12px" }, priceBlock()),
       ),
-      h("div", { class: "promo-row" }, field("Gutscheincode", promoInput)),
+      promoBlock(promoInput),
       h("div", { style: "height:20px" }),
       field("Spot-Text (final)", input("script", { multiline: true, class: "script-box" })),
       demoBlock(),

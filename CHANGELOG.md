@@ -11,6 +11,9 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Gutscheincode einblendbar:** Im letzten Schritt steht statt des Eingabefelds nur der Link „Gutscheincode
+  eingeben?“ – ein Klick blendet das Feld ein (Cursor steht gleich drin). Ist schon ein Code eingetragen,
+  bleibt das Feld offen, auch beim Zurück- und Weiterblättern.
 - **Pakete ohne Werbespot** (*Komplettpakete → „Studiospot zubuchbar“*): ausschalten bei Paketen, für die kein
   Spot produziert wird (z. B. Gewinnspiel, Sponsoring, Moderation). Der Kunde sieht dann nur „Spot-Text &
   Hörbeispiel – für dieses Paket wird kein Studiospot benötigt“; Extras „nur mit Studiospot“ sind ausgeblendet,
