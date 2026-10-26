@@ -117,3 +117,10 @@ def test_popup_mode(client, db):
     wheel.save_config(db, True, False, 72, SEGMENTS, mode="quatsch", popup_step="9")
     w = client.get("/api/catalog").json()["wheel"]
     assert w["mode"] == "inline" and w["popup_step"] == 4
+
+
+def test_radio_style(client, db):
+    wheel.save_config(db, True, False, 72, SEGMENTS, style="radio")
+    assert client.get("/api/catalog").json()["wheel"]["style"] == "radio"
+    wheel.save_config(db, True, False, 72, SEGMENTS, style="unbekannt")
+    assert client.get("/api/catalog").json()["wheel"]["style"] == "wheel"

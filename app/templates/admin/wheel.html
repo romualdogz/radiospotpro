@@ -10,6 +10,16 @@
     <small class="help">Kunden drehen einmal am Rad. Wo es stehen bleibt, entscheidet der Server –
       Neuladen bringt 24 Stunden lang dasselbe Ergebnis.</small>
 
+    <h2>Darstellung</h2>
+    <div class="wm-modes">
+      {% for value, text in styles.items() %}
+        <label class="check"><input type="radio" name="style" value="{{ value }}" {{ 'checked' if wheel.style == value }}
+          data-style> {{ text }}</label>
+      {% endfor %}
+    </div>
+    <small class="help">Analog-Radio: Die Felder sind „Sender“ auf einer Senderskala. Der Kunde dreht am Sendersuchknopf
+      (oder tippt ihn an), der Zeiger sucht und bleibt beim gewonnenen Sender stehen.</small>
+
     <h2>Anzeige</h2>
     <div class="wm-modes">
       {% for value, text in modes.items() %}
@@ -82,10 +92,14 @@
     const win = total ? 100 * segs.filter((s) => s.percent > 0).reduce((a, s) => a + s.weight, 0) / total : 0;
     document.getElementById("wheelStats").textContent = segs.length < 2 ? "Mindestens zwei Felder ausfüllen."
       : `Gewinnchance ${win.toFixed(0)} % · durchschnittlich ${avg.toFixed(1).replace(".", ",")} % Rabatt pro Dreh`;
-    if (segs.length >= 2) wheel = DiscountWheel.render(document.getElementById("wheelPreview"), segs);
+    const style = document.querySelector("[data-style]:checked")?.value || "wheel";
+    if (segs.length >= 2) wheel = DiscountWheel.render(document.getElementById("wheelPreview"), segs,
+      { style, brand: "onaircraft", onTune: testSpin });
   }
   rows.forEach((r) => r.addEventListener("input", update));
-  document.getElementById("wheelTest").addEventListener("click", async () => {
+  document.querySelectorAll("[data-style]").forEach((r) => r.addEventListener("change", update));
+  document.getElementById("wheelTest").addEventListener("click", testSpin);
+  async function testSpin() {
     if (!wheel) return;
     const total = segs.reduce((a, s) => a + s.weight, 0);
     let pick = Math.random() * total, index = 0;
@@ -94,7 +108,8 @@
     out.textContent = "Dreht …";
     await wheel.spinTo(index);
     out.textContent = `Probedrehen: „${segs[index].label}“` + (segs[index].percent ? ` – ${segs[index].percent} % Rabatt` : " – Niete");
-  });
+    setTimeout(update, 2500);  // für das nächste Probedrehen zurücksetzen
+  }
   update();
 </script>
 {% endblock %}

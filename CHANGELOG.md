@@ -11,6 +11,12 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Glücksrad im Analog-Radio-Design** (*Glücksrad → Darstellung → „Analog-Radio“*): Röhrenradio aus Holz mit
+  Lautsprecher-Stoff, beleuchteter Senderskala (88–108 MHz) und Sendersuchknopf. Die Felder des Rads sind die
+  „Sender“ auf der Skala (höchster Rabatt mit ★). Der Kunde dreht am Knopf (mit Maus oder Finger im Kreis ziehen)
+  oder tippt ihn an – der Zeiger sucht mit leisem Rauschen über die Skala und bleibt beim gewonnenen Sender stehen,
+  das „magische Auge“ leuchtet grün. Funktioniert eingebettet und als Pop-up, auch mit Tastatur. Die Auslosung
+  bleibt beim Server. Admin-Vorschau mit Probedrehen in beiden Darstellungen.
 - **Spielmodus:** Der geheime Erfolg „Sparfuchs“ wurde entfernt – es gibt jetzt sieben Erfolge (700 XP); die Level
   bleiben gleich (Radiolegende ab 600 XP).
 - **Glücksrad als Pop-up** (*Glücksrad → Anzeige*): wahlweise eingebettet im letzten Schritt (wie bisher) oder als

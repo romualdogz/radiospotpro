@@ -613,3 +613,8 @@ body.lay-skin-neon {
 @media (prefers-reduced-motion: reduce) {
   .wheel-overlay, .wheel-dialog, .wheel-launcher, .wheel-launcher span { animation: none !important; }
 }
+/* Glücksrad im Analog-Radio-Design */
+.wheel-host.radio-host { max-width: 470px; }
+.radio-hint { font-size: 0.88rem; color: var(--text-muted); font-style: italic; }
+.wheel-launcher b { font: inherit; }
+.wheel-dialog:has(.radio-host) { width: min(520px, 100%); }

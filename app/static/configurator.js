@@ -925,31 +925,40 @@
       box.append(message(state.wheel));
       return box;
     }
-    const host = h("div", { class: "wheel-host" });
+    const radio = C.wheel.style === "radio";
+    const host = h("div", { class: "wheel-host" + (radio ? " radio-host" : "") });
     const status = h("span", { class: "gen-status" });
-    const btn = h("button", { type: "button", class: "btn wheel-btn", onclick: async () => {
-      btn.disabled = true; status.textContent = "";
+    let busy = false;
+    const spin = async () => {
+      if (busy) return;
+      busy = true; btn.disabled = true; status.textContent = "";
+      if (radio) { wheel.setBusy(true); hint.textContent = "Sender wird gesucht …"; }
       try {
         const r = await api("/api/wheel/spin", {});
         btn.textContent = "Das Rad dreht …";
         await wheel.spinTo(r.index);
         state.wheel = r;
-        box.querySelector(".wheel-actions").replaceChildren(message(r),
-          popup ? h("button", { type: "button", class: "btn", onclick: closeWheelPopup }, "Weiter") : null);
+        box.querySelector(".wheel-actions").replaceChildren(...[message(r),
+          popup ? h("button", { type: "button", class: "btn", onclick: closeWheelPopup }, "Weiter") : null].filter(Boolean));
         refreshWheelLauncher();
         if (popup && !wheelOverlay && state.step === STEPS.length - 1) render();  // Pop-up schon geschlossen
         document.dispatchEvent(new CustomEvent("radiospot:wheel", { detail: { percent: r.percent } }));
         if (r.token) scheduleQuote();
       } catch (e) {
-        status.textContent = e.message; btn.disabled = false;
+        status.textContent = e.message; btn.disabled = false; busy = false;
+        if (radio) { wheel.setBusy(false); hint.textContent = "Am Knopf drehen – oder einfach antippen"; }
       }
-    } }, "Jetzt drehen!");
+    };
+    const btn = h("button", { type: "button", class: "btn wheel-btn", hidden: radio, onclick: spin }, "Jetzt drehen!");
+    const hint = h("span", { class: "radio-hint" }, "Am Knopf drehen – oder einfach antippen");
     box.append(
-      h("div", { class: "wheel-intro" }, h("b", {}, "🎡 Glücksrad"),
-        h("span", {}, ` Einmal drehen und bis zu ${best} % Rabatt auf Ihre Buchung gewinnen.`)),
+      h("div", { class: "wheel-intro" }, h("b", {}, radio ? "📻 Glücksradio" : "🎡 Glücksrad"),
+        h("span", {}, radio
+          ? ` Drehen Sie am Sendersuchknopf und finden Sie Ihren Sender mit bis zu ${best} % Rabatt.`
+          : ` Einmal drehen und bis zu ${best} % Rabatt auf Ihre Buchung gewinnen.`)),
       host,
-      h("div", { class: "wheel-actions" }, btn, status));
-    const wheel = window.DiscountWheel.render(host, C.wheel.segments);
+      h("div", { class: "wheel-actions" }, radio ? hint : null, btn, status));
+    const wheel = window.DiscountWheel.render(host, C.wheel.segments, { style: C.wheel.style, brand: "onaircraft", onTune: spin });
     return box;
   }
 
@@ -957,10 +966,13 @@
   // bleibt unten links ein Knopf zum Wiederöffnen
   let wheelOverlay = null;
   const wheelLauncher = h("button", { type: "button", class: "wheel-launcher", hidden: true,
-    onclick: () => openWheelPopup() }, h("span", { "aria-hidden": "true" }, "🎡"), " Glücksrad");
+    onclick: () => openWheelPopup() }, h("span", { "aria-hidden": "true" }, "🎡"), h("b", {}, " Glücksrad"));
   root.append(wheelLauncher);  // im Konfigurator-Element, damit Farben aus dem Design gelten
   const wheelPopupMode = () => !!(C?.wheel && C.wheel.mode === "popup" && window.DiscountWheel);
   function refreshWheelLauncher() {
+    if (C?.wheel?.style === "radio") {  // Beschriftung passend zur Darstellung
+      wheelLauncher.firstChild.textContent = "📻"; wheelLauncher.lastChild.textContent = " Glücksradio";
+    }
     wheelLauncher.hidden = !(wheelPopupMode() && state.wheelPopupShown && !state.wheel && !state.sent && !wheelOverlay);
   }
   function openWheelPopup() {
