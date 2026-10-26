@@ -459,3 +459,17 @@ body.lay-skin-neon {
   .lay-skin-neon .panel { animation: neon-breathe 5s ease-in-out infinite; }
 }
 @keyframes neon-breathe { 50% { border-color: color-mix(in srgb, var(--glow) 100%, transparent); } }
+
+/* Fortschrittsanzeige der Hörprobe */
+.demo-progress { margin-top: 12px; }
+.demo-progress-head { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; margin-bottom: 6px; }
+.demo-progress-text { color: var(--text); font-weight: 500; animation: demo-text .35s ease-out; }
+.demo-progress-pct { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.demo-bar { height: 8px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+.demo-bar-fill { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .25s linear;
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 10px, var(--accent-2) 10px 20px);
+  background-size: 28px 28px; animation: demo-stripes 1s linear infinite; }
+.demo-progress.done .demo-bar-fill { animation: none; background: var(--success); }
+@keyframes demo-stripes { to { background-position: 28px 0; } }
+@keyframes demo-text { from { opacity: 0; transform: translateY(3px); } }
+@media (prefers-reduced-motion: reduce) { .demo-bar-fill, .demo-progress-text { animation: none; } }

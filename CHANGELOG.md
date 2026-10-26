@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Fortschrittsanzeige beim Erstellen der Hörprobe:** Balken mit Prozent und wechselnden, lustigen Texten
+  passend zum Arbeitsschritt – „Jetzt wird mal eingesprochen …“, „Es wird gemixt …“, „Es wird gemastert …“,
+  „Gleich ist es soweit …“ (ohne Musik: „Es wird geschnitten …“). Dauert es länger, kommen Sprüche wie
+  „Der Tontechniker holt noch Kaffee …“. Am Ende kurz „Fertig – Bühne frei für Ihren Spot!“, dann startet
+  der Player. Die Anzeige richtet sich nach der Textlänge (der Server meldet keinen Zwischenstand).
 - **Layout-Designer** (*Design → Layout-Varianten*): vier fertige Bildschirm-Designs zum Wechseln –
   **Klassisch** (wie bisher), **ENERGY Neon** (dunkel, Magenta-Leuchtrahmen, Raster, zentrierte Großbuchstaben,
   breit – nach dem Ad-Boost-Mockup, mit passender Farbvorlage), **Studio** (breit, Schritte als Seitenleiste)

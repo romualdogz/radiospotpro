@@ -435,6 +435,57 @@
     }));
   }
 
+  // Fortschrittsanzeige der Hörprobe. Der Server meldet keinen Zwischenstand – die Anzeige läuft nach der
+  // erwarteten Dauer (Textlänge) und springt auf 100 %, sobald die Hörprobe da ist.
+  const DEMO_PHASES = [
+    { until: 30, texts: ["Die Stimme räuspert sich …", "Jetzt wird mal eingesprochen …", "Mikrofon an, Rotlicht leuchtet …"] },
+    { until: 55, texts: ["Die Musik wird druntergelegt …", "Es wird gemixt …", "Regler hoch, Regler runter …"],
+      noMusic: ["Die Stimme wird zurechtgeschnitten …", "Atmer werden wegpoliert …", "Es wird geschnitten …"] },
+    { until: 80, texts: ["Es wird gemastert …", "Ein bisschen Glanz obendrauf …", "Lautheit wird radiotauglich gemacht …"] },
+    { until: 96, texts: ["Gleich ist es soweit …", "Noch kurz das Wasserzeichen dazu …", "Die Bänder spulen zurück …"] },
+    { until: 100, texts: ["Das Studio gibt sich besonders viel Mühe …", "Der Tontechniker holt noch Kaffee …",
+      "Fast fertig – wirklich!", "Gut Ding braucht Weile …"] },
+  ];
+  function demoProgress(chars, withMusic) {
+    const bar = h("span", { class: "demo-bar-fill" });
+    const text = h("span", { class: "demo-progress-text", "aria-live": "polite" });
+    const pct = h("span", { class: "demo-progress-pct" });
+    const track = h("div", { class: "demo-bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100",
+      "aria-label": "Hörprobe wird erstellt" }, bar);
+    const el = h("div", { class: "demo-progress" }, h("div", { class: "demo-progress-head" }, text, pct), track);
+    const expected = Math.min(25, 5 + chars * 0.025) * 1000;  // ms – ElevenLabs + Mischen
+    const start = performance.now();
+    let phase = -1, lastSwap = 0, timer = null;
+    const pick = (list, not) => { const opts = list.filter((x) => x !== not); return opts[Math.floor(Math.random() * opts.length)]; };
+    const set = (value, msg) => {
+      bar.style.width = value + "%";
+      track.setAttribute("aria-valuenow", String(Math.round(value)));
+      pct.textContent = Math.round(value) + " %";
+      if (msg) {  // Text austauschen und kurz einblenden
+        text.textContent = msg;
+        text.style.animation = "none"; void text.offsetWidth; text.style.animation = "";
+      }
+    };
+    function tick() {
+      const t = performance.now() - start;
+      const value = 96 * (1 - Math.exp(-2.1 * t / expected));  // nähert sich 96 %, nie ganz
+      const idx = value >= 95.5 ? 4 : DEMO_PHASES.findIndex((p) => value < p.until);
+      const p = DEMO_PHASES[idx];
+      const list = !withMusic && p.noMusic ? p.noMusic : p.texts;
+      if (idx !== phase || (idx === 4 && t - lastSwap > 3500)) {
+        phase = idx; lastSwap = t;
+        set(value, pick(list, text.textContent));
+      } else set(value);
+    }
+    tick();
+    timer = setInterval(tick, 200);
+    return {
+      el,
+      done() { clearInterval(timer); set(100, "Fertig – Bühne frei für Ihren Spot!"); el.classList.add("done"); },
+      fail() { clearInterval(timer); el.remove(); },
+    };
+  }
+
   // Hörprobe = Spot-Text + KI-Stimme + Musik, serverseitig gemischt, mit Wasserzeichen
   const demoKey = () => JSON.stringify([state.voiceId, state.musicId, state.tonalityId, state.lengthId, state.script.trim()]);
   function demoBlock() {
@@ -454,18 +505,20 @@
     }
     const fresh = state.demo && state.demo.key === demoKey();
     const btn = h("button", { type: "button", class: "btn", disabled: !state.script.trim(), onclick: async () => {
-      btn.disabled = true; stopAudio();
-      say("Hörprobe wird erstellt … das dauert ein paar Sekunden.");
+      btn.disabled = true; stopAudio(); say("");
+      const progress = demoProgress(state.script.trim().length, !!byId(C.music_styles, state.musicId)?.audio_url);
+      player.replaceChildren(progress.el);
       try {
         const url = await fetchAudio("/api/demo-audio",
           { voice_id: state.voiceId, music_style_id: state.musicId, script: state.script.trim(),
             tonality_id: state.tonalityId, spot_length_id: state.lengthId });
         if (state.demo) URL.revokeObjectURL(state.demo.url);
         state.demo = { key: demoKey(), url };
+        progress.done();
+        await new Promise((r) => setTimeout(r, 700));  // „Fertig“ kurz zeigen
         showPlayer(url);
         player.querySelector("audio").play().catch(() => {});
-        say("");
-      } catch (e) { say(e.message, true); }
+      } catch (e) { progress.fail(); say(e.message, true); }
       btn.disabled = false;
     } }, fresh ? "Hörprobe neu erstellen" : "Hörprobe erstellen");
     if (fresh) showPlayer(state.demo.url);
