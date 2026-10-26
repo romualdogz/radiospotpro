@@ -338,9 +338,9 @@ class ScriptRequestIn(BaseModel):
     spot_length_id: int
     tonality_id: int
     language_style_id: int
-    firma: str = Field(min_length=1, max_length=160)
+    firma: str = Field(default="", max_length=160, description="leer = Text ohne Firmennamen")
     botschaft: str = Field(min_length=1, max_length=2000)
-    cta: str = Field(min_length=1, max_length=500)
+    cta: str = Field(default="", max_length=500, description="leer = KI formuliert selbst eine Handlungsaufforderung")
 
 
 class LegalTextOut(ORMModel):

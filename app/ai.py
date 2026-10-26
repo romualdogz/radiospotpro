@@ -113,10 +113,12 @@ async def generate_script(*, occasion: str, seconds: int, tonality: str, style_i
         f"{style_instruction}\n"
         "Schreibe den Sprechtext für einen Radiowerbespot.\n\n"
         "<angaben>\n"
-        f"Firma / Marke: {firma}\n"
+        + (f"Firma / Marke: {firma}\n" if firma.strip() else
+           "Firma / Marke: (nicht angegeben – keinen Firmennamen erfinden, neutral formulieren)\n") +
         f"Anlass: {occasion}\n"
         f"Kernbotschaft / Angebot: {botschaft}\n"
-        f"Call-to-Action: {cta}\n"
+        + (f"Call-to-Action: {cta}\n" if cta.strip() else
+           "Call-to-Action: (nicht vorgegeben – formuliere selbst eine kurze, passende Handlungsaufforderung)\n") +
         f"Tonalität: {tonality}\n"
         "</angaben>\n\n"
         f"Ziel-Länge: {seconds} Sekunden gesprochen, also ungefähr {target_words} Wörter."

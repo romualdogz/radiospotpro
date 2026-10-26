@@ -11,6 +11,9 @@
   "use strict";
 
   const root = document.getElementById("radiospot-configurator");
+  // Admin → Design: Felder „Firma / Marke“ und „Call-to-Action“ ausblendbar
+  const showCta = root.dataset.showCta !== "off";
+  const showFirma = root.dataset.showFirma !== "off";
   if (!root) return;
   const API = (root.dataset.api || "").replace(/\/$/, "");
 
@@ -140,8 +143,8 @@
   }
 
   function canAdvance() {
-    // Eigener Spot-Text reicht – Firma, Kernbotschaft und Call-to-Action braucht nur der KI-Vorschlag
-    if (state.step === 1) return !!(state.script.trim() || (state.firma.trim() && state.botschaft.trim() && state.cta.trim()));
+    // Eigener Spot-Text reicht – Firma, Kernbotschaft (und ggf. Call-to-Action) braucht nur der KI-Vorschlag
+    if (state.step === 1) return !!(state.script.trim() || aiInputsComplete());
     if (state.step === 3) {
       if (!periodValid()) return false;
       if (state.bookingMode === "package") return packageFits(selectedPackage());
@@ -152,6 +155,12 @@
     }
     return true;
   }
+
+  // Angaben für den KI-Vorschlag: nur die angezeigten Felder sind Pflicht
+  const aiInputsComplete = () => !!state.botschaft.trim() && (!showFirma || !!state.firma.trim())
+    && (!showCta || !!state.cta.trim());
+  const aiFieldNames = () => [showFirma && "Firma", "Kernbotschaft", showCta && "Call-to-Action"].filter(Boolean)
+    .join(", ").replace(/, ([^,]*)$/, " und $1");
 
   function refreshNav() {
     btnNext.disabled = !canAdvance();
@@ -339,8 +348,8 @@
     updateEst();
 
     async function generate(btn) {
-      if (!state.firma.trim() || !state.botschaft.trim() || !state.cta.trim()) {
-        status.textContent = "Bitte zuerst Firma, Kernbotschaft und Call-to-Action ausfüllen.";
+      if (!aiInputsComplete()) {
+        status.textContent = `Bitte zuerst ${aiFieldNames()} ausfüllen.`;
         status.style.color = "var(--danger)";
         return;
       }
@@ -369,20 +378,23 @@
       h("p", { class: "hint" }, C.ai_enabled
         ? "Kurz die Eckpunkte eintragen — der Text lässt sich danach mit einem Klick vorschlagen und frei bearbeiten."
         : "Kurz die Eckpunkte eintragen und den Spot-Text selbst formulieren — wir feilen gerne noch daran."),
-      h("div", { class: "two-col" },
-        field("Firma / Marke", input("firma", { autocomplete: "organization" })),
-        field("Tonalität", select(C.tonalities, state.tonalityId, (id) => { state.tonalityId = id; }))),
-      field("Sprachstil", select(C.language_styles, state.styleId, (id) => { state.styleId = id; })),
+      ...(() => {  // ohne „Firma / Marke“ stehen Tonalität und Sprachstil nebeneinander
+        const tone = field("Tonalität", select(C.tonalities, state.tonalityId, (id) => { state.tonalityId = id; }));
+        const style = field("Sprachstil", select(C.language_styles, state.styleId, (id) => { state.styleId = id; }));
+        return showFirma
+          ? [h("div", { class: "two-col" }, field("Firma / Marke", input("firma", { autocomplete: "organization" })), tone), style]
+          : [h("div", { class: "two-col" }, tone, style)];
+      })(),
       field("Kernbotschaft / Angebot", input("botschaft", { multiline: true,
         placeholder: "z. B. 20% auf alle Meerwasser-Sets, nur diese Woche" })),
-      field("Call-to-Action", input("cta", { placeholder: "z. B. Jetzt vorbeischauen in der Filiale Neusiedl" })),
+      showCta ? field("Call-to-Action", input("cta", { placeholder: "z. B. Jetzt vorbeischauen in der Filiale Neusiedl" })) : null,
       C.ai_enabled ? h("div", { class: "gen-row" },
         h("button", { type: "button", class: "btn", onclick: (e) => generate(e.currentTarget) }, "Text mit KI generieren"),
         status) : null,
       field("Spot-Text", scriptBox),
       est,
       h("p", { class: "hint", id: "textHint", hidden: true },
-        "Zum Weiterklicken: Spot-Text selbst schreiben – oder Firma, Kernbotschaft und Call-to-Action ausfüllen " +
+        `Zum Weiterklicken: Spot-Text selbst schreiben – oder ${aiFieldNames()} ausfüllen ` +
         "und den Text mit KI erstellen lassen."),
     ];
   }
@@ -1050,7 +1062,7 @@
         h("div", {}, kv("Anlass", occ?.name || "—"), " · ", kv("Länge", `${len.seconds} Sek.`)),
         h("div", {}, kv("Spot", studioActive() ? "Studiospot mit echtem Sprecher" : "Text & Hörbeispiel (gratis)")),
         h("div", {}, kv("Hörbeispiel-Stimme", v?.name || "—"), " · ", kv("Musik", m?.name || "keine")),
-        h("div", {}, kv("Firma", state.firma || "—"), " · ",
+        h("div", {}, showFirma ? [kv("Firma", state.firma || "—"), " · "] : null,
           kv("Rechnungsland", C.countries.find((c) => c.code === state.country)?.name || state.country),
           state.vatId.trim() ? [" · ", kv("UID", state.vatId.trim().toUpperCase())] : null),
         h("div", {}, kv("Schaltung", selectedPackage() ? `Komplettpaket „${selectedPackage().name}“`

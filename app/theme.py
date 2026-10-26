@@ -141,7 +141,7 @@ _FONT_NAME = re.compile(r"[A-Za-z0-9 ]{2,40}")
 def get_theme(db: Session) -> dict[str, str]:
     stored = {s.key[6:]: s.value for s in db.query(Setting).filter(Setting.key.like("theme_%"))}
     theme = ({k: v[1] for k, v in COLORS.items()} | FONT_DEFAULTS | {k: v[1] for k, v in TEXTS.items()}
-             | {"hero_size": str(HERO_SIZE_DEFAULT)} | LAYOUT_DEFAULTS)
+             | {"hero_size": str(HERO_SIZE_DEFAULT), "show_cta": "on", "show_firma": "on"} | LAYOUT_DEFAULTS)
     theme.update({k: v for k, v in stored.items() if k in theme})
     return theme
 
@@ -169,6 +169,9 @@ def validate(values: dict[str, str]) -> dict[str, str]:
     except ValueError as e:
         raise ValueError("Größe der Überschrift: bitte eine ganze Zahl in Prozent angeben") from e
     clean["hero_size"] = str(min(HERO_SIZE_MAX, max(HERO_SIZE_MIN, size)))
+    # Felder „Firma / Marke“ und „Call-to-Action“ in Schritt „Text“ (Checkbox: fehlt = ausgeblendet)
+    for key in ("show_firma", "show_cta"):
+        clean[key] = "on" if values.get(key) == "on" else "off"
     clean.update(validate_layout(values))
     return clean
 

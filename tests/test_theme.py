@@ -216,3 +216,45 @@ def test_game_level_names_configurable(client, db):
     client.post("/admin/design", data=_form(theme.get_theme(db), csrf=token, action="save",
                                             game_levels="Rookie, Hitmaker, Headliner, Legende"))
     assert 'data-game-levels="Rookie, Hitmaker, Headliner, Legende"' in client.get("/").text
+
+
+def test_cta_field_can_be_hidden(client, db, monkeypatch):
+    assert 'data-show-cta="on"' in client.get("/").text
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    form = _form(theme.get_theme(db), csrf=token, action="save")
+    form.pop("show_cta")  # Häkchen entfernt
+    form.pop("show_firma")
+    client.post("/admin/design", data=form)
+    assert 'data-show-cta="off"' in client.get("/").text and 'data-show-firma="off"' in client.get("/").text
+    assert theme.get_theme(db)["show_cta"] == "off"
+    # Layout-Variante übernehmen lässt die Einstellung unverändert
+    client.post("/admin/design", data={"csrf": token, "action": "variant:Kompakt"})
+    assert theme.get_theme(db)["show_cta"] == "off"
+
+
+def test_ai_prompt_without_cta(monkeypatch):
+    import asyncio
+    from app import ai
+    captured = {}
+
+    async def fake_create(prompt, with_fallback=False):
+        captured["prompt"] = prompt
+        class R:  # minimale Antwort
+            content = [type("B", (), {"type": "text", "text": "Testtext"})()]
+            stop_reason = "end_turn"
+        return R()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    monkeypatch.setattr(ai, "_create", fake_create)
+    try:
+        asyncio.run(ai.generate_script(occasion="Sale", seconds=20, tonality="locker", style_instruction="",
+                                       firma="Muster", botschaft="20 % auf alles", cta=""))
+    except Exception:
+        pass  # Antwort-Auswertung ist hier egal – es geht um den Prompt
+    assert "nicht vorgegeben" in captured["prompt"]
+    try:
+        asyncio.run(ai.generate_script(occasion="Sale", seconds=20, tonality="locker", style_instruction="",
+                                       firma="", botschaft="20 % auf alles", cta="Jetzt kaufen"))
+    except Exception:
+        pass
+    assert "keinen Firmennamen erfinden" in captured["prompt"] and "Jetzt kaufen" in captured["prompt"]

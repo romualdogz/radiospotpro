@@ -763,7 +763,7 @@ async def design_save(request: Request, user=Depends(admin_only), db: Session = 
         theme.save_theme(db, {**current, **{k: str(form.get(k, "")) for k in theme.LAYOUT_DEFAULTS}})
         return redirect("/admin/design", "Layout gespeichert – Konfigurator neu laden, um es zu sehen.", request)
     values = {**{k: v for k, v in theme.get_theme(db).items() if k in theme.LAYOUT_DEFAULTS},
-              **{k: str(form.get(k, "")) for k in [*theme.COLORS, *theme.FONT_DEFAULTS, *theme.TEXTS, "hero_size"]}}
+              **{k: str(form.get(k, "")) for k in [*theme.COLORS, *theme.FONT_DEFAULTS, *theme.TEXTS, "hero_size", "show_cta", "show_firma"]}}
     for key in theme.FONT_DEFAULTS:  # eigene Google-Font statt Auswahl
         custom = str(form.get(f"{key}_custom", "")).strip()
         if values[key] == "custom":

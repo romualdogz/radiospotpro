@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Felder „Firma / Marke“ und „Call-to-Action“ ausblendbar** (*Design → Texte & Überschrift*, je ein Häkchen): Im
+  Schritt „Text“ fallen die Felder weg (ohne Firma stehen Tonalität und Sprachstil nebeneinander), sie sind dann auch
+  für den KI-Vorschlag keine Pflicht mehr. Die KI schreibt ohne Firma neutral (erfindet keinen Namen) und formuliert
+  ohne Call-to-Action selbst eine passende Handlungsaufforderung. Die Firma für die Rechnung fragt weiterhin der
+  letzte Schritt ab. Die Einstellung bleibt beim Wechsel der Layout-Variante erhalten.
 - **Level-Namen im Spielmodus selbst einstellbar** (*Design → Texte & Überschrift → „Spielmodus: Namen der 4 Level“*,
   mit Komma getrennt). Standard jetzt: Newcomer → **Sound-Talent** (statt „Jingle-Profi“) → Studio-Star → Radiolegende.
 - **Design-Variante „Energy Gaming“** (*Design → Layout-Varianten*, mit Farbvorlage „Energy Gaming“): E-Sport-Look in

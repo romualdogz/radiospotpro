@@ -106,6 +106,13 @@
       {% endfor %}
       <small class="help">Leer lassen = Standardtext. Die Überschrift steht groß über dem Konfigurator. Die Level-Namen
         erscheinen nur im Spielmodus (ab 0, 150, 350 und 600 XP), z. B. „Newcomer, Sound-Talent, Studio-Star, Radiolegende“.</small>
+      <label class="check"><input type="checkbox" name="show_firma" {{ 'checked' if design.show_firma != 'off' }}>
+        Feld „Firma / Marke“ im Schritt „Text“ anzeigen</label>
+      <label class="check"><input type="checkbox" name="show_cta" {{ 'checked' if design.show_cta != 'off' }}>
+        Feld „Call-to-Action“ im Schritt „Text“ anzeigen</label>
+      <small class="help">Ausgeblendete Felder braucht auch der KI-Textvorschlag nicht: ohne Firma schreibt die KI neutral
+        (ohne erfundenen Namen), ohne Call-to-Action formuliert sie selbst eine passende Handlungsaufforderung.
+        Die Firma für die Rechnung fragt der letzte Schritt ohnehin ab.</small>
       <label><span>Größe der Überschrift: <output id="heroSizeOut">{{ design.hero_size }}</output> %</span>
         <input type="range" name="hero_size" min="{{ hero_size_limits[0] }}" max="{{ hero_size_limits[2] }}" step="5"
                value="{{ design.hero_size }}" oninput="document.getElementById('heroSizeOut').textContent = this.value">
