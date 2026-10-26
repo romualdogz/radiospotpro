@@ -11,6 +11,9 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Nach Updates keine alten Dateien mehr im Browser:** JS- und CSS-Dateien werden mit einer Versionskennung geladen
+  (`?v=…`), die sich bei jeder Änderung ändert. Vorher konnte der Browser z. B. noch die alte Glücksrad-Datei zeigen
+  (Rad statt Spielautomat), bis man den Zwischenspeicher leerte.
 - **Glücksrad als Spielautomat** (*Glücksrad → Darstellung → „Spielautomat“*): roter Automat mit „JACKPOT“-Leuchtschild
   und Lauflichtern, drei Walzen mit Gewinnlinie und Hebel. Der Kunde zieht am Hebel (nach unten ziehen oder antippen),
   die Walzen laufen und stoppen nacheinander. Gewinn = dreimal dasselbe Feld auf der Linie (z. B. „5 % | 5 % | 5 %“,

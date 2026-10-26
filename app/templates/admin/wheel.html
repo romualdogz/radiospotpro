@@ -75,7 +75,7 @@
     <p class="help" id="wheelTestResult">Probedrehen hier zählt nicht – es zeigt nur, wie das Rad aussieht und sich dreht.</p>
   </div>
 </div>
-<script src="/static/wheel.js"></script>
+<script src="/static/wheel.js?v={{ static_v }}"></script>
 <script>
   const rows = [...document.querySelectorAll("[data-row]")];
   const read = () => rows.map((r) => ({

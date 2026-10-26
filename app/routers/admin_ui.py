@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+import hashlib
 import re
 from typing import Any, Callable
 import uuid
@@ -49,6 +50,16 @@ def fmt_bp(bp: int | None, suffix: str = " %") -> str:
 
 
 templates.env.filters["eur"] = fmt_eur
+
+
+def _static_version() -> str:
+    """Kennung der aktuellen JS-/CSS-Dateien – hängt als ?v=… an, damit Browser nach Updates neu laden."""
+    stamp = "".join(f"{f.name}{f.stat().st_mtime_ns}{f.stat().st_size}"
+                    for f in sorted((BASE_DIR / "static").glob("*.[jc]s*")))
+    return hashlib.sha1(stamp.encode()).hexdigest()[:10]
+
+
+templates.env.globals["static_v"] = _static_version()
 templates.env.filters["pct"] = fmt_bp
 templates.env.filters["de_date"] = lambda v: date.fromisoformat(str(v)).strftime("%d.%m.%Y") if v else ""
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ text.title if text else "Nicht gefunden" }} — onaircraft</title>
 {% if fonts_url %}<link href="{{ fonts_url }}" rel="stylesheet">{% endif %}
-<link rel="stylesheet" href="/static/configurator.css">
+<link rel="stylesheet" href="/static/configurator.css?v={{ static_v }}">
 <link rel="stylesheet" href="/theme.css?v={{ theme_version }}">
 </head>
 <body class="{{ body_class }}">

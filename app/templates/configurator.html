@@ -7,7 +7,7 @@
 {% if fonts_url %}
 <link href="{{ fonts_url }}" rel="stylesheet">
 {% endif %}
-<link rel="stylesheet" href="/static/configurator.css">
+<link rel="stylesheet" href="/static/configurator.css?v={{ static_v }}">
 <!-- Farben & Schriften aus Admin → Design -->
 <link rel="stylesheet" href="/theme.css?v={{ theme_version }}">
 </head>
@@ -45,9 +45,9 @@
   <footer>© onaircraft sound so(u)lutions, Wien · <a href="/agb">AGB</a> · <a href="/datenschutz">Datenschutz</a></footer>
 </div>
 
-<script src="/static/coverage-map.js" defer></script>
-<script src="/static/wheel.js" defer></script>
-<script src="/static/configurator.js" defer></script>
-{% if design.layout_game == "on" %}<script src="/static/gamify.js" defer></script>{% endif %}
+<script src="/static/coverage-map.js?v={{ static_v }}" defer></script>
+<script src="/static/wheel.js?v={{ static_v }}" defer></script>
+<script src="/static/configurator.js?v={{ static_v }}" defer></script>
+{% if design.layout_game == "on" %}<script src="/static/gamify.js?v={{ static_v }}" defer></script>{% endif %}
 </body>
 </html>
