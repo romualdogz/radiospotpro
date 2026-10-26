@@ -52,16 +52,17 @@
   const mission = el("div", "game-mission");
   const badges = el("div", "game-badges");
   const badgeEls = {};
-  for (const a of ACHIEVEMENTS) {
-    const b = el("span", "game-badge locked", a.secret ? "❔" : a.icon);
+  for (const a of ACHIEVEMENTS) {  // Abzeichen: großes Icon im Kreis, darunter der Name
+    const b = el("div", "game-badge locked");
+    b.append(el("span", "game-badge-icon", a.secret ? "❔" : a.icon),
+      el("span", "game-badge-label", a.secret ? "Geheim" : a.title));
     b.title = a.secret ? "Geheimer Erfolg" : `${a.title} – ${a.task} (+${a.xp} XP)`;
     badgeEls[a.id] = b;
     badges.append(b);
   }
   const top = el("div", "game-hud-top");
   top.append(level, xpText);
-  hud.append(top, meter, el("div", "game-hud-bottom"));
-  hud.lastChild.append(mission, badges);
+  hud.append(top, meter, mission, badges);
   panel.prepend(hud);
   const toasts = el("div", "game-toasts");
   toasts.setAttribute("aria-live", "polite");
@@ -86,8 +87,9 @@
     countUp();
     xpText.title = next ? `noch ${next.xp - xp} XP bis „${next.name}“` : "Höchstes Level erreicht!";
     const todo = ACHIEVEMENTS.find((a) => !a.secret && !unlocked.has(a.id));
-    mission.replaceChildren(el("span", "game-mission-label", todo ? "Nächste Mission:" : "Alle Missionen erfüllt"),
-      todo ? ` ${todo.icon} ${todo.task}` : " 🏆");
+    const text = el("span", "game-mission-text");
+    text.append(el("span", "game-mission-label", todo ? "Nächste Mission: " : "Alle Missionen erfüllt!"), todo ? todo.task : "");
+    mission.replaceChildren(el("span", "game-mission-icon", todo ? todo.icon : "🏆"), text);
   }
 
   function countUp() {  // XP-Zahl zählt hoch statt zu springen
@@ -130,16 +132,36 @@
     const before = levelFor(xp);
     xp += a.xp;
     const b = badgeEls[a.id];
-    b.textContent = a.icon;
+    b.querySelector(".game-badge-icon").textContent = a.icon;
+    b.querySelector(".game-badge-label").textContent = a.title;
     b.title = `${a.title} – erledigt (+${a.xp} XP)`;
     b.classList.remove("locked");
     if (silent) return;
-    b.classList.add("pop");
+    celebrate(b, a.xp);
     hud.classList.remove("bump"); void hud.offsetWidth; hud.classList.add("bump");
     toast(a);
     const after = levelFor(xp);
     if (after > before) toast(null, `Level ${after + 1}: ${LEVELS[after].name}`);
     if (a.party) confetti(a.id === "onair" ? 220 : 90);
+  }
+
+  // Freigeschaltetes Abzeichen: springt auf, Funkenkranz, „+XP“ steigt auf, leuchtet ein paar Sekunden
+  function celebrate(b, points) {
+    document.querySelectorAll(".game-badge.fresh").forEach((x) => x.classList.remove("fresh"));
+    b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop", "fresh");
+    setTimeout(() => b.classList.remove("fresh"), 4000);
+    if (reduceMotion) return;
+    const icon = b.querySelector(".game-badge-icon");
+    for (let i = 0; i < 10; i++) {
+      const s = el("i", "game-spark");
+      s.style.setProperty("--a", `${i * 36 + Math.random() * 14}deg`);
+      s.style.setProperty("--d", `${34 + Math.random() * 18}px`);
+      icon.append(s);
+      setTimeout(() => s.remove(), 900);
+    }
+    const plus = el("span", "game-plus", `+${points} XP`);
+    b.append(plus);
+    setTimeout(() => plus.remove(), 1400);
   }
 
   document.addEventListener("radiospot:update", (e) => {

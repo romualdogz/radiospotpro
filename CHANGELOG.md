@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Spielmodus mit mehr Action:** Erfolge als große Abzeichen (60 px, am Handy 50 px) mit Namen darunter und
+  farbigem Ring; gesperrte grau und gestrichelt, sie wackeln beim Drüberfahren. Beim Freischalten springt das
+  Abzeichen auf, ein Funkenkranz sprüht, „+XP“ steigt auf und es leuchtet ein paar Sekunden. Dazu ein dickerer
+  XP-Balken mit Glanzeffekt, größeres Level-Abzeichen, schwebendes Icon bei „Nächste Mission“ und größere
+  Erfolgsmeldungen. Am Handy vier Abzeichen pro Reihe.
 - **Gutscheincode einblendbar:** Im letzten Schritt steht statt des Eingabefelds nur der Link „Gutscheincode
   eingeben?“ – ein Klick blendet das Feld ein (Cursor steht gleich drin). Ist schon ein Code eingetragen,
   bleibt das Feld offen, auch beim Zurück- und Weiterblättern.
