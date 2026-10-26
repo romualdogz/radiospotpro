@@ -11,6 +11,11 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Pakete ohne Werbespot** (*Komplettpakete → „Studiospot zubuchbar“*): ausschalten bei Paketen, für die kein
+  Spot produziert wird (z. B. Gewinnspiel, Sponsoring, Moderation). Der Kunde sieht dann nur „Spot-Text &
+  Hörbeispiel – für dieses Paket wird kein Studiospot benötigt“; Extras „nur mit Studiospot“ sind ausgeblendet,
+  der Server lehnt einen Studiospot zu diesem Paket ab. Wechselt der Kunde zu einem anderen Paket oder zu
+  „Individuell“, gilt seine vorherige Studiospot-Wahl wieder. Bestehende Pakete: weiterhin zubuchbar.
 - **Spielmodus (optional)** – neue Variante **„Spielerisch“** bzw. *Anordnung → Spielmodus*: Über dem Konfigurator
   eine Punkteleiste mit Level (Newcomer → Jingle-Profi → Studio-Star → Radiolegende), XP-Balken, „Nächste
   Mission“ und acht Erfolgen zum Freischalten (u. a. „Wortakrobat“, „Erste Hörprobe“, „Sendeplan steht“,

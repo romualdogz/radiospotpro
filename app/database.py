@@ -46,6 +46,7 @@ _ADDED_COLUMNS = [
     ("packages", "article_no", "VARCHAR(40) NOT NULL DEFAULT ''"),
     ("packages", "duration_days", "INTEGER NOT NULL DEFAULT 0"),
     ("packages", "recommended_days", "INTEGER NOT NULL DEFAULT 0"),
+    ("packages", "studio_bookable", "BOOLEAN NOT NULL DEFAULT 1"),
 ]
 
 

@@ -212,6 +212,8 @@ class Package(Base):
     spots: Mapped[int] = mapped_column(Integer, default=0)  # Ausstrahlungen gesamt (Info, Mengenrabatte)
     max_seconds: Mapped[int] = mapped_column(Integer, default=0)  # 0 = jede Spotlänge
     includes_studio: Mapped[bool] = mapped_column(Boolean, default=False)
+    # False = Paket ohne Werbespot (z. B. Gewinnspiel, Sponsoring): Studiospot nicht zubuchbar
+    studio_bookable: Mapped[bool] = mapped_column(Boolean, default=True)
     ad_tax_applies: Mapped[bool] = mapped_column(Boolean, default=True)
     # Anteil Radio-Sendezeit als Basis der Werbeabgabe; 0 = gesamter Paketpreis
     airtime_cent: Mapped[int] = mapped_column(Integer, default=0)

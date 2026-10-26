@@ -18,6 +18,7 @@ def cat(db):
         "basic": Package(name="Basic", price_cent=100000, spots=40, max_seconds=20),
         "allin": Package(name="All-in", price_cent=300000, airtime_cent=265100, spots=80, includes_studio=True),
         "stream": Package(name="Streams", price_cent=50000, ad_tax_applies=False),
+        "promo": Package(name="Gewinnspiel", price_cent=80000, studio_bookable=False),
     }
     db.add_all(objs.values())
     db.commit()
@@ -50,6 +51,18 @@ def test_studio_included(db, cat):
     assert r.ad_tax_base_cent == 265100  # nur der Sendezeit-Anteil
     with pytest.raises(QuoteError, match="Studiospot"):
         calculate_quote(db, pq(cat, "basic", addons=["express"]))
+
+
+def test_package_without_studio(db, cat, client):
+    r = calculate_quote(db, pq(cat, "promo"))
+    assert r.net_cent == 80000 and not r.production.studio
+    with pytest.raises(QuoteError, match="kein Studiospot buchbar"):
+        calculate_quote(db, pq(cat, "promo", studio=True))
+    with pytest.raises(QuoteError, match="Studiospot"):  # Extras „nur mit Studiospot“ ebenfalls nicht
+        calculate_quote(db, pq(cat, "promo", addons=["express"]))
+    assert calculate_quote(db, pq(cat, "basic", studio=True)).production.total_cent > 0  # andere Pakete wie bisher
+    flags = {p["name"]: p["studio_bookable"] for p in client.get("/api/catalog").json()["packages"]}
+    assert flags["Gewinnspiel"] is False and flags["Basic"] is True
 
 
 def test_stream_package_without_ad_tax(db, cat):
@@ -85,7 +98,7 @@ def test_package_only_quote_is_valid():
 
 def test_catalog_lists_active_packages_and_request_pdf(client, db, cat):
     names = [p["name"] for p in client.get("/api/catalog").json()["packages"]]
-    assert names == ["Basic", "All-in", "Streams"]
+    assert names == ["Basic", "All-in", "Streams", "Gewinnspiel"]
     r = client.post("/api/quote-requests", json={
         "configuration": {**pq(cat, "allin", studio=True).model_dump(mode="json"), **PERIOD},
         "customer_name": "Max", "email": "max@example.com", "street": "Gasse 1", "zip_code": "1010",

@@ -389,6 +389,9 @@ ENTITIES: dict[str, Entity] = {
               help="0 = jede Spotlänge. Längere Spots können das Paket nicht wählen"),
             F("includes_studio", "Studiospot inklusive", "bool",
               help="Der Studiospot mit echtem Sprecher ist im Pauschalpreis enthalten"),
+            F("studio_bookable", "Studiospot zubuchbar", "bool", in_list=False,
+              help="Ausschalten bei Paketen ohne Werbespot (z. B. Gewinnspiel, Sponsoring, Moderation) – "
+                   "der Kunde kann dann keinen Studiospot wählen. Gilt nicht, wenn „Studiospot inklusive“ an ist."),
             F("ad_tax_applies", "Werbeabgabe fällt an", "bool", in_list=False,
               help="Bei reinen Stream-Paketen ausschalten"),
             F("station_ids", "Wählbare Sender", "multi", options=lambda db: [
@@ -455,7 +458,7 @@ def _form_value(entity: Entity, f: F, obj: Any) -> str:
         if f.type == "multi":
             return []
         return {"active": "on", "technology": "ukw", "stackable": "on", "price_factor_bp": "1", "pitch_bp": "1", "rate_bp": "1",
-                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "duration_days": "0", "recommended_days": "0", "reverse_charge": "on",
+                "kind": "percent", "tier": "Demo", "ad_tax_applies": "on", "studio_bookable": "on", "max_seconds": "0", "gain_bp": "1", "station_mode": "choose", "duration_days": "0", "recommended_days": "0", "reverse_charge": "on",
                 **({"vat_rate_bp": "20"} if entity.slug == "countries" else {}),
                 **(_VOICE_FORM_DEFAULTS if entity.slug == "voices" else {})}.get(f.name, "")
     if f.name == "value_raw":  # Rabattwert je nach Art

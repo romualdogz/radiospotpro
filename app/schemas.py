@@ -90,6 +90,7 @@ class PackagePublic(ORMModel):
     spots: int
     max_seconds: int
     includes_studio: bool
+    studio_bookable: bool = True
     coverage_ids: list[int] = Field(default_factory=list)
     station_ids: list[int] = Field(default_factory=list)
     station_mode: str = "choose"
@@ -473,6 +474,7 @@ class PackageIn(BaseModel):
     spots: int = Field(default=0, ge=0)
     max_seconds: int = Field(default=0, ge=0, le=300)
     includes_studio: bool = False
+    studio_bookable: bool = True
     ad_tax_applies: bool = True
     airtime_cent: int = Field(default=0, ge=0, description="Basis Werbeabgabe; 0 = gesamter Paketpreis")
     coverage_ids: list[int] = Field(default_factory=list)

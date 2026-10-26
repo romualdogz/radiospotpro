@@ -173,6 +173,8 @@ def calculate_quote(db: Session, data: QuoteIn, today: date | None = None) -> Qu
     period = booking_period(data, package, cfg["booking_lead_days"], today)
 
     studio_in_package = bool(package and package.includes_studio)
+    if package and prod and prod.studio and not studio_in_package and not package.studio_bookable:
+        raise QuoteError(f"Zu „{package.name}“ ist kein Studiospot buchbar.")
     studio = bool(prod and prod.studio) or studio_in_package
     blocked = [a.name for a in addons.values() if a.requires_studio and not studio]
     if blocked:

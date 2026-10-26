@@ -181,15 +181,18 @@
     return options.find((s) => s.id === state.packageStations[p.id]) || options[0];
   };
   const packageFits = (p) => !!p && (!p.max_seconds || byId(C.spot_lengths, state.lengthId).seconds <= p.max_seconds);
+  // Pakete ohne Werbespot (z. B. Gewinnspiel): Studiospot nicht wählbar. Die Wahl bleibt gemerkt
+  // und gilt wieder, sobald ein anderes Paket oder „Individuell“ gewählt wird.
+  const studioBookable = () => { const p = selectedPackage(); return !p || p.includes_studio || p.studio_bookable !== false; };
   // Studiospot gewählt oder im gewählten Paket enthalten
-  const studioActive = () => state.studio || !!selectedPackage()?.includes_studio;
+  const studioActive = () => (state.studio && studioBookable()) || !!selectedPackage()?.includes_studio;
 
   // ------------------------------------------------------------------ Preis
   function configuration() {
     const pkg = selectedPackage();
     return {
       production: { spot_length_id: state.lengthId, voice_id: state.voiceId, music_style_id: state.musicId,
-        studio: state.studio && !pkg?.includes_studio },
+        studio: state.studio && studioBookable() && !pkg?.includes_studio },
       package_id: pkg ? pkg.id : null,
       package_station_id: pkg ? packageStation(pkg)?.id ?? null : null,
       start_date: state.startDate || null,
@@ -823,6 +826,12 @@
               h("div", {}, h("div", { class: "voice-name" }, "Studiospot mit echtem Sprecher"),
                 h("div", { class: "voice-tag" }, "Professionell im Studio produziert, zur Freigabe vor Ausstrahlung")),
               h("div", { class: "voice-badge" }, "im Paket inklusive")))))
+        : !studioBookable()
+        ? field("Ihr Spot", h("div", { class: "voices spot-choice" }, h("div", { class: "voice option sel" },
+            h("div", { class: "voice-top" },
+              h("div", {}, h("div", { class: "voice-name" }, "Spot-Text & Hörbeispiel"),
+                h("div", { class: "voice-tag" }, `Für „${pkg.name}“ wird kein Studiospot benötigt`)),
+              h("div", { class: "voice-badge" }, "gratis")))))
         : field("Ihr Spot", h("div", { class: "voices spot-choice" },
             option(false, "Spot-Text & Hörbeispiel", "So wie konfiguriert", "gratis"),
             option(true, "Studiospot mit echtem Sprecher", "Professionell im Studio produziert, zur Freigabe vor Ausstrahlung",
