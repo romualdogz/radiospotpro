@@ -11,6 +11,10 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 26.10.2026
 
 ### Neu
+- **Glücksrad als Pop-up** (*Glücksrad → Anzeige*): wahlweise eingebettet im letzten Schritt (wie bisher) oder als
+  Pop-up beim Start, bei „Buchung“ oder bei „Anfrage“. Das Pop-up kommt einmal pro Besuch, lässt sich mit ×, Esc
+  oder Klick daneben schließen; dann bleibt unten links ein kleiner „🎡 Glücksrad“-Knopf zum Wiederöffnen. Nach dem
+  Drehen „Weiter“ – ein Gewinn wird sofort im Preis abgezogen und steht auch im letzten Schritt.
 - **Rabatt-Glücksrad** (*Preise → Glücksrad*, auch für die Verkaufsleitung; standardmäßig aus): Im letzten
   Schritt dreht der Kunde einmal am Rad und gewinnt ggf. einen Rabatt auf den Gesamtbetrag (auch bei
   Komplettpaketen). Bis zu 12 Felder mit Beschriftung, Rabatt (0–50 %, 0 = Niete) und Gewichtung; der Admin zeigt

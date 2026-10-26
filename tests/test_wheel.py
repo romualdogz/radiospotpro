@@ -108,3 +108,12 @@ def test_admin_page_for_sales(client, db):
     assert cfg.enabled and cfg.valid_hours == 48 and len(cfg.segments) == 2 and cfg.win_chance == 0.25
     r = client.post("/admin/wheel", data={"csrf": token, "label": ["A"], "percent": ["90"], "weight": ["1"]})
     assert "2 bis 12" in r.text or "zwischen 0 und 50" in r.text
+
+
+def test_popup_mode(client, db):
+    wheel.save_config(db, True, False, 72, SEGMENTS, mode="popup", popup_step="3")
+    w = client.get("/api/catalog").json()["wheel"]
+    assert w["mode"] == "popup" and w["popup_step"] == 3
+    wheel.save_config(db, True, False, 72, SEGMENTS, mode="quatsch", popup_step="9")
+    w = client.get("/api/catalog").json()["wheel"]
+    assert w["mode"] == "inline" and w["popup_step"] == 4

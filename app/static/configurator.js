@@ -26,7 +26,7 @@
     studio: false, items: [], bookingMode: "individual", packageId: null,
     packageStations: {},  // Paket-ID → gewählter Sender (bei Paketen mit Senderwahl)
     startDate: "", endDate: "",  // Kampagnenzeitraum (JJJJ-MM-TT)
-    promo: "", promoOpen: false, wheel: null, country: "AT", vatId: "",
+    promo: "", promoOpen: false, wheel: null, wheelPopupShown: false, country: "AT", vatId: "",
     name: "", company: null, street: "", zip: "", city: "", email: "", phone: "", nachricht: "",
     acceptTerms: false, acceptPrivacy: false,
     quote: null, sent: null, demo: null,
@@ -906,8 +906,10 @@
   }
 
   // Rabatt-Glücksrad: einmal drehen, das Ergebnis bestimmt der Server (signiertes Gewinn-Token)
-  function wheelBlock() {
+  function wheelBlock(popup = false) {
     if (!C.wheel || !window.DiscountWheel) return null;
+    // Pop-up-Modus: im Schritt steht nur das Ergebnis (falls schon gedreht)
+    if (C.wheel.mode === "popup" && !popup && !state.wheel) return null;
     const best = Math.max(...C.wheel.segments.map((s) => s.percent));
     const box = h("div", { class: "wheel-box" });
     const message = (r) => {
@@ -933,7 +935,10 @@
         btn.textContent = "Das Rad dreht …";
         await wheel.spinTo(r.index);
         state.wheel = r;
-        box.querySelector(".wheel-actions").replaceChildren(message(r));
+        box.querySelector(".wheel-actions").replaceChildren(message(r),
+          popup ? h("button", { type: "button", class: "btn", onclick: closeWheelPopup }, "Weiter") : null);
+        refreshWheelLauncher();
+        if (popup && !wheelOverlay && state.step === STEPS.length - 1) render();  // Pop-up schon geschlossen
         document.dispatchEvent(new CustomEvent("radiospot:wheel", { detail: { percent: r.percent } }));
         if (r.token) scheduleQuote();
       } catch (e) {
@@ -947,6 +952,45 @@
       h("div", { class: "wheel-actions" }, btn, status));
     const wheel = window.DiscountWheel.render(host, C.wheel.segments);
     return box;
+  }
+
+  // Glücksrad als Pop-up: erscheint einmal beim Öffnen des eingestellten Schritts; geschlossen ohne Drehen
+  // bleibt unten links ein Knopf zum Wiederöffnen
+  let wheelOverlay = null;
+  const wheelLauncher = h("button", { type: "button", class: "wheel-launcher", hidden: true,
+    onclick: () => openWheelPopup() }, h("span", { "aria-hidden": "true" }, "🎡"), " Glücksrad");
+  root.append(wheelLauncher);  // im Konfigurator-Element, damit Farben aus dem Design gelten
+  const wheelPopupMode = () => !!(C?.wheel && C.wheel.mode === "popup" && window.DiscountWheel);
+  function refreshWheelLauncher() {
+    wheelLauncher.hidden = !(wheelPopupMode() && state.wheelPopupShown && !state.wheel && !state.sent && !wheelOverlay);
+  }
+  function openWheelPopup() {
+    if (wheelOverlay || !wheelPopupMode()) return;
+    state.wheelPopupShown = true;
+    const onKey = (e) => { if (e.key === "Escape") closeWheelPopup(); };
+    const dialog = h("div", { class: "wheel-dialog", role: "dialog", "aria-modal": "true", "aria-label": "Glücksrad" },
+      h("button", { type: "button", class: "wheel-close", "aria-label": "Schließen", onclick: closeWheelPopup }, "×"),
+      wheelBlock(true));
+    wheelOverlay = h("div", { class: "wheel-overlay", onclick: (e) => { if (e.target === wheelOverlay) closeWheelPopup(); } }, dialog);
+    wheelOverlay.onKey = onKey;
+    document.addEventListener("keydown", onKey);
+    root.append(wheelOverlay);
+    refreshWheelLauncher();
+    (dialog.querySelector(".wheel-btn") || dialog.querySelector(".wheel-close")).focus();
+  }
+  function closeWheelPopup() {
+    if (!wheelOverlay) return;
+    document.removeEventListener("keydown", wheelOverlay.onKey);
+    wheelOverlay.remove();
+    wheelOverlay = null;
+    refreshWheelLauncher();
+    if (state.wheel && state.step === STEPS.length - 1) render();  // Gewinn auch im letzten Schritt zeigen
+  }
+  function maybeWheelPopup() {
+    refreshWheelLauncher();
+    if (wheelPopupMode() && !state.wheelPopupShown && !state.wheel && !state.sent && state.step === C.wheel.popup_step) {
+      setTimeout(() => { if (state.step === C.wheel.popup_step) openWheelPopup(); }, 700);
+    }
   }
 
   // Gutscheincode: zugeklappt hinter einem Link, damit Kunden ohne Code nicht danach suchen.
@@ -1070,6 +1114,7 @@
     btnNext.style.visibility = state.sent ? "hidden" : "visible";
     btnNext.textContent = state.step === STEPS.length - 1 ? "Anfrage senden" : "Weiter";
     refreshNav();
+    maybeWheelPopup();
   }
 
   btnBack.addEventListener("click", () => { if (state.step > 0) goTo(state.step - 1); });

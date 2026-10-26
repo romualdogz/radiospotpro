@@ -7,8 +7,25 @@
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <label class="check"><input type="checkbox" name="enabled" {{ 'checked' if wheel.enabled }}>
       Glücksrad im Konfigurator anzeigen</label>
-    <small class="help">Kunden drehen im letzten Schritt einmal am Rad. Wo es stehen bleibt, entscheidet der Server –
+    <small class="help">Kunden drehen einmal am Rad. Wo es stehen bleibt, entscheidet der Server –
       Neuladen bringt 24 Stunden lang dasselbe Ergebnis.</small>
+
+    <h2>Anzeige</h2>
+    <div class="wm-modes">
+      {% for value, text in modes.items() %}
+        <label class="check"><input type="radio" name="mode" value="{{ value }}" {{ 'checked' if wheel.mode == value }}
+          onchange="document.getElementById('popupStep').hidden = this.value !== 'popup'"> {{ text }}</label>
+      {% endfor %}
+    </div>
+    <label id="popupStep" {{ 'hidden' if wheel.mode != 'popup' }}>Pop-up erscheint
+      <select name="popup_step">
+        {% for value, text in popup_steps.items() %}
+          <option value="{{ value }}" {{ 'selected' if wheel.popup_step | string == value }}>{{ text }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <small class="help">Das Pop-up kommt einmal pro Besuch. Schließt der Kunde es ohne zu drehen, bleibt unten links ein
+      kleiner „🎡 Glücksrad“-Knopf zum Wiederöffnen. Ein Gewinn steht danach auch im letzten Schritt.</small>
 
     <h2>Felder des Rads</h2>
     <p class="help">{{ 2 }} bis {{ rows | length }} Felder. Rabatt 0 = Niete. Die <b>Gewichtung</b> bestimmt, wie oft ein

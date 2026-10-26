@@ -852,7 +852,8 @@ def _render_wheel(request: Request, user, db: Session, error=None, cfg=None):
     cfg = cfg or wheel.get_config(db)
     rows = cfg.segments + [{"label": "", "percent": 0, "weight": 0}] * (wheel.MAX_SEGMENTS - len(cfg.segments))
     return render(request, "admin/wheel.html", user=user, wheel=cfg, rows=rows, error=error,
-                  flash=None if error else pop_flash(request), max_percent=wheel.MAX_PERCENT)
+                  flash=None if error else pop_flash(request), max_percent=wheel.MAX_PERCENT,
+                  modes=wheel.MODES, popup_steps=wheel.POPUP_STEPS)
 
 
 @router.post("/wheel")
@@ -863,11 +864,13 @@ async def wheel_save(request: Request, user=Depends(section_page("wheel")), db: 
                 zip(form.getlist("label"), form.getlist("percent"), form.getlist("weight"))]
     try:
         hours = int(str(form.get("valid_hours") or "72"))
-        wheel.save_config(db, form.get("enabled") == "on", form.get("stackable") == "on", hours, segments)
+        wheel.save_config(db, form.get("enabled") == "on", form.get("stackable") == "on", hours, segments,
+                          str(form.get("mode", "inline")), str(form.get("popup_step", "4")))
     except ValueError as e:
         msg = str(e) if "invalid literal" not in str(e) else "Gültigkeit: bitte eine ganze Zahl (Stunden) angeben"
         draft = wheel.WheelConfig(enabled=form.get("enabled") == "on", stackable=form.get("stackable") == "on",
-                                  valid_hours=72, segments=[s for s in segments if str(s["label"]).strip()][:wheel.MAX_SEGMENTS])
+                                  valid_hours=72, segments=[s for s in segments if str(s["label"]).strip()][:wheel.MAX_SEGMENTS],
+                                  mode=str(form.get("mode", "inline")), popup_step=int(form.get("popup_step", "4") or 4))
         return _render_wheel(request, user, db, error=msg, cfg=draft)
     return redirect("/admin/wheel", "Glücksrad gespeichert.", request)
 

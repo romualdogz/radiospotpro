@@ -25,7 +25,11 @@ DEFAULT_SEGMENTS = [  # Bezeichnung, Rabatt in %, Gewichtung (relative Häufigke
     {"label": "7 %", "percent": 7, "weight": 10},
     {"label": "10 %", "percent": 10, "weight": 5},
 ]
+# Anzeige: eingebettet im letzten Schritt oder als Pop-up beim Öffnen eines Schritts
+MODES = {"inline": "Eingebettet im letzten Schritt („Anfrage“)", "popup": "Als Pop-up"}
+POPUP_STEPS = {"0": "beim Start (Schritt 1)", "3": "bei „Buchung“ (Schritt 4)", "4": "bei „Anfrage“ (Schritt 5)"}
 DEFAULTS = {"wheel_enabled": "0", "wheel_stackable": "0", "wheel_valid_hours": "72",
+            "wheel_mode": "inline", "wheel_popup_step": "4",
             "wheel_segments": json.dumps(DEFAULT_SEGMENTS, ensure_ascii=False)}
 MAX_SEGMENTS, MIN_SEGMENTS, MAX_PERCENT = 12, 2, 50
 REPEAT_WINDOW = 24 * 3600  # so lange bekommt dieselbe IP dasselbe Ergebnis
@@ -41,6 +45,8 @@ class WheelConfig:
     stackable: bool
     valid_hours: int
     segments: list[dict]
+    mode: str = "inline"
+    popup_step: int = 4
 
     @property
     def total_weight(self) -> int:
@@ -70,7 +76,9 @@ def get_config(db: Session) -> WheelConfig:
     except ValueError:
         hours = 72
     return WheelConfig(enabled=v["wheel_enabled"] == "1", stackable=v["wheel_stackable"] == "1",
-                       valid_hours=hours, segments=segments)
+                       valid_hours=hours, segments=segments,
+                       mode=v["wheel_mode"] if v["wheel_mode"] in MODES else "inline",
+                       popup_step=int(v["wheel_popup_step"]) if v["wheel_popup_step"] in POPUP_STEPS else 4)
 
 
 def validate_segments(rows: list) -> list[dict]:
@@ -97,9 +105,12 @@ def validate_segments(rows: list) -> list[dict]:
     return out
 
 
-def save_config(db: Session, enabled: bool, stackable: bool, valid_hours: int, segments: list) -> None:
+def save_config(db: Session, enabled: bool, stackable: bool, valid_hours: int, segments: list,
+                mode: str = "inline", popup_step: str = "4") -> None:
     clean = validate_segments(segments)
     values = {"wheel_enabled": "1" if enabled else "0", "wheel_stackable": "1" if stackable else "0",
+              "wheel_mode": mode if mode in MODES else "inline",
+              "wheel_popup_step": popup_step if popup_step in POPUP_STEPS else "4",
               "wheel_valid_hours": str(min(720, max(1, valid_hours))),
               "wheel_segments": json.dumps(clean, ensure_ascii=False)}
     for key, value in values.items():

@@ -63,7 +63,8 @@ def _wheel_public(db: Session) -> WheelPublic | None:
     if not cfg.enabled:
         return None
     return WheelPublic(segments=[WheelSegmentPublic(label=s["label"], percent=s["percent"]) for s in cfg.segments],
-                      valid_hours=cfg.valid_hours)
+                      valid_hours=cfg.valid_hours, mode=cfg.mode,
+                      popup_step=cfg.popup_step)
 
 
 @router.post("/wheel/spin", response_model=WheelSpinOut, summary="Glücksrad drehen (Ergebnis bestimmt der Server)")

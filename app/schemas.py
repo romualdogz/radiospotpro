@@ -111,6 +111,8 @@ class WheelSegmentPublic(BaseModel):
 class WheelPublic(BaseModel):
     segments: list[WheelSegmentPublic]
     valid_hours: int
+    mode: str = Field(default="inline", description="inline = im letzten Schritt, popup = als Pop-up")
+    popup_step: int = Field(default=4, description="Pop-up erscheint beim Öffnen dieses Schritts (0 = erster)")
 
 
 class WheelSpinOut(BaseModel):
