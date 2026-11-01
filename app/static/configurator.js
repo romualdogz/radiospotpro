@@ -937,15 +937,15 @@
       box.append(message(state.wheel));
       return box;
     }
-    const radio = C.wheel.style === "radio" || C.wheel.style === "slot";  // mit eigenem Bedienelement
-    const slot = C.wheel.style === "slot";
+    const radio = ["radio", "slot", "scratch"].includes(C.wheel.style);  // mit eigenem Bedienelement
+    const slot = C.wheel.style === "slot", scratch = C.wheel.style === "scratch";
     const host = h("div", { class: "wheel-host" + (radio ? " radio-host" : "") });
     const status = h("span", { class: "gen-status" });
     let busy = false;
     const spin = async () => {
       if (busy) return;
       busy = true; btn.disabled = true; status.textContent = "";
-      if (radio) { wheel.setBusy(true); hint.textContent = slot ? "Die Walzen laufen …" : "Sender wird gesucht …"; }
+      if (radio) { wheel.setBusy(true); hint.textContent = scratch ? "Weiterrubbeln …" : slot ? "Die Walzen laufen …" : "Sender wird gesucht …"; }
       try {
         const r = await api("/api/wheel/spin", {});
         btn.textContent = "Das Rad dreht …";
@@ -963,11 +963,14 @@
       }
     };
     const btn = h("button", { type: "button", class: "btn wheel-btn", hidden: radio, onclick: spin }, "Jetzt drehen!");
-    const idleHint = slot ? "Am Hebel ziehen – oder einfach antippen" : "Am Knopf drehen – oder einfach antippen";
+    const idleHint = scratch ? "Mit Maus oder Finger freirubbeln – oder „Aufdecken“ tippen"
+      : slot ? "Am Hebel ziehen – oder einfach antippen" : "Am Knopf drehen – oder einfach antippen";
     const hint = h("span", { class: "radio-hint" }, idleHint);
     box.append(
-      h("div", { class: "wheel-intro" }, h("b", {}, slot ? "🎰 Glücksautomat" : radio ? "📻 Glücksradio" : "🎡 Glücksrad"),
-        h("span", {}, slot
+      h("div", { class: "wheel-intro" }, h("b", {}, scratch ? "🎟️ Rubbellos" : slot ? "🎰 Glücksautomat" : radio ? "📻 Glücksradio" : "🎡 Glücksrad"),
+        h("span", {}, scratch
+          ? ` Rubbeln Sie die drei Felder frei – drei Gleiche gewinnen bis zu ${best} % Rabatt.`
+          : slot
           ? ` Ziehen Sie am Hebel – drei Gleiche gewinnen bis zu ${best} % Rabatt.`
           : radio
           ? ` Drehen Sie am Sendersuchknopf und finden Sie Ihren Sender mit bis zu ${best} % Rabatt.`
@@ -986,7 +989,7 @@
   root.append(wheelLauncher);  // im Konfigurator-Element, damit Farben aus dem Design gelten
   const wheelPopupMode = () => !!(C?.wheel && C.wheel.mode === "popup" && window.DiscountWheel);
   function refreshWheelLauncher() {
-    const label = { radio: ["📻", " Glücksradio"], slot: ["🎰", " Glücksautomat"] }[C?.wheel?.style];
+    const label = { radio: ["📻", " Glücksradio"], slot: ["🎰", " Glücksautomat"], scratch: ["🎟️", " Rubbellos"] }[C?.wheel?.style];
     if (label) [wheelLauncher.firstChild.textContent, wheelLauncher.lastChild.textContent] = label;  // passend zur Darstellung
     wheelLauncher.hidden = !(wheelPopupMode() && state.wheelPopupShown && !state.wheel && !state.sent && !wheelOverlay);
   }

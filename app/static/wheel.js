@@ -422,10 +422,144 @@
     };
   }
 
+  // ------------------------------------------------------------------ Variante „Rubbellos“
+  // Los mit drei Feldern unter einer Silberschicht. Erstes Rubbeln ruft opts.onTune() auf (Server lost aus),
+  // spinTo(index) legt das Ergebnis unter die Schicht und ist erledigt, sobald gut die Hälfte freigerubbelt ist
+  // (oder „Aufdecken“ gedrückt wurde). Gewinn = dreimal dasselbe Feld, Niete = gemischte Symbole.
+  const SCRATCH_STYLE = `
+.scratch { position: relative; max-width: 420px; margin: 0 auto; padding: 16px 18px 18px; border-radius: 14px; color: #3b1d00;
+  background: radial-gradient(circle at 0 50%, transparent 9px, #ffd84d 10px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 9px, #ffd84d 10px) right / 51% 100% no-repeat;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.28)); user-select: none; -webkit-user-select: none; }
+.scratch::before { content: ""; position: absolute; inset: 7px; border: 2px dashed rgba(120,60,0,.35); border-radius: 10px; pointer-events: none; }
+.scratch-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; position: relative; }
+.scratch-title { font: 900 1.25rem/1 var(--head, system-ui, sans-serif); letter-spacing: .08em; color: #c2410c;
+  text-shadow: 2px 2px 0 #fff; }
+.scratch-no { font: 600 .7rem ui-monospace, monospace; color: #8a5a00; }
+.scratch-area { position: relative; height: 104px; border-radius: 10px; overflow: hidden; background: #fffaf0;
+  box-shadow: inset 0 0 0 2px #e0a800; touch-action: none; }
+.scratch-symbols { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+.scratch-cell { display: grid; place-items: center; font: 800 1.35rem var(--head, system-ui, sans-serif); color: #b0002a; }
+.scratch-cell + .scratch-cell { border-left: 2px dotted #f0c040; }
+.scratch-cell.emoji { font-size: 2.1rem; }
+.scratch-cell.jackpot::after { content: "★"; color: #d48a00; margin-left: 3px; }
+.scratch.won .scratch-cell { animation: scratch-win .45s ease-in-out 4; }
+@keyframes scratch-win { 50% { transform: scale(1.18); color: #e4002b; } }
+.scratch canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; transition: opacity .6s; }
+.scratch canvas.gone { opacity: 0; pointer-events: none; }
+.scratch-foot { position: relative; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
+  font: 600 .72rem system-ui, sans-serif; color: #8a5a00; }
+.scratch-reveal { border: 0; background: #c2410c; color: #fff; border-radius: 999px; padding: 6px 14px;
+  font: 700 .75rem system-ui, sans-serif; cursor: pointer; }
+.scratch-reveal:disabled { opacity: .5; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .scratch.won .scratch-cell { animation: none; } }
+`;
+
+  function renderScratch(host, segments, opts = {}) {
+    if (!document.getElementById("discount-scratch-style")) {
+      const s = document.createElement("style");
+      s.id = "discount-scratch-style";
+      s.textContent = SCRATCH_STYLE;
+      document.head.appendChild(s);
+    }
+    const div = (cls, text) => { const d = document.createElement("div"); d.className = cls; if (text != null) d.textContent = text; return d; };
+    const best = Math.max(...segments.map((s) => s.percent));
+    const wins = segments.map((s, i) => ({ ...s, i })).filter((s) => s.percent > 0);
+    const ticket = div("scratch");
+    const head = div("scratch-head");
+    head.append(div("scratch-title", opts.title || "RUBBELLOS"),
+      div("scratch-no", "Nr. " + String(Math.floor(Math.random() * 900000) + 100000)));
+    const area = div("scratch-area");
+    area.setAttribute("role", "img");
+    area.setAttribute("aria-label", "Rubbellos mit drei Feldern – Gewinne: " + wins.map((w) => w.label).join(", "));
+    const symbols = div("scratch-symbols");
+    const cells = [0, 1, 2].map(() => div("scratch-cell emoji", "❔"));
+    symbols.append(...cells);
+    const canvas = document.createElement("canvas");
+    area.append(symbols, canvas);
+    const foot = div("scratch-foot");
+    const reveal = document.createElement("button");
+    reveal.type = "button"; reveal.className = "scratch-reveal"; reveal.textContent = "Aufdecken";
+    foot.append(div(null, "Drei Gleiche gewinnen"), reveal);
+    ticket.append(head, area, foot);
+    host.replaceChildren(ticket);
+
+    // Silberschicht zeichnen (nach dem Einfügen, damit die Größe bekannt ist)
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    function paintCover() {
+      const r = area.getBoundingClientRect();
+      canvas.width = Math.max(1, r.width * dpr); canvas.height = Math.max(1, r.height * dpr);
+      const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      g.addColorStop(0, "#b8b8b8"); g.addColorStop(.45, "#e9e9e9"); g.addColorStop(.55, "#cfcfcf"); g.addColorStop(1, "#a9a9a9");
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(255,255,255,.35)";
+      for (let x = 0; x < canvas.width; x += 26 * dpr) for (let y = 0; y < canvas.height; y += 26 * dpr) {
+        ctx.beginPath(); ctx.arc(x + ((y / (26 * dpr)) % 2) * 13 * dpr, y, 3 * dpr, 0, 7); ctx.fill();
+      }
+      ctx.fillStyle = "#6b6b6b"; ctx.font = `800 ${15 * dpr}px system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("✦ HIER RUBBELN ✦", canvas.width / 2, canvas.height / 2);
+    }
+    requestAnimationFrame(paintCover);
+
+    let started = false, busy = false, result = null, finish = null, wantReveal = false, last = null, checks = 0;
+    const start = () => { if (!started && !busy) { started = true; opts.onTune && opts.onTune(); } };
+    function scratchAt(x, y) {
+      const r = canvas.getBoundingClientRect();
+      const px = (x - r.left) * dpr, py = (y - r.top) * dpr;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineWidth = 34 * dpr; ctx.lineCap = "round";
+      ctx.beginPath();
+      if (last) { ctx.moveTo(last[0], last[1]); ctx.lineTo(px, py); } else { ctx.arc(px, py, 17 * dpr, 0, 7); ctx.fill(); }
+      ctx.stroke();
+      last = [px, py];
+      if (++checks % 6 === 0) checkDone();
+    }
+    function cleared() {  // Anteil freigerubbelt (Stichprobe)
+      const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let clear = 0, n = 0;
+      for (let i = 3; i < d.length; i += 4 * 37) { n++; if (d[i] < 40) clear++; }
+      return n ? clear / n : 0;
+    }
+    function done() {
+      canvas.classList.add("gone"); reveal.style.display = "none";
+      if (result && result.percent > 0) ticket.classList.add("won");
+      const f = finish; finish = null; f && f();
+    }
+    function checkDone() { if (result && finish && cleared() > 0.5) done(); }
+    canvas.addEventListener("pointerdown", (e) => { if (canvas.classList.contains("gone")) return; start();
+      canvas.setPointerCapture(e.pointerId); last = null; scratchAt(e.clientX, e.clientY); });
+    canvas.addEventListener("pointermove", (e) => { if (e.buttons || e.pointerType === "touch") { if (last || e.buttons) scratchAt(e.clientX, e.clientY); } });
+    canvas.addEventListener("pointerup", () => { last = null; checkDone(); });
+    reveal.addEventListener("click", () => { wantReveal = true; reveal.disabled = true; start(); if (result && finish) done(); });
+
+    return {
+      el: ticket,
+      setBusy(v) { busy = v; if (!v) { started = false; reveal.disabled = false; } },
+      spinTo(index) {
+        const seg = segments[index];
+        const fillers = ["🍒", "📻", "🔔", "⭐", "🎵", "🍋"].sort(() => Math.random() - 0.5);
+        const labels = seg.percent > 0 ? [seg, seg, seg] : fillers.slice(0, 3);
+        cells.forEach((c, k) => {
+          const s = labels[k];
+          c.className = "scratch-cell" + (typeof s === "string" ? " emoji" : s.percent === best ? " jackpot" : "");
+          c.textContent = typeof s === "string" ? s : s.label;
+        });
+        result = seg;
+        return new Promise((resolve) => {
+          finish = resolve;
+          if (wantReveal || reduceMotion) done(); else checkDone();
+        });
+      },
+    };
+  }
+
   window.DiscountWheel = {
     render(host, segments, opts = {}) {
       if (opts.style === "radio") return renderRadio(host, segments, opts);
       if (opts.style === "slot") return renderSlot(host, segments, opts);
+      if (opts.style === "scratch") return renderScratch(host, segments, opts);
       return render(host, segments);
     },
   };

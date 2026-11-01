@@ -615,7 +615,7 @@ body.lay-skin-neon {
 }
 /* Glücksrad im Analog-Radio-Design */
 .wheel-host.radio-host { max-width: 470px; }
-.wheel-host.radio-host:has(.slot) { max-width: 430px; }
+.wheel-host.radio-host:has(.slot), .wheel-host.radio-host:has(.scratch) { max-width: 430px; }
 .radio-hint { font-size: 0.88rem; color: var(--text-muted); font-style: italic; }
 .wheel-launcher b { font: inherit; }
 .wheel-dialog:has(.radio-host) { width: min(520px, 100%); }
