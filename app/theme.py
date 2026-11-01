@@ -74,7 +74,9 @@ PRESETS["ENERGY Neon"] = {
 LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
     "skin": ("Stil", {"classic": "Klassisch – Karte mit Schatten", "neon": "Neon – Leuchtrahmen & Raster",
                       "flat": "Flach – ohne Rahmen", "arcade": "Arcade – Retro-Computerspiel mit Pixelschrift",
-                      "esport": "E-Sport – Gaming-Look, Spieler-Seitenleiste mit Missionen"},
+                      "esport": "E-Sport – Gaming-Look, Spieler-Seitenleiste mit Missionen",
+                      "jumprun": "Jump & Run – Plattform-Spiel mit Wolken, Münzen und ?-Block",
+                      "candy": "Candy Pop – bunt, rund, Wackelpudding-Knöpfe"},
              "classic"),
     "width": ("Breite", {"narrow": "Schmal (880 px)", "wide": "Breit (1200 px)"}, "narrow"),
     "hero": ("Überschrift", {"left": "Groß, linksbündig", "center": "Groß, zentriert",
@@ -87,8 +89,8 @@ LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
     "game": ("Spielmodus", {"off": "Aus", "on": "An – Punkte, Level, Erfolge & Konfetti"}, "off"),
 }
 # Stile mit eigener Überschriften-Schrift (lokal unter app/static/fonts, siehe scripts/fetch_fonts.py)
-SKINS_WITH_FONT = {"arcade": "Press Start 2P", "esport": "Oswald"}
-SKIN_FONTS = {"Press Start 2P": "400"}  # Schrift → verfügbare Schnitte
+SKINS_WITH_FONT = {"arcade": "Press Start 2P", "esport": "Oswald", "jumprun": "Bungee", "candy": "Fredoka"}
+SKIN_FONTS = {"Press Start 2P": "400", "Bungee": "400", "Fredoka": "400;500;600;700"}  # Schrift → verfügbare Schnitte
 LAYOUT_DEFAULTS = {f"layout_{k}": v[2] for k, v in LAYOUT.items()}
 
 # Fertige Varianten: Layout (+ optional passende Farbvorlage)
@@ -115,6 +117,14 @@ VARIANTS: dict[str, dict] = {
                       "colors": "Energy Gaming",
                       "layout": {"skin": "esport", "width": "wide", "hero": "left", "steps": "dots",
                                  "header": "split", "caps": "upper", "wave": "off", "game": "on"}},
+    "Jump & Run": {"description": "Plattform-Spiel: Himmel, Wolken, Ziegelboden, Münzen als Schritte, ?-Block, Spielmodus an.",
+                   "colors": "Jump & Run",
+                   "layout": {"skin": "jumprun", "width": "narrow", "hero": "center", "steps": "dots",
+                              "header": "split", "caps": "normal", "wave": "off", "game": "on"}},
+    "Candy Pop": {"description": "Bonbonbuntes Handyspiel: Seifenblasen, Wackelpudding-Knöpfe, runde Schrift, Spielmodus an.",
+                  "colors": "Candy Pop",
+                  "layout": {"skin": "candy", "width": "narrow", "hero": "center", "steps": "dots",
+                             "header": "center", "caps": "normal", "wave": "on", "game": "on"}},
     "Kompakt": {"description": "Wenig Kopfbereich, Punkte-Navigation – schnell beim Formular.", "colors": None,
                 "layout": {"skin": "classic", "width": "narrow", "hero": "compact", "steps": "dots",
                            "header": "center", "caps": "normal", "wave": "off"}},
@@ -132,6 +142,19 @@ PRESETS["Energy Gaming"] = {
     "field_bg": "#1f1f23", "line": "#36363d", "text": "#f5f5f7", "text_muted": "#a3a3ad",
     "accent": "#e4002b", "accent_soft": "#3a0b12", "accent_2": "#ff4d5e", "button_text": "#ffffff",
     "success": "#2ee66b", "danger": "#ff6b6b",
+}
+
+PRESETS["Jump & Run"] = {
+    "page_bg": "#5c94fc", "page_text": "#ffffff", "logo_accent": "#fbd000", "panel_bg": "#ffffff",
+    "field_bg": "#fff6dc", "line": "#2b2b2b", "text": "#1d1d1d", "text_muted": "#5a5a5a",
+    "accent": "#e52521", "accent_soft": "#ffe0de", "accent_2": "#43b047", "button_text": "#ffffff",
+    "success": "#2e9e3a", "danger": "#e52521",
+}
+PRESETS["Candy Pop"] = {
+    "page_bg": "#ff8fc7", "page_text": "#ffffff", "logo_accent": "#7b2ff7", "panel_bg": "#ffffff",
+    "field_bg": "#fff3fa", "line": "#f5b5d8", "text": "#3b1d4a", "text_muted": "#8a6a99",
+    "accent": "#ff3d8b", "accent_soft": "#ffe0ef", "accent_2": "#7b2ff7", "button_text": "#ffffff",
+    "success": "#19c37d", "danger": "#ff3d3d",
 }
 
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")

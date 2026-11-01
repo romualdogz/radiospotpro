@@ -8,6 +8,19 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 
 ---
 
+## 01.11.2026
+
+### Neu
+- **Zwei lustige Gaming-Varianten** (*Design → Layout-Varianten*, je mit eigener Farbvorlage):
+  - **„Jump & Run“** – Plattform-Spiel: blauer Himmel mit Wolken, grüne Hügel, Ziegelboden, hüpfender „?“-Block, Münzen
+    über der Überschrift, Schritte als Münzen (die aktuelle dreht sich), dicke Knöpfe zum „Draufhüpfen“, Schrift „Bungee“.
+  - **„Candy Pop“** – bonbonbuntes Handyspiel: rosa-lila Verlauf mit aufsteigenden Seifenblasen, Bonbon-Rahmen,
+    bunte Auswahl-Bubbles (Mint, Zitrone, Himmelblau, Flieder), Wackelpudding-Knöpfe, gestreifte Schritt-Bonbons,
+    Schrift „Fredoka“, „Weiter 🍭“.
+  Beide mit Spielmodus; auch als Stil einzeln wählbar. Schriften lokal mitgeliefert (OFL).
+
+---
+
 ## 26.10.2026
 
 ### Neu

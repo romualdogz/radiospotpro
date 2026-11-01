@@ -258,3 +258,12 @@ def test_ai_prompt_without_cta(monkeypatch):
     except Exception:
         pass
     assert "keinen Firmennamen erfinden" in captured["prompt"] and "Jetzt kaufen" in captured["prompt"]
+
+
+def test_fun_gaming_variants(client, db):
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    for name, skin, font in [("Jump & Run", "jumprun", "Bungee"), ("Candy Pop", "candy", "Fredoka")]:
+        client.post("/admin/design", data={"csrf": token, "action": f"variant:{name}", "with_colors": "on"})
+        assert f"lay-skin-{skin}" in client.get("/").text
+        assert f"font-family: '{font}'" in client.get("/fonts.css").text

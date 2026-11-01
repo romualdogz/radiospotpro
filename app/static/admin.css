@@ -181,3 +181,7 @@ ul.plain li:last-child { border-bottom: 0; }
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
 .thumb.t-skin-esport .t-steps { width: 28%; height: auto; background: repeating-linear-gradient(180deg, var(--t-accent) 0 5px, #333 5px 8px, transparent 8px 12px); }
 .thumb.t-skin-esport .t-hero { transform: skewX(-10deg); height: 12px; }
+.thumb.t-skin-jumprun { background: linear-gradient(transparent 80%, #c84c0c 80%), var(--t-bg); }
+.thumb.t-skin-jumprun .t-panel { border: 2px solid #000; box-shadow: 0 3px 0 #000; }
+.thumb.t-skin-candy { background: radial-gradient(circle, rgba(255,255,255,.5) 2px, transparent 3px) 0 0 / 10px 10px, linear-gradient(160deg, #ff9ad1, #b38bff); }
+.thumb.t-skin-candy .t-panel { border-radius: 10px; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ff3d8b; }
