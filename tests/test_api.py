@@ -158,13 +158,14 @@ def test_generate_script_success(client, db, monkeypatch):
 
     async def fake(**kwargs):
         seen.update(kwargs)
-        return "Hallo Wien!"
+        return ["Hallo Wien!", "Variante 2", "Variante 3"]
 
-    monkeypatch.setattr(ai, "generate_script", fake)
+    monkeypatch.setattr(ai, "generate_scripts", fake)
     body = {"occasion_id": 1, "spot_length_id": 1, "tonality_id": 1, "language_style_id": 1,
             "firma": "X", "botschaft": "Y", "cta": "Z"}
     r = client.post("/api/generate-script", json=body)
-    assert r.status_code == 200 and r.json() == {"script": "Hallo Wien!"}
+    assert r.status_code == 200
+    assert r.json() == {"script": "Hallo Wien!", "scripts": ["Hallo Wien!", "Variante 2", "Variante 3"]}
     assert seen["seconds"] == 30 and seen["style_instruction"] == "Neutral."
 
 

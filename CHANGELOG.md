@@ -8,6 +8,16 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 
 ---
 
+## 03.11.2026
+
+### Neu
+- **Drei KI-Textvorschläge statt einem:** „Text mit KI generieren“ liefert drei unterschiedliche Varianten – „Direkt &
+  klar“, „Mit kleiner Szene“ und „Mit Augenzwinkern“ – in einer einzigen KI-Anfrage (keine Mehrkosten). Vorschlag 1
+  steht sofort im Textfeld, die anderen als Karten darüber; ein Klick übernimmt einen anderen (bei eigenen Änderungen
+  mit Rückfrage). Die Vorschläge bleiben beim Zurück- und Weiterblättern erhalten.
+
+---
+
 ## 01.11.2026
 
 ### Neu

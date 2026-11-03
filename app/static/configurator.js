@@ -25,6 +25,7 @@
     step: 0, maxReached: 0,
     occasionId: null, lengthId: null,
     firma: "", tonalityId: null, styleId: null, botschaft: "", cta: "", script: "",
+    scriptOptions: [], scriptChoice: 0,  // KI-Vorschläge (in der Regel 3) und welcher gerade im Textfeld steht
     voiceId: null, musicId: null, addonIds: new Set(),
     studio: false, items: [], bookingMode: "individual", packageId: null,
     packageStations: {},  // Paket-ID → gewählter Sender (bei Paketen mit Senderwahl)
@@ -347,6 +348,34 @@
       placeholder: "Hier erscheint der Vorschlag — oder selbst schreiben.", onInput: updateEst });
     updateEst();
 
+    // Drei KI-Vorschläge als Karten – Klick übernimmt den Text ins Feld
+    const VARIANT_NAMES = ["Direkt & klar", "Mit kleiner Szene", "Mit Augenzwinkern"];
+    const optionsHost = h("div", { class: "script-options" });
+    function useOption(i) {
+      const edited = state.script.trim() && state.script !== state.scriptOptions[state.scriptChoice];
+      if (i !== state.scriptChoice && edited && !confirm("Ihre Änderungen am Text durch diesen Vorschlag ersetzen?")) return;
+      state.scriptChoice = i;
+      state.script = state.scriptOptions[i];
+      scriptBox.value = state.script;
+      autoGrow(scriptBox);
+      updateEst();
+      renderOptions();
+      refreshNav();
+    }
+    function renderOptions() {
+      const opts = state.scriptOptions;
+      if (opts.length < 2) { optionsHost.replaceChildren(); return; }
+      optionsHost.replaceChildren(
+        h("div", { class: "script-options-head" }, `${opts.length} Vorschläge – zum Übernehmen anklicken:`),
+        h("div", { class: "script-options-grid" }, opts.map((text, i) => h("button", {
+          type: "button", class: "script-option" + (i === state.scriptChoice ? " sel" : ""),
+          "aria-pressed": String(i === state.scriptChoice), onclick: () => useOption(i) },
+          h("span", { class: "script-option-name" }, `${i + 1} · ${VARIANT_NAMES[i] || "Vorschlag"}`),
+          h("span", { class: "script-option-text" }, text.replace(/\[[^\]\n]{1,40}\]\s*/g, "")),
+          h("span", { class: "script-option-use" }, i === state.scriptChoice ? "✓ im Textfeld" : "Übernehmen")))));
+    }
+    renderOptions();
+
     async function generate(btn) {
       if (!aiInputsComplete()) {
         status.textContent = `Bitte zuerst ${aiFieldNames()} ausfüllen.`;
@@ -361,11 +390,17 @@
           occasion_id: state.occasionId, spot_length_id: state.lengthId, tonality_id: state.tonalityId,
           language_style_id: state.styleId, firma: state.firma, botschaft: state.botschaft, cta: state.cta,
         });
-        state.script = res.script;
-        scriptBox.value = res.script;
+        state.scriptOptions = res.scripts?.length ? res.scripts : [res.script];
+        state.scriptChoice = 0;
+        state.script = state.scriptOptions[0];
+        scriptBox.value = state.script;
         autoGrow(scriptBox);
         updateEst();
-        status.textContent = "Vorschlag eingefügt — gerne direkt im Feld anpassen.";
+        renderOptions();
+        refreshNav();
+        status.textContent = state.scriptOptions.length > 1
+          ? "Vorschlag 1 eingefügt — oder unten einen anderen wählen. Im Feld frei anpassbar."
+          : "Vorschlag eingefügt — gerne direkt im Feld anpassen.";
       } catch (e) {
         status.textContent = e.message;
         status.style.color = "var(--danger)";
@@ -391,6 +426,7 @@
       C.ai_enabled ? h("div", { class: "gen-row" },
         h("button", { type: "button", class: "btn", onclick: (e) => generate(e.currentTarget) }, "Text mit KI generieren"),
         status) : null,
+      optionsHost,
       field("Spot-Text", scriptBox),
       est,
       h("p", { class: "hint", id: "textHint", hidden: true },

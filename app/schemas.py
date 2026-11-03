@@ -352,7 +352,8 @@ class LegalTextOut(ORMModel):
 
 
 class ScriptOut(BaseModel):
-    script: str
+    script: str = Field(description="Erster Vorschlag (für ältere Clients)")
+    scripts: list[str] = Field(default_factory=list, description="Alle Vorschläge (in der Regel 3)")
 
 
 class DemoAudioIn(BaseModel):

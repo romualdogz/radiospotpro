@@ -93,3 +93,14 @@ def test_prompt_contains_audio_tag_instruction(fake_client):
     assert "Eleven v4" in prompt and "energiegeladen – [excited]" in prompt
     asyncio.run(ai.generate_script(**ARGS, audio_tags=False))
     assert "Eleven v4" not in beta.calls[1]["messages"][0]["content"]
+
+
+def test_three_variants_in_one_request(fake_client):
+    beta, plain = fake_client(ok("<vorschlag>Eins</vorschlag>\n<vorschlag> Zwei </vorschlag><vorschlag>Drei</vorschlag>"))
+    assert asyncio.run(ai.generate_scripts(**ARGS)) == ["Eins", "Zwei", "Drei"]
+    assert len(beta.calls) == 1 and "3 deutlich unterschiedliche Varianten" in beta.calls[0]["messages"][0]["content"]
+
+
+def test_variants_fallback_without_tags(fake_client):
+    fake_client(ok("Nur ein Text ohne Tags"))
+    assert asyncio.run(ai.generate_scripts(**ARGS)) == ["Nur ein Text ohne Tags"]

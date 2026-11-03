@@ -166,14 +166,14 @@ async def generate_script(data: ScriptRequestIn, request: Request, db: Session =
     style = active(LanguageStyle, data.language_style_id, "Sprachstil")
     try:
         ai.check_rate_limit(request.client.host if request.client else "unknown")
-        script = await ai.generate_script(
+        scripts = await ai.generate_scripts(
             occasion=occasion.name, seconds=length.seconds, tonality=tonality.name,
             style_instruction=style.instruction, firma=data.firma, botschaft=data.botschaft, cta=data.cta,
             audio_tags=audio.tts_enabled() and audio.supports_audio_tags(), delivery_hint=tonality.delivery_hint,
         )
     except ai.ScriptError as e:
         raise HTTPException(e.status, str(e)) from e
-    return ScriptOut(script=script)
+    return ScriptOut(script=scripts[0], scripts=scripts)
 
 
 # --------------------------------------------------------------------------- Hörproben

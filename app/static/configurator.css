@@ -1046,3 +1046,20 @@ body.lay-skin-candy {
   body.lay-skin-candy, .lay-skin-candy .freq.active::before, .lay-skin-jumprun .hero::after,
   .lay-skin-jumprun .panel::before, .lay-skin-jumprun .freq.active::before { animation: none !important; }
 }
+
+/* KI-Textvorschläge (drei zur Auswahl) */
+.script-options { margin: 4px 0 18px; }
+.script-options:empty { display: none; }
+.script-options-head { font-size: .88rem; color: var(--text-muted); margin-bottom: 8px; }
+.script-options-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .script-options-grid { grid-template-columns: 1fr; } }
+.script-option { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg-field); color: var(--text); font: inherit; cursor: pointer;
+  transition: border-color .15s, transform .15s; }
+.script-option:hover { border-color: var(--accent); transform: translateY(-2px); }
+.script-option.sel { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.script-option-name { font: 600 .82rem var(--head); color: var(--accent); }
+.script-option-text { font-size: .84rem; line-height: 1.45; color: var(--text); display: -webkit-box; -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.script-option-use { margin-top: auto; font-size: .75rem; font-weight: 600; color: var(--text-muted); }
+.script-option.sel .script-option-use { color: var(--accent); }
