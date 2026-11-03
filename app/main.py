@@ -17,7 +17,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import BASE_DIR, settings
 from .database import SessionLocal, get_db, upgrade_schema
-from . import branding, fonts, theme
+from . import branding, design_schedule, fonts, theme
 from .models import LegalText
 from .security import current_admin_or_none
 from .routers import admin_api, admin_ui, public
@@ -86,7 +86,7 @@ async def _forbidden(request: Request, exc):
 def _design(request: Request, db: Session) -> tuple[dict, str]:
     """Gespeichertes Design – für eingeloggte Admins mit Live-Vorschau aus dem Layout-Designer
     (?preset=…&layout_…=…, wird nicht gespeichert). Liefert zusätzlich den Query-String für /theme.css."""
-    design = theme.get_theme(db)
+    design = design_schedule.apply(db, theme.get_theme(db))  # Zeitplan (z. B. Black Friday) hat Vorrang
     q = request.query_params
     keys = [k for k in q if k.startswith("layout_") or k == "preset"]
     if not keys or current_admin_or_none(request, db) is None:

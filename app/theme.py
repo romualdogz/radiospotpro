@@ -76,7 +76,8 @@ LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
                       "flat": "Flach – ohne Rahmen", "arcade": "Arcade – Retro-Computerspiel mit Pixelschrift",
                       "esport": "E-Sport – Gaming-Look, Spieler-Seitenleiste mit Missionen",
                       "jumprun": "Jump & Run – Plattform-Spiel mit Wolken, Münzen und ?-Block",
-                      "candy": "Candy Pop – bunt, rund, Wackelpudding-Knöpfe"},
+                      "candy": "Candy Pop – bunt, rund, Wackelpudding-Knöpfe",
+                      "blackfriday": "Black Friday – Schwarz-Weiß, Laufband, Sale-Look"},
              "classic"),
     "width": ("Breite", {"narrow": "Schmal (880 px)", "wide": "Breit (1200 px)"}, "narrow"),
     "hero": ("Überschrift", {"left": "Groß, linksbündig", "center": "Groß, zentriert",
@@ -89,8 +90,9 @@ LAYOUT: dict[str, tuple[str, dict[str, str], str]] = {
     "game": ("Spielmodus", {"off": "Aus", "on": "An – Punkte, Level, Erfolge & Konfetti"}, "off"),
 }
 # Stile mit eigener Überschriften-Schrift (lokal unter app/static/fonts, siehe scripts/fetch_fonts.py)
-SKINS_WITH_FONT = {"arcade": "Press Start 2P", "esport": "Oswald", "jumprun": "Bungee", "candy": "Fredoka"}
-SKIN_FONTS = {"Press Start 2P": "400", "Bungee": "400", "Fredoka": "400;500;600;700"}  # Schrift → verfügbare Schnitte
+SKINS_WITH_FONT = {"arcade": "Press Start 2P", "esport": "Oswald", "jumprun": "Bungee", "candy": "Fredoka",
+                   "blackfriday": "Anton"}
+SKIN_FONTS = {"Press Start 2P": "400", "Bungee": "400", "Fredoka": "400;500;600;700", "Anton": "400"}  # Schrift → verfügbare Schnitte
 LAYOUT_DEFAULTS = {f"layout_{k}": v[2] for k, v in LAYOUT.items()}
 
 # Fertige Varianten: Layout (+ optional passende Farbvorlage)
@@ -125,6 +127,10 @@ VARIANTS: dict[str, dict] = {
                   "colors": "Candy Pop",
                   "layout": {"skin": "candy", "width": "narrow", "hero": "center", "steps": "dots",
                              "header": "center", "caps": "normal", "wave": "on", "game": "on"}},
+    "Black Friday": {"description": "Monochrom in Schwarz-Weiß: Laufband „BLACK FRIDAY“, riesige Schrift, Sale-Look.",
+                     "colors": "Black Friday",
+                     "layout": {"skin": "blackfriday", "width": "wide", "hero": "left", "steps": "dots",
+                                "header": "split", "caps": "upper", "wave": "off", "game": "off"}},
     "Kompakt": {"description": "Wenig Kopfbereich, Punkte-Navigation – schnell beim Formular.", "colors": None,
                 "layout": {"skin": "classic", "width": "narrow", "hero": "compact", "steps": "dots",
                            "header": "center", "caps": "normal", "wave": "off"}},
@@ -155,6 +161,13 @@ PRESETS["Candy Pop"] = {
     "field_bg": "#fff3fa", "line": "#f5b5d8", "text": "#3b1d4a", "text_muted": "#8a6a99",
     "accent": "#ff3d8b", "accent_soft": "#ffe0ef", "accent_2": "#7b2ff7", "button_text": "#ffffff",
     "success": "#19c37d", "danger": "#ff3d3d",
+}
+
+PRESETS["Black Friday"] = {
+    "page_bg": "#000000", "page_text": "#ffffff", "logo_accent": "#9a9a9a", "panel_bg": "#ffffff",
+    "field_bg": "#f2f2f2", "line": "#111111", "text": "#000000", "text_muted": "#555555",
+    "accent": "#000000", "accent_soft": "#e9e9e9", "accent_2": "#000000", "button_text": "#ffffff",
+    "success": "#000000", "danger": "#000000",
 }
 
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")

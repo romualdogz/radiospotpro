@@ -185,3 +185,11 @@ ul.plain li:last-child { border-bottom: 0; }
 .thumb.t-skin-jumprun .t-panel { border: 2px solid #000; box-shadow: 0 3px 0 #000; }
 .thumb.t-skin-candy { background: radial-gradient(circle, rgba(255,255,255,.5) 2px, transparent 3px) 0 0 / 10px 10px, linear-gradient(160deg, #ff9ad1, #b38bff); }
 .thumb.t-skin-candy .t-panel { border-radius: 10px; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ff3d8b; }
+.schedule-table td, .schedule-table th { padding: 6px 8px; font-size: .9rem; }
+.schedule-table tr.s-abgelaufen { opacity: .55; }
+.badge.s-aktiv { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+.badge.s-geplant { border-color: var(--accent); color: var(--accent); }
+.schedule-add { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.thumb.t-skin-blackfriday { background: repeating-linear-gradient(-45deg, #000 0 6px, #1a1a1a 6px 12px); }
+.thumb.t-skin-blackfriday .t-panel { border-radius: 0; box-shadow: 0 0 0 2px #fff; }
+.thumb.t-skin-blackfriday .t-hero { height: 14px; width: 70%; border-radius: 0; }

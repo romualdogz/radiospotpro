@@ -11,6 +11,16 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 03.11.2026
 
 ### Neu
+- **Design-Variante „Black Friday“** (monochrom, mit Farbvorlage): Schwarz-Weiß mit diagonalen Streifen, laufendem Band
+  „BLACK FRIDAY ✦ NUR FÜR KURZE ZEIT ✦ …“, „AKTION“-Plakette, riesiger Schrift „Anton“, umrandetem „SALE“, „SALE“-Schild
+  an den Paketpreisen, eckigen schwarzen Knöpfen (beim Drüberfahren invertiert) und Karte in Graustufen.
+- **Zeitplan für Designs** (*Design → „Zeitplan – Designs automatisch umschalten“*): Zeiträume mit Von/Bis (Ortszeit Wien),
+  Variante und optional deren Farben anlegen. Im Zeitraum sieht jeder Besucher automatisch dieses Design, danach wieder
+  das normale – ohne dass etwas umgestellt werden muss. Status „geplant / aktiv / abgelaufen“, Löschen per Klick,
+  Knopf „Black Friday eintragen“ füllt Black Friday bis Cyber Monday (z. B. 27.–30.11.) vor.
+
+### Behoben
+- Am Handy konnte im Schritt „Buchung“ ein Feld (Zeitraum, Komplettpaket/Individuell) seitlich über den Rand ragen.
 - **Drei KI-Textvorschläge statt einem:** „Text mit KI generieren“ liefert drei unterschiedliche Varianten – „Direkt &
   klar“, „Mit kleiner Szene“ und „Mit Augenzwinkern“ – in einer einzigen KI-Anfrage (keine Mehrkosten). Vorschlag 1
   steht sofort im Textfeld, die anderen als Karten darüber; ein Klick übernimmt einen anderen (bei eigenen Änderungen

@@ -1063,3 +1063,78 @@ body.lay-skin-candy {
   -webkit-box-orient: vertical; overflow: hidden; }
 .script-option-use { margin-top: auto; font-size: .75rem; font-weight: 600; color: var(--text-muted); }
 .script-option.sel .script-option-use { color: var(--accent); }
+
+/* ======================================================================
+   Stil „Black Friday“ – monochrom: Schwarz-Weiß, Laufband, riesige Schrift, Sale-Look
+   ====================================================================== */
+body.lay-skin-blackfriday {
+  --head: 'Anton', 'Arial Narrow', Impact, system-ui, sans-serif;
+  background: repeating-linear-gradient(-45deg, #000 0 14px, #0b0b0b 14px 28px);
+}
+.lay-skin-blackfriday header.top { border-bottom: 0; position: relative; overflow: hidden; padding-bottom: 38px; }
+.lay-skin-blackfriday header.top::after {  /* Laufband */
+  content: "BLACK FRIDAY ✦ NUR FÜR KURZE ZEIT ✦ RADIOSPOTS ZUM AKTIONSPREIS ✦ BLACK FRIDAY ✦ NUR FÜR KURZE ZEIT ✦ RADIOSPOTS ZUM AKTIONSPREIS ✦ BLACK FRIDAY ✦ NUR FÜR KURZE ZEIT ✦ RADIOSPOTS ZUM AKTIONSPREIS ✦ BLACK FRIDAY ✦ NUR FÜR KURZE ZEIT ✦ RADIOSPOTS ZUM AKTIONSPREIS ✦ ";
+  position: absolute; left: 0; bottom: 0; height: 34px; line-height: 34px; white-space: nowrap;
+  font: 400 1.05rem var(--head); letter-spacing: .14em; color: #000; background: #fff;
+  animation: bf-ticker 28s linear infinite; }
+@keyframes bf-ticker { to { transform: translateX(-50%); } }
+.lay-skin-blackfriday .wordmark { font-family: var(--head); font-weight: 400; font-size: 1.4rem; letter-spacing: .04em; }
+.lay-skin-blackfriday .tag { font-family: var(--head); letter-spacing: .12em; color: #bdbdbd; }
+.lay-skin-blackfriday .hero { position: relative; padding: 46px 0 40px; }
+.lay-skin-blackfriday .hero::before { content: "AKTION"; display: inline-block; margin-bottom: 14px; padding: 4px 12px;
+  font: 400 .95rem var(--head); letter-spacing: .25em; color: #000; background: #fff; }
+.lay-skin-blackfriday .hero h1 { font-family: var(--head); font-weight: 400; text-transform: uppercase; letter-spacing: .01em;
+  font-size: clamp(2.8rem, 8.4vw, 6.4rem) !important; line-height: .95; max-width: 14ch; color: #fff; }
+.lay-skin-blackfriday .hero::after { content: "SALE"; position: absolute; right: 2%; top: 50%; pointer-events: none;
+  font: 400 clamp(4rem, 12vw, 9rem)/1 var(--head); color: transparent; -webkit-text-stroke: 2px #fff;
+  transform: translateY(-50%) rotate(-8deg); opacity: .9; }
+@media (max-width: 760px) { .lay-skin-blackfriday .hero::after { display: none; } }
+.lay-skin-blackfriday .panel { border-radius: 0; border: 0; box-shadow: 14px 14px 0 #5a5a5a; }
+.lay-skin-blackfriday .dial { border-bottom: 3px solid #000; }
+.lay-skin-blackfriday .freq::before { border-radius: 0 !important; border-color: #000 !important; font-family: var(--head) !important;
+  font-weight: 400 !important; }
+.lay-skin-blackfriday .freq.active::before { background: #000 !important; color: #fff !important; box-shadow: 4px 4px 0 #bbb !important; }
+.lay-skin-blackfriday .freq.done::before { background: #fff !important; color: #000 !important; content: "✓" !important; }
+.lay-skin-blackfriday .freq:not(:last-child)::after { background: #000 !important; height: 3px !important; }
+.lay-skin-blackfriday .fname { font-family: var(--head); font-weight: 400 !important; letter-spacing: .08em; color: #000 !important; }
+.lay-skin-blackfriday .step h2 { font-family: var(--head); font-weight: 400; font-size: 2.3rem; letter-spacing: .01em; }
+.lay-skin-blackfriday .step h3.sub, .lay-skin-blackfriday .field > label { font-family: var(--head); font-weight: 400;
+  letter-spacing: .14em; text-transform: uppercase; color: #000; }
+.lay-skin-blackfriday .field input, .lay-skin-blackfriday .field textarea, .lay-skin-blackfriday .field select,
+.lay-skin-blackfriday .period input[type=date] { border-radius: 0; border: 2px solid #000; background: #fff; }
+.lay-skin-blackfriday .chip { border-radius: 0; border: 2px solid #000; background: #fff; color: #000; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; }
+.lay-skin-blackfriday .chip:hover { background: #000; color: #fff; }
+.lay-skin-blackfriday .chip.sel { background: #000; color: #fff; box-shadow: 4px 4px 0 #bbb; }
+.lay-skin-blackfriday .voice, .lay-skin-blackfriday .summary-box { border-radius: 0; border: 2px solid #000; background: #fff; }
+.lay-skin-blackfriday .voice.sel { box-shadow: 6px 6px 0 #000; background: #f4f4f4; }
+.lay-skin-blackfriday .voice-name { font-family: var(--head); font-weight: 400; letter-spacing: .04em; font-size: 1.15rem; text-transform: uppercase; }
+.lay-skin-blackfriday .voice-badge, .lay-skin-blackfriday .badge { border-radius: 0; background: #000; color: #fff; border-color: #000; }
+.lay-skin-blackfriday .package-price { font-family: var(--head); font-weight: 400; font-size: 1.3rem; color: #000; }
+.lay-skin-blackfriday .package-price::before { content: "SALE "; font-size: .7rem; letter-spacing: .12em; background: #000; color: #fff;
+  padding: 2px 6px; margin-right: 4px; vertical-align: 3px; }
+.lay-skin-blackfriday .price { font-family: var(--head); font-weight: 400; font-size: 3rem; color: #000; letter-spacing: .01em; }
+.lay-skin-blackfriday .coverage-mapbox, .lay-skin-blackfriday .wheel-host, .lay-skin-blackfriday .game-hud,
+.lay-skin-blackfriday .coverage .tech { filter: grayscale(1); }
+.lay-skin-blackfriday .btn { border-radius: 0; background: #000; color: #fff; border: 2px solid #000; font-family: var(--head);
+  font-weight: 400; font-size: 1.15rem; letter-spacing: .12em; text-transform: uppercase; padding: 12px 28px; transition: none; }
+.lay-skin-blackfriday .btn:not(:disabled):hover { background: #fff; color: #000; }
+.lay-skin-blackfriday .btn.ghost { background: #fff; color: #000; }
+.lay-skin-blackfriday .btn.ghost:not(:disabled):hover { background: #000; color: #fff; }
+.lay-skin-blackfriday #btnNext:not(:disabled)::after { content: " →"; }
+.lay-skin-blackfriday footer { color: #9a9a9a; border-top-color: #333; font-family: var(--head); letter-spacing: .1em; }
+.lay-skin-blackfriday .link-button { color: #000; }
+@media (prefers-reduced-motion: reduce) { .lay-skin-blackfriday header.top::after { animation: none; } }
+.lay-skin-blackfriday .coverage-mapbox { --accent: #ffffff; }  /* Sendegebiete hell auf der dunklen Karte */
+.lay-skin-blackfriday .booking-layout .booking-mode .chip { min-width: 0; letter-spacing: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .lay-skin-blackfriday .chip { font-size: .85rem; padding: 8px 12px; }
+  .lay-skin-blackfriday .panel { box-shadow: 8px 8px 0 #5a5a5a; }
+}
+/* Schmale Bildschirme: Spalten dürfen schmaler als ihr Inhalt werden (kein seitliches Überlaufen) */
+@media (max-width: 760px) {
+  .booking-layout, .booking-layout.no-map { grid-template-columns: minmax(0, 1fr); }
+  .booking-layout .booking-mode .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.period-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.period input[type=date] { min-width: 0; }

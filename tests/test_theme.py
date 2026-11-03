@@ -267,3 +267,30 @@ def test_fun_gaming_variants(client, db):
         client.post("/admin/design", data={"csrf": token, "action": f"variant:{name}", "with_colors": "on"})
         assert f"lay-skin-{skin}" in client.get("/").text
         assert f"font-family: '{font}'" in client.get("/fonts.css").text
+
+
+def test_design_schedule(client, db):
+    from datetime import datetime, timedelta
+    from app import design_schedule
+    now = design_schedule.now_local()
+    fmt = lambda d: d.strftime("%Y-%m-%dT%H:%M")
+    _login(client)
+    token = _csrf(client, "/admin/design")
+    assert "lay-skin-classic" in client.get("/").text
+    r = client.post("/admin/design/schedule", data={"csrf": token, "start": fmt(now - timedelta(hours=1)),
+                    "end": fmt(now + timedelta(hours=1)), "variant": "Black Friday", "colors": "on", "label": "Test"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    page = client.get("/").text
+    assert "lay-skin-blackfriday" in page and "--bg: #000000" in client.get("/theme.css").text
+    assert "font-family: 'Anton'" in client.get("/fonts.css").text
+    assert theme.get_theme(db)["layout_skin"] == "classic"  # gespeichertes Design unverändert
+    assert "Gerade aktiv" in client.get("/admin/design").text
+    # Zukunft / Vergangenheit greifen nicht
+    entry = design_schedule.get_entries(db)[0]
+    assert design_schedule.active_entry(db, now + timedelta(hours=2)) is None
+    client.post("/admin/design/schedule", data={"csrf": token, "action": "remove", "id": entry["id"]})
+    assert "lay-skin-classic" in client.get("/").text
+    r = client.post("/admin/design/schedule", data={"csrf": token, "start": fmt(now), "end": fmt(now - timedelta(hours=1)),
+                                                    "variant": "Black Friday"})
+    assert "nach „Von“" in r.text

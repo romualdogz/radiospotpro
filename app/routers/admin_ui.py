@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from starlette.concurrency import run_in_threadpool
 
-from .. import audio, branding, fonts, mailer, music_mix, theme, watermark, wheel
+from .. import audio, branding, design_schedule, fonts, mailer, music_mix, theme, watermark, wheel
 from ..config import BASE_DIR
 from ..database import get_db
 from ..models import (
@@ -61,6 +61,7 @@ def _static_version() -> str:
 
 templates.env.globals["static_v"] = _static_version()
 templates.env.filters["pct"] = fmt_bp
+templates.env.filters["de_dt"] = lambda v: datetime.fromisoformat(str(v)).strftime("%d.%m.%Y %H:%M") if v else ""
 templates.env.filters["de_date"] = lambda v: date.fromisoformat(str(v)).strftime("%d.%m.%Y") if v else ""
 
 
@@ -691,6 +692,34 @@ def design_form(request: Request, user=Depends(admin_only), db: Session = Depend
                   flash=pop_flash(request), **_design_context(db))
 
 
+def _black_friday(now) -> tuple[str, str]:
+    """Nächster Black Friday (Freitag nach dem 4. Donnerstag im November) bis Cyber Monday 23:59."""
+    from datetime import timedelta
+    for year in (now.year, now.year + 1):
+        first = date(year, 11, 1)
+        thursday = first + timedelta(days=(3 - first.weekday()) % 7 + 21)
+        friday, monday = thursday + timedelta(days=1), thursday + timedelta(days=4)
+        if datetime.combine(monday, datetime.max.time()) > now:
+            return f"{friday.isoformat()}T00:00", f"{monday.isoformat()}T23:59"
+    return "", ""
+
+
+@router.post("/design/schedule")
+async def design_schedule_save(request: Request, user=Depends(admin_only), db: Session = Depends(get_db)):
+    form = await request.form()
+    check_csrf(request, form.get("csrf"))
+    if form.get("action") == "remove":
+        design_schedule.remove_entry(db, str(form.get("id", "")))
+        return redirect("/admin/design", "Zeitplan-Eintrag gelöscht.", request)
+    try:
+        design_schedule.add_entry(db, str(form.get("start", "")), str(form.get("end", "")), str(form.get("variant", "")),
+                                  form.get("colors") == "on", str(form.get("label", "")))
+    except ValueError as e:
+        return render(request, "admin/design.html", user=user, design=theme.get_theme(db), error=str(e),
+                      flash=None, **_design_context(db))
+    return redirect("/admin/design", "Zeitplan gespeichert – das Design schaltet zur eingestellten Zeit automatisch um.", request)
+
+
 @router.post("/design/logo")
 async def design_logo(request: Request, user=Depends(admin_only), db: Session = Depends(get_db)):
     form = await request.form()
@@ -725,9 +754,13 @@ def _design_context(db: Session) -> dict:
         groups.setdefault(group, []).append((key, label, default))
     layouts = {n: theme.variant_layout(n) for n in theme.VARIANTS}
     saved = theme.get_theme(db)
+    now = design_schedule.now_local()
+    schedule = [{**e, "status": design_schedule.status(e, now)} for e in design_schedule.get_entries(db)]
     return {"color_groups": groups, "fonts": theme.FONTS, "system_font": theme.SYSTEM_FONT,
             "presets": theme.PRESETS, "logo": branding.get_logo(db), "texts": theme.TEXTS,
             "layout_options": theme.LAYOUT, "variants": theme.VARIANTS,
+            "schedule": schedule, "scheduled_now": design_schedule.active_entry(db, now),
+            "black_friday": _black_friday(now),
             "variant_layouts": layouts, "current_variant": next(
                 (n for n, lay in layouts.items() if all(saved[k] == v for k, v in lay.items())), None),
             "hero_size_limits": (theme.HERO_SIZE_MIN, theme.HERO_SIZE_DEFAULT, theme.HERO_SIZE_MAX),

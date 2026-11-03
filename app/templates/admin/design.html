@@ -56,6 +56,55 @@
         <input type="hidden" name="csrf" value="{{ csrf }}"></form>
     {% endfor %}
 
+    <div class="card form" id="schedule">
+      <h2>Zeitplan – Designs automatisch umschalten</h2>
+      <p class="help">Im eingestellten Zeitraum zeigt der Konfigurator automatisch die gewählte Variante (Ortszeit Wien),
+        danach wieder das normale Design. Das normale Design bleibt dabei gespeichert.
+        {% if scheduled_now %}<br><b>Gerade aktiv:</b> „{{ scheduled_now.variant }}“ bis
+        {{ scheduled_now.end | de_dt }}.{% endif %}</p>
+      {% if schedule %}
+      <table class="schedule-table">
+        <thead><tr><th>Von</th><th>Bis</th><th>Variante</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for e in schedule %}
+          <tr class="s-{{ e.status }}">
+            <td>{{ e.start | de_dt }}</td><td>{{ e.end | de_dt }}</td>
+            <td>{{ e.variant }}{% if e.colors %} <small class="help">+ Farben</small>{% endif %}
+              {% if e.label %}<br><small class="help">{{ e.label }}</small>{% endif %}</td>
+            <td><span class="badge s-{{ e.status }}">{{ e.status }}</span></td>
+            <td><form method="post" action="/admin/design/schedule">
+              <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ e.id }}">
+              <button name="action" value="remove" class="link" onclick="return confirm('Eintrag löschen?')">Löschen</button></form></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="help">Noch keine Einträge.</p>{% endif %}
+      <form method="post" action="/admin/design/schedule" class="schedule-add" id="scheduleForm">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="layout-options">
+          <label>Von <input type="datetime-local" name="start" required></label>
+          <label>Bis <input type="datetime-local" name="end" required></label>
+          <label>Variante
+            <select name="variant">{% for name in variants %}<option>{{ name }}</option>{% endfor %}</select></label>
+          <label>Bezeichnung (optional) <input name="label" maxlength="60" placeholder="z. B. Black Friday 2026"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="colors" checked> Passende Farben der Variante mit übernehmen</label>
+        <div class="buttons">
+          <button class="primary">Zum Zeitplan hinzufügen</button>
+          {% if black_friday[0] %}<button type="button" id="bfFill">Black Friday eintragen
+            ({{ black_friday[0][8:10] }}.{{ black_friday[0][5:7] }}.–{{ black_friday[1][8:10] }}.{{ black_friday[1][5:7] }}.)</button>{% endif %}
+        </div>
+      </form>
+      <script>
+        document.getElementById("bfFill")?.addEventListener("click", () => {
+          const f = document.getElementById("scheduleForm");
+          f.start.value = "{{ black_friday[0] }}"; f.end.value = "{{ black_friday[1] }}";
+          f.variant.value = "Black Friday"; f.label.value = "Black Friday bis Cyber Monday";
+        });
+      </script>
+    </div>
+
     <form method="post" action="/admin/design/logo" enctype="multipart/form-data" class="card form">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <h2>Logo</h2>
