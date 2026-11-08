@@ -95,7 +95,7 @@ def invite_accept(token: str, request: Request, name: str = Form(""), password: 
 
 @router.get("/", response_class=HTMLResponse)
 def studio(request: Request, user: StudioUser = Depends(page_user)):
-    return render(request, "studio.html", user=user)
+    return render(request, "studio.html", user=user, export_days=settings.export_days)
 
 
 # --------------------------------------------------------------------------- Mein Konto

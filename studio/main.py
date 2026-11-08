@@ -7,6 +7,7 @@ Start:  uvicorn studio.main:app --port 8001
     /admin/users    Konten, Rollen, Kontingente, Einladungen (nur Administratoren)
     /api/...        JSON-API (jede Route verlangt eine gültige Session)
 """
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -15,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import api, pages
+from . import api, pages, worker
 from .accounts import ensure_admin
 from .config import BASE_DIR, settings
 from .database import SessionLocal, init_db
@@ -31,7 +32,11 @@ async def lifespan(_: FastAPI):
     settings.media_dir.mkdir(parents=True, exist_ok=True)
     with SessionLocal() as db:
         ensure_admin(db)
+    stop = threading.Event()
+    if settings.worker == "inline":
+        worker.start_threads(stop)  # jeder Auftrag läuft trotzdem in einem eigenen Prozess
     yield
+    stop.set()
 
 
 app = FastAPI(title="Radiospot-Studio", version="0.1.0", lifespan=lifespan,

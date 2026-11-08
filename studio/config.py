@@ -35,6 +35,19 @@ class StudioSettings:
     # Fehlversuche pro IP bzw. E-Mail in 15 Minuten, danach Sperre
     login_attempts: int = int(os.getenv("STUDIO_LOGIN_ATTEMPTS", "8"))
     media_dir: Path = Path(os.getenv("STUDIO_MEDIA_DIR", str(BASE_DIR.parent / "media" / "studio")))
+    # Uploads: max. Dateigröße und Länge je Datei
+    max_upload_mb: int = int(os.getenv("STUDIO_MAX_UPLOAD_MB", "100"))
+    max_asset_minutes: float = float(os.getenv("STUDIO_MAX_ASSET_MINUTES", "10"))
+    # Max. Spotlänge in Sekunden
+    max_length_s: int = int(os.getenv("STUDIO_MAX_LENGTH", "120"))
+    # Render-Warteschlange: "inline" = Worker-Thread im Webserver startet je Job einen eigenen Prozess
+    # (bequem am Mac), "external" = eigener Dienst `python -m studio.worker` (Produktion), "off" = gar keiner
+    worker: str = os.getenv("STUDIO_WORKER", "inline").strip().lower()
+    render_workers: int = int(os.getenv("STUDIO_RENDER_WORKERS", "1"))
+    render_timeout_s: int = int(os.getenv("STUDIO_RENDER_TIMEOUT", "180"))
+    max_queued_per_user: int = int(os.getenv("STUDIO_MAX_QUEUED", "2"))
+    # Exporte werden nach so vielen Tagen automatisch gelöscht
+    export_days: int = int(os.getenv("STUDIO_EXPORT_DAYS", "14"))
 
 
 settings = StudioSettings()

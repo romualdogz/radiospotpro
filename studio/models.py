@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -60,3 +60,54 @@ class Invitation(Base):
         if aware(self.expires_at) < now():
             return "abgelaufen"
         return "offen"
+
+
+TRACKS = {"voice": "Sprache", "music": "Musik", "sfx": "SFX", "atmo": "Atmo"}
+
+
+class Asset(Base):
+    """Hochgeladene Audiodatei eines Nutzers (Sprecheraufnahme, Musik, Geräusch …)."""
+    __tablename__ = "studio_assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("studio_users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    stored_name: Mapped[str] = mapped_column(String(80))  # Dateiname auf der Platte (zufällig)
+    media_type: Mapped[str] = mapped_column(String(40))
+    size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    duration_s: Mapped[float] = mapped_column(Float, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Project(Base):
+    __tablename__ = "studio_projects"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("studio_users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    # {"length": 30, "tracks": {"voice": {"gain_db": 0, "mute": false, "solo": false}, …}, "clips": [...]}
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Export(Base):
+    """Render-Auftrag. Läuft im Worker, nie im Webprozess."""
+    __tablename__ = "studio_exports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("studio_users.id", ondelete="CASCADE"), index=True)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("studio_projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)  # Projektstand beim Auftrag
+    loudness: Mapped[float | None] = mapped_column(Float, nullable=True)  # Ziel-LUFS, None = nur Spitzen begrenzen
+    # queued → running → done | failed; done → expired (Datei gelöscht)
+    status: Mapped[str] = mapped_column(String(12), default="queued", index=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+    stored_name: Mapped[str] = mapped_column(String(80), default="")
+    size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    measured_lufs: Mapped[float | None] = mapped_column(Float, nullable=True)
+    measured_peak: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

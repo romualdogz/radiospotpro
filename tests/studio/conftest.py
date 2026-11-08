@@ -9,6 +9,8 @@ os.environ["STUDIO_ADMIN_EMAIL"] = "ron@onaircraft.test"
 os.environ["STUDIO_ADMIN_PASSWORD"] = "admin-passwort-123"
 os.environ["STUDIO_SECRET_KEY"] = "studio-test"
 os.environ.pop("STUDIO_HOSTS", None)
+os.environ["STUDIO_WORKER"] = "off"  # Worker in den Tests gezielt aufrufen
+os.environ["STUDIO_MAX_UPLOAD_MB"] = "5"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

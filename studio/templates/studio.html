@@ -2,49 +2,87 @@
 {% block title %}Arbeitsfläche{% endblock %}
 {% block body_class %}workspace{% endblock %}
 {% block content %}
-<section class="editor" aria-label="Mehrspur-Editor">
-  <div class="transport">
-    <button class="tbtn" disabled title="Abspielen (folgt in Schritt 2)">▶</button>
-    <button class="tbtn" disabled title="Stopp">■</button>
-    <span class="time" id="playhead-time">00:00.0</span>
-    <label class="len">Spotlänge
-      <select id="spot-length">
-        <option value="15">15 s</option><option value="20">20 s</option><option value="30" selected>30 s</option>
-        <option value="45">45 s</option><option value="60">60 s</option>
-      </select>
-    </label>
-    <span class="spacer"></span>
-    <button class="primary" disabled title="Export folgt in Schritt 2">Exportieren</button>
-  </div>
+<div class="projectbar">
+  <label class="inline">Projekt
+    <select id="project-select" aria-label="Projekt wählen"></select>
+  </label>
+  <button id="project-new">Neues Projekt</button>
+  <input id="project-name" aria-label="Projektname" maxlength="120">
+  <span class="save-state" id="save-state" aria-live="polite"></span>
+  <span class="spacer"></span>
+  <button id="project-delete" class="link danger">Projekt löschen</button>
+</div>
 
-  <div class="timeline">
-    <div class="track-head ruler-head"></div>
-    <div class="ruler" id="ruler"></div>
-    {% for key, label, hint in [('voice', 'Sprache', 'Sprecheraufnahme oder KI-Stimme'),
-                                ('music', 'Musik', 'frei verschiebbar'),
-                                ('sfx', 'SFX', 'per Drag & Drop platzieren'),
-                                ('atmo', 'Atmo', 'leise im Hintergrund')] %}
-    <div class="track-head" data-track="{{ key }}">
-      <span class="track-name"><span class="swatch {{ key }}"></span>{{ label }}</span>
-      <span class="track-ctrls">
-        <button class="mini" disabled title="Stumm">M</button><button class="mini" disabled title="Solo">S</button>
-        <input type="range" min="-30" max="6" value="0" disabled aria-label="Lautstärke {{ label }}">
-      </span>
+<div class="studio-grid">
+  <aside class="library card" id="library" aria-label="Dateien">
+    <div class="library-head">
+      <h2>Dateien</h2>
+      <label class="button-like">Hochladen<input type="file" id="upload-input" accept=".wav,.mp3,.flac,.ogg,.oga,audio/*" multiple hidden></label>
     </div>
-    <div class="lane {{ key }}" data-track="{{ key }}"><span class="lane-hint">{{ hint }}</span></div>
-    {% endfor %}
-  </div>
-</section>
+    <p class="help small">WAV, MP3, FLAC oder OGG – hierher ziehen oder direkt auf eine Spur.</p>
+    <div class="usage"><div class="usage-bar"><span id="usage-fill"></span></div><span id="usage-text" class="small muted"></span></div>
+    <ul class="asset-list" id="asset-list"></ul>
+  </aside>
 
-<aside class="card roadmap">
-  <h2>Aufbau des Studios</h2>
-  <ol>
-    <li class="done">Login, Rollen und Studio-Oberfläche</li>
-    <li>Mehrspur-Timeline mit Upload und Export</li>
-    <li>SFX-Bibliothek, Atmo-Spur, Fades</li>
-    <li>Hüllkurven, Ducking, Loudness-Normalisierung</li>
-    <li>Kontingente, Abrechnung, Einladungen per E-Mail</li>
-  </ol>
-</aside>
+  <section class="editor" aria-label="Mehrspur-Editor">
+    <div class="transport">
+      <button class="tbtn" id="play" title="Abspielen / Pause (Leertaste)" aria-label="Abspielen">▶</button>
+      <button class="tbtn" id="stop" title="Zum Anfang" aria-label="Stopp">■</button>
+      <span class="time" id="playhead-time">00:00.0</span>
+      <label class="inline muted">Länge
+        <select id="spot-length">
+          {% for s in [10, 15, 20, 25, 30, 40, 45, 60, 90, 120] %}<option value="{{ s }}">{{ s }} s</option>{% endfor %}
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <label class="inline muted">Lautheit
+        <select id="export-loudness">
+          <option value="">Pegel lassen (Spitzen −1 dBTP)</option>
+          <option value="-8">−8 LUFS (wie Konfigurator)</option>
+          <option value="-14">−14 LUFS (Web/Streaming)</option>
+          <option value="-23">−23 LUFS (EBU R128)</option>
+        </select>
+      </label>
+      <button class="primary" id="export">Exportieren</button>
+    </div>
+
+    <div class="timeline" id="timeline">
+      <div class="track-head ruler-head"></div>
+      <div class="ruler" id="ruler" title="Klicken: Abspielposition setzen"><div class="playhead" id="playhead"></div></div>
+      {% for key, label, hint in [('voice', 'Sprache', 'Sprecheraufnahme hierher ziehen'),
+                                  ('music', 'Musik', 'Musik hierher ziehen – frei verschiebbar'),
+                                  ('sfx', 'SFX', 'Geräusche an die gewünschte Stelle ziehen'),
+                                  ('atmo', 'Atmo', 'Atmosphäre – leise im Hintergrund')] %}
+      <div class="track-head" data-track="{{ key }}">
+        <span class="track-name"><span class="swatch {{ key }}"></span>{{ label }}</span>
+        <span class="track-ctrls">
+          <button class="mini" data-act="mute" aria-pressed="false" title="Stumm">M</button><button class="mini" data-act="solo" aria-pressed="false" title="Solo">S</button>
+          <input type="range" min="-30" max="6" step="0.5" value="0" data-act="gain" aria-label="Lautstärke {{ label }}">
+          <span class="db small muted" data-db>0 dB</span>
+        </span>
+      </div>
+      <div class="lane {{ key }}" data-track="{{ key }}"><span class="lane-hint">{{ hint }}</span></div>
+      {% endfor %}
+    </div>
+
+    <div class="inspector" id="inspector" hidden>
+      <strong id="insp-name"></strong>
+      <label class="inline">Lautstärke <input type="range" id="insp-gain" min="-30" max="12" step="0.5"><span id="insp-gain-val" class="small muted"></span></label>
+      <label class="inline">Einblenden <input type="number" id="insp-fade-in" min="0" step="0.1" class="num"> s</label>
+      <label class="inline">Ausblenden <input type="number" id="insp-fade-out" min="0" step="0.1" class="num"> s</label>
+      <span class="small muted" id="insp-pos"></span>
+      <span class="spacer"></span>
+      <button id="insp-delete" class="link danger">Clip entfernen (Entf)</button>
+    </div>
+    <p class="help small hint-line">Clips ziehen zum Verschieben (auch auf eine andere Spur), Ränder ziehen zum Kürzen. Alt gedrückt halten: ohne Einrasten.</p>
+  </section>
+</div>
+
+<section class="card exports">
+  <h2>Exporte</h2>
+  <p class="help small">WAV, 48 kHz, Stereo, 24 Bit. Exporte werden nach {{ export_days }} Tagen automatisch gelöscht.</p>
+  <ul id="export-list" class="export-list"></ul>
+</section>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 {% endblock %}
 {% block scripts %}<script src="/static/studio.js" defer></script>{% endblock %}

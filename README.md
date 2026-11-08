@@ -299,6 +299,31 @@ Audio-Kern (`app/audio.py`).
 uvicorn studio.main:app --port 8001      # Mac: Doppelklick auf start-studio-mac.command
 ```
 
+**Arbeiten im Studio (Schritt 2):**
+- **Dateien** (WAV, MP3, FLAC, OGG) hochladen – Button, in die Dateiliste ziehen oder direkt auf eine Spur.
+  Jede Datei wird beim Hochladen geprüft (echtes Audio, max. `STUDIO_MAX_UPLOAD_MB` MB und
+  `STUDIO_MAX_ASSET_MINUTES` Minuten) und zählt zum Speicherkontingent des Kontos.
+- **Vier Spuren** (Sprache, Musik, SFX, Atmo): Dateien aus der Liste an die gewünschte Stelle ziehen,
+  Clips frei verschieben (auch auf eine andere Spur), an den Rändern kürzen, Raster 0,05 s (Alt = frei).
+  Atmo-Clips starten bei −12 dB.
+- **Pro Clip** Lautstärke, Ein- und Ausblenden; **pro Spur** Lautstärke, Stumm und Solo.
+- **Vorhören** direkt im Browser (Leertaste), Klick auf das Zeitlineal setzt die Position.
+- Projekte speichern automatisch; mehrere Projekte pro Konto.
+- **Export:** WAV, 48 kHz, Stereo, 24 Bit. Wahlweise Pegel lassen (nur Spitzen auf −1 dBTP begrenzt)
+  oder auf −8 / −14 / −23 LUFS mastern (gleicher Audio-Kern wie der Konfigurator). Der True Peak liegt
+  immer bei höchstens −1 dBTP. Gemessene Lautheit und Spitze stehen beim Export. Exporte werden nach
+  `STUDIO_EXPORT_DAYS` Tagen gelöscht; das Exportkontingent zählt alle gestarteten Exporte.
+
+**Render-Warteschlange:** Exporte laufen nie im Webprozess. Ein Worker holt die Aufträge aus der
+Datenbank und rendert jeden in einem eigenen Prozess mit Zeitlimit (`STUDIO_RENDER_TIMEOUT`), höchstens
+`STUDIO_RENDER_WORKERS` gleichzeitig und `STUDIO_MAX_QUEUED` wartende pro Konto. Am Mac läuft der Worker
+automatisch mit (`STUDIO_WORKER=inline`), auf dem Server als eigener Dienst:
+
+```bash
+STUDIO_WORKER=external uvicorn studio.main:app --port 8001 --proxy-headers
+python -m studio.worker
+```
+
 **Zugang nur mit Login.** Es gibt keine öffentliche Registrierung. Konten entstehen über einen
 Einladungslink (Admin → *Benutzer*) oder auf dem Server per Kommandozeile:
 

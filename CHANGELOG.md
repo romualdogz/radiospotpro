@@ -16,6 +16,12 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
   Registrierung, Einladungslinks (einmalig, ablaufend), Benutzerverwaltung mit Speicher- und
   Exportkontingent, Sperre nach Fehlversuchen, Sessions mit Ablauf, Kommandozeile `python -m studio.cli`.
   Leere Mehrspur-Arbeitsfläche (Sprache, Musik, SFX, Atmo) als Grundlage für Schritt 2.
+- **Radiospot-Studio, Schritt 2 – Mehrspur-Editor mit Upload und Export:** eigene Dateien hochladen
+  (WAV/MP3/FLAC/OGG, mit Wellenform), per Drag & Drop auf vier Spuren legen, frei verschieben und
+  kürzen, Clip-Lautstärke und Fades, Spur-Lautstärke/Stumm/Solo, Vorhören im Browser, Projekte mit
+  automatischem Speichern. Export als WAV (48 kHz, 24 Bit) über eine Render-Warteschlange mit eigenem
+  Prozess und Zeitlimit pro Auftrag, wahlweise auf −8/−14/−23 LUFS gemastert, True Peak max. −1 dBTP.
+  Speicher- und Exportkontingent werden jetzt durchgesetzt, alte Exporte automatisch gelöscht.
 
 ---
 
