@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ target.email }}{% endblock %}
+{% block content %}
+<p><a href="/admin/users">← Alle Konten</a></p>
+<h1>{{ target.email }}</h1>
+<form method="post" action="/admin/users/{{ target.id }}" class="detail-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="grid2">
+    <section class="card">
+      <h2>Zugang</h2>
+      <label>Name <input name="name" value="{{ target.name }}" maxlength="120"></label>
+      <label>Rolle <select name="role">{% for k, v in roles.items() %}<option value="{{ k }}" {% if k == target.role %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+      <label class="check"><input type="checkbox" name="active" value="1" {% if target.active %}checked{% endif %}> Aktiv (gesperrte Konten können sich nicht anmelden)</label>
+      <p class="help small">Letzte Anmeldung: {{ target.last_login_at.strftime('%d.%m.%Y %H:%M') if target.last_login_at else '–' }} ·
+        Zwei-Faktor: {{ 'eingeschaltet' if target.totp_enabled else 'aus' }}</p>
+    </section>
+    <section class="card">
+      <h2>Abrechnung</h2>
+      <label>Tarif / Paket <input name="plan" value="{{ target.plan }}" maxlength="80" placeholder="z. B. Pro jährlich, Stammkunde"></label>
+      <label>Freigeschaltet bis <input type="date" name="valid_until" value="{{ aware(target.valid_until).strftime('%Y-%m-%d') if target.valid_until else '' }}"></label>
+      <p class="help small">Leer = unbegrenzt. Danach kann das Konto Projekte ansehen und Exporte herunterladen, aber nichts Neues hochladen, erzeugen oder exportieren.</p>
+      <label>Notiz (Rechnungen, Absprachen – nur für onaircraft sichtbar) <textarea name="billing_note" rows="4" maxlength="4000">{{ target.billing_note }}</textarea></label>
+    </section>
+    <section class="card">
+      <h2>Kontingente</h2>
+      <label>Speicher (MB) <input type="number" min="0" name="quota_mb" value="{{ target.quota_mb }}" class="num"></label>
+      <p class="help small">Belegt: {{ '%.1f'|format(usage.get('bytes', 0) / 1048576) }} MB</p>
+      <label>Exporte insgesamt (leer = unbegrenzt) <input type="number" min="0" name="export_limit" value="{{ target.export_limit if target.export_limit is not none else '' }}" class="num"></label>
+      <p class="help small">Bisher: {{ usage.get('exports', 0) }}</p>
+      <label>KI-Zeichen pro Monat <input type="number" min="0" step="1000" name="tts_chars_month" value="{{ target.tts_chars_month if target.tts_chars_month is not none else '' }}" placeholder="∞" class="num"></label>
+      <p class="help small">Diesen Monat: {{ usage.get('voice_chars', 0) }}</p>
+      <label>KI-Texte pro Monat <input type="number" min="0" name="scripts_month" value="{{ target.scripts_month if target.scripts_month is not none else '' }}" placeholder="∞" class="num"></label>
+    </section>
+    {% if private_libs %}
+    <section class="card">
+      <h2>Bibliotheken</h2>
+      <p class="help small">Sammlungen „für alle“ sieht jedes Konto. Diese hier nur, wenn angehakt (Administratoren sehen alle).</p>
+      {% for lib in private_libs %}<label class="check"><input type="checkbox" name="libraries" value="{{ lib.id }}" {% if lib.id in (target.libraries or []) %}checked{% endif %}> {{ lib.name }}</label>{% endfor %}
+    </section>
+    {% endif %}
+  </div>
+  <button class="primary">Speichern</button>
+</form>
+{% if target.totp_enabled %}
+<form method="post" action="/admin/users/{{ target.id }}/reset-2fa" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <button class="link danger">Zwei-Faktor-Anmeldung zurücksetzen</button> <span class="help small">(z. B. bei verlorenem Handy)</span>
+</form>
+{% endif %}
+{% endblock %}

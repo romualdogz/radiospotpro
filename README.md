@@ -334,6 +334,16 @@ ausschalten; mit Loop wird ein Clip über das Dateiende hinaus verlängert (Naht
 Überblendung, in der Wellenform gestrichelt). Ein- und Ausblendung über die kleinen Griffe oben am
 Clip oder im Clip-Panel, Kurve „weich (S-Kurve)“ oder „linear“ – Vorhören und Export klingen gleich.
 
+**Hüllkurven & Ducking (Schritt 4):** Button *Hüllkurven* im Editor: Klick auf eine Spur setzt
+einen Punkt (Lautstärke über die Zeit), Punkte ziehen, Doppelklick löscht. Spuren mit **D** werden
+automatisch leiser, sobald die Sprache spricht (Stärke im Editor wählbar, Standard −10 dB; setzt
+50 ms vor dem ersten Wort ein, hält 0,25 s in Sprechpausen, fährt in 0,5 s wieder hoch). In neuen
+Projekten ducken Musik und Atmo. Vorhören und Export rechnen mit demselben Verfahren.
+
+**Lautheit beim Export:** *Normalisieren* (nur Verstärkung, Dynamik bleibt – −23 LUFS EBU R128 für
+die Sender-Anlieferung, −16 Web/Podcast, −14 Streaming) oder *Mastern* (Kompressor + Limiter, laut –
+−8 wie Konfigurator, −11). True Peak immer max. −1 dBTP; gemessene Werte stehen beim Export.
+
 **KI-Text & Stimme** (Button im Editor): Briefing eingeben → Claude schreibt drei Vorschläge →
 übernehmen und frei bearbeiten (der Sprechtext wird mit dem Projekt gespeichert) → mit einer
 freigegebenen Stimme einsprechen lassen. Die Aufnahme landet als Datei (Kennzeichen „KI“) in der
@@ -374,7 +384,22 @@ beim ersten Start eines erzeugt und einmal im Terminal angezeigt.
 |---|---|
 | **Administrator** | Studio plus Benutzerverwaltung: einladen, Rollen, sperren, Speicher- und Exportkontingent |
 | **Pro** | Studio |
-| **Testzugang** | Studio (Einschränkungen folgen mit den Kontingenten) |
+| **Testzugang** | Studio; läuft nach `STUDIO_TRIAL_DAYS` Tagen (Standard 14) ab Einrichtung ab |
+
+**Konten & Abrechnung (Schritt 5):** Admin → *Benutzer* zeigt alle Konten mit Status, Laufzeit,
+Speicher, Exporten und KI-Verbrauch. Auf der Detailseite: Rolle, Sperre, Kontingente, Bibliotheken
+und **Abrechnung** – Tarif, *Freigeschaltet bis* (manuell nach Zahlungseingang verlängern) und eine
+interne Notiz. Abgelaufene Konten können sich anmelden, Projekte ansehen und Exporte herunterladen,
+aber nichts Neues hochladen, erzeugen oder exportieren. Einladungen gehen auf Wunsch direkt per
+E-Mail raus (SMTP-Einstellungen wie beim Konfigurator).
+
+**An onaircraft schicken:** Button im Editor – das Projekt (aktueller Stand, mit Nachricht) landet
+unter Admin → *Anfragen*; mit `STUDIO_SUPPORT_EMAIL` kommt zusätzlich eine E-Mail. *Als Kopie öffnen*
+legt das Projekt samt Dateien in den eigenen Projekten an, zum Fertigstellen und Exportieren.
+
+**Zwei-Faktor-Anmeldung** (optional, *Mein Konto*): QR-Code mit einer Authenticator-App scannen,
+danach fragt die Anmeldung nach dem 6-stelligen Code. Ein Code gilt nur einmal. Bei verlorenem
+Handy setzt der Admin sie auf der Detailseite des Kontos zurück.
 
 **Sicherheit:** Jede Seite und jede `/api`-Route prüft die Session serverseitig (Test:
 `tests/studio/test_studio_access.py` geht alle Routen durch). Sessions laufen nach

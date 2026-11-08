@@ -11,6 +11,7 @@
   <input id="project-name" aria-label="Projektname" maxlength="120">
   <span class="save-state" id="save-state" aria-live="polite"></span>
   <span class="spacer"></span>
+  <button id="support-open" title="Spot von onaircraft fertigstellen lassen oder Hilfe bekommen">An onaircraft schicken</button>
   <button id="project-delete" class="link danger">Projekt löschen</button>
 </div>
 
@@ -149,6 +150,15 @@
       <p class="small muted" id="ai-usage"></p>
     </section>
   </div>
+</dialog>
+
+<dialog id="support-dialog" class="small-dialog" aria-labelledby="support-title">
+  <form method="dialog" id="support-form">
+    <h2 id="support-title">An onaircraft schicken</h2>
+    <p class="help">onaircraft bekommt das Projekt im aktuellen Stand mit allen Dateien – zum Fertigstellen, Feinschliff mit Profi-Sprecher oder bei Fragen. Wir melden uns per E-Mail.</p>
+    <label>Nachricht <textarea id="support-message" rows="5" maxlength="3000" placeholder="z. B. Bitte mit echtem Sprecher aufnehmen und an Radio XY liefern."></textarea></label>
+    <div class="dialog-actions"><button value="cancel" class="link">Abbrechen</button><button value="send" class="primary" id="support-send">Schicken</button></div>
+  </form>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

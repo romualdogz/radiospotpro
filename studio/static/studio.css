@@ -218,3 +218,12 @@ svg.env circle { fill: var(--card); stroke: var(--text); stroke-width: 1.5; }
 .timeline.env-mode .lane-hint { display: none; }
 .env-toggle[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
 .track-head .mini[aria-pressed="true"][data-act="duck"] { background: var(--atmo); color: #fff; border-color: var(--atmo); }
+/* --- Schritt 5 -------------------------------------------------------- */
+.qr { display: block; background: #fff; border-radius: 8px; padding: 6px; margin: 8px 0; }
+.detail-form .grid2 { margin-bottom: 16px; }
+.detail-form textarea { margin-top: 4px; }
+td.message { white-space: pre-wrap; max-width: 360px; min-width: 200px; }
+.small-dialog { width: min(560px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); padding: 20px; }
+.small-dialog::backdrop { background: rgba(10, 12, 18, .55); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 12px; align-items: center; margin-top: 12px; }
+.dialog-actions .primary { margin: 0; }

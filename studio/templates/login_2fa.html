@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Bestätigungscode{% endblock %}
+{% block body_class %}auth{% endblock %}
+{% block content %}
+<form method="post" action="/login/2fa" class="card narrow">
+  <div class="brand big"><span class="dot"></span>Radiospot-Studio</div>
+  <p>Bitte den 6-stelligen Code aus deiner Authenticator-App eingeben.</p>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Code <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,8}" maxlength="8" required autofocus></label>
+  <button class="primary">Bestätigen</button>
+  <p class="help small">Kein Zugriff mehr auf die App? onaircraft kann die Zwei-Faktor-Anmeldung zurücksetzen.</p>
+</form>
+{% endblock %}

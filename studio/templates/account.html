@@ -7,7 +7,8 @@
     <h2>Zugang</h2>
     <dl class="facts">
       <dt>E-Mail</dt><dd>{{ user.email }}</dd>
-      <dt>Rolle</dt><dd>{{ roles[user.role] }}</dd>
+      <dt>Rolle</dt><dd>{{ roles[user.role] }}{% if user.plan %} · {{ user.plan }}{% endif %}</dd>
+      <dt>Freigeschaltet bis</dt><dd>{% if user.valid_until %}{{ user.valid_until.strftime('%d.%m.%Y') }}{% if user.expired() %} <strong class="error-text">(abgelaufen)</strong>{% endif %}{% else %}unbegrenzt{% endif %}</dd>
       <dt>Speicherplatz</dt><dd>{{ user.quota_mb }} MB</dd>
       <dt>Exporte</dt><dd>{{ user.export_limit if user.export_limit is not none else 'unbegrenzt' }}</dd>
       <dt>KI-Stimme</dt><dd>{{ user.tts_chars_month if user.tts_chars_month is not none else 'unbegrenzt' }} Zeichen pro Monat</dd>
@@ -24,4 +25,29 @@
     <p class="help">Alle anderen Geräte werden dabei abgemeldet.</p>
   </form>
 </div>
+
+<section class="card" id="zwei-faktor">
+  <h2>Zwei-Faktor-Anmeldung</h2>
+  {% if user.totp_enabled %}
+    <p>✓ Eingeschaltet. Bei der Anmeldung fragt das Studio nach dem Code aus deiner Authenticator-App.</p>
+    <form method="post" action="/account/2fa/disable" class="inline-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>Passwort <input name="password" type="password" autocomplete="current-password" required></label>
+      <label>Aktueller Code <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" class="num" required></label>
+      <button>Ausschalten</button>
+    </form>
+  {% elif setup %}
+    <p>1. Den QR-Code mit einer Authenticator-App scannen (z. B. Google Authenticator, Microsoft Authenticator, 1Password).</p>
+    <img class="qr" src="{{ setup.qr }}" alt="QR-Code für die Authenticator-App" width="200" height="200">
+    <p class="help small">Oder den Schlüssel von Hand eintragen: <code class="mono">{{ setup.pretty }}</code></p>
+    <form method="post" action="/account/2fa/confirm" class="inline-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>2. Angezeigten Code eingeben <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" class="num" required autofocus></label>
+      <button class="primary">Einschalten</button>
+    </form>
+  {% else %}
+    <p class="help">Schützt dein Konto zusätzlich: Neben dem Passwort braucht die Anmeldung einen Code vom Handy.</p>
+    <form method="post" action="/account/2fa/start"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Einrichten</button></form>
+  {% endif %}
+</section>
 {% endblock %}

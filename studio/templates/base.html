@@ -13,7 +13,7 @@
   <a class="brand" href="/"><span class="dot"></span>Radiospot-Studio</a>
   <nav>
     <a href="/">Arbeitsfläche</a>
-    {% if user.role == 'admin' %}<a href="/admin/users">Benutzer</a><a href="/admin/voices">KI-Stimmen</a><a href="/admin/library">Bibliothek</a>{% endif %}
+    {% if user.role == 'admin' %}<a href="/admin/users">Benutzer</a><a href="/admin/voices">KI-Stimmen</a><a href="/admin/library">Bibliothek</a><a href="/admin/support">Anfragen</a>{% endif %}
     <a href="/account">Mein Konto</a>
   </nav>
   <form method="post" action="/logout" class="logout">
@@ -23,6 +23,7 @@
 </header>
 {% endif %}
 <main>
+  {% if user and user.expired() %}<div class="error">Dein Zugang ist am {{ user.valid_until.strftime('%d.%m.%Y') }} abgelaufen. Du kannst deine Projekte ansehen und Exporte herunterladen; für Neues bitte onaircraft kontaktieren.</div>{% endif %}
   {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   {% block content %}{% endblock %}

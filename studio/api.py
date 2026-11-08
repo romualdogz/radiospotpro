@@ -10,10 +10,12 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.orm import Session
 
-from . import ai, storage
+from . import ai, mail, storage
+from .accounts import AccountError, check_active
 from .config import settings
 from .database import get_db
-from .models import LIBRARY_CATEGORIES, ROLES, TRACKS, Asset, Export, Library, LibraryItem, Project, StudioUser, StudioVoice, now
+from .models import (LIBRARY_CATEGORIES, ROLES, TRACKS, Asset, Export, Library, LibraryItem, Project, StudioUser,
+                     StudioVoice, SupportRequest, aware, now)
 from .projects import ProjectData, accessible_libraries, empty_project, resolve_sources
 from .security import api_admin, api_user
 
@@ -23,6 +25,13 @@ _PRIVATE_CACHE = {"Cache-Control": "private, max-age=3600"}
 
 def _iso(dt: datetime | None) -> str | None:
     return dt.isoformat() if dt else None
+
+
+def _active(user: StudioUser) -> None:
+    try:
+        check_active(user)
+    except AccountError as e:
+        raise HTTPException(403, str(e)) from e
 
 
 def _owned(db: Session, model, obj_id: int, user: StudioUser):
@@ -45,6 +54,7 @@ def _me(db: Session, u: StudioUser) -> dict:
             "quota_mb": u.quota_mb, "used_bytes": storage.used_bytes(db, u.id), "export_limit": u.export_limit,
             "exports_used": db.query(Export).filter_by(user_id=u.id).count(), "libraries": u.libraries or [],
             "limits": {"max_upload_mb": settings.max_upload_mb, "max_length_s": settings.max_length_s},
+            "valid_until": _iso(aware(u.valid_until)), "expired": u.expired(), "plan": u.plan,
             "tracks": TRACKS}
 
 
@@ -87,6 +97,7 @@ def list_assets(user: StudioUser = Depends(api_user), db: Session = Depends(get_
 async def upload_asset(request: Request, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
     """Upload als Rohdaten (Body = Datei, Name im Header X-Filename). Wird gestreamt auf die Platte
     geschrieben und bricht beim Größenlimit ab; Prüfen und Dekodieren laufen außerhalb der Event-Loop."""
+    _active(user)
     filename = unquote(request.headers.get("X-Filename", ""))
     limit = settings.max_upload_mb * 1024 * 1024
     too_big = HTTPException(413, f"Die Datei ist größer als {settings.max_upload_mb} MB.")
@@ -251,6 +262,7 @@ def _export(e: Export) -> dict:
 def start_export(project_id: int, body: ExportRequest, user: StudioUser = Depends(api_user),
                  db: Session = Depends(get_db)):
     p = _owned(db, Project, project_id, user)
+    _active(user)
     data = ProjectData.model_validate(p.data)
     if not data.clips:
         raise HTTPException(400, "Das Projekt ist leer – zuerst Dateien auf die Spuren ziehen.")
@@ -330,6 +342,7 @@ class ScriptRequest(BaseModel):
 
 @router.post("/ai/script")
 async def ai_script(body: ScriptRequest, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    _active(user)
     try:
         found = await ai.scripts(db, user, **body.model_dump())
     except ai.AiError as e:
@@ -345,6 +358,7 @@ class VoiceRequest(BaseModel):
 @router.post("/ai/voice", status_code=201)
 async def ai_voice(body: VoiceRequest, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
     """Text einsprechen lassen → neue Datei in der Dateiliste (wie ein Upload, zählt zum Speicher)."""
+    _active(user)
     voice = db.get(StudioVoice, body.voice_id)
     if voice is None or not voice.active:
         raise HTTPException(404, "Diese Stimme ist nicht verfügbar.")
@@ -359,3 +373,31 @@ async def ai_voice(body: VoiceRequest, user: StudioUser = Depends(api_user), db:
     except storage.StorageError as e:
         raise HTTPException(e.status, str(e)) from e
     return {"asset": _asset(asset), "usage": ai.usage(db, user.id)}
+
+
+# --------------------------------------------------------------------------- An onaircraft schicken
+
+class SupportBody(BaseModel):
+    message: str = Field("", max_length=3000)
+
+
+@router.post("/projects/{project_id}/support", status_code=201)
+async def send_to_onaircraft(project_id: int, body: SupportBody, request: Request,
+                             user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    """Projekt (Stand jetzt) an onaircraft übergeben – zur Fertigstellung oder für Hilfe."""
+    p = _owned(db, Project, project_id, user)
+    open_count = db.query(SupportRequest).filter(SupportRequest.user_id == user.id,
+                                                 SupportRequest.status != "erledigt").count()
+    if open_count >= 5:
+        raise HTTPException(429, "Es sind schon 5 Anfragen offen – onaircraft meldet sich.")
+    req = SupportRequest(user_id=user.id, project_id=p.id, project_name=p.name, snapshot=p.data,
+                         message=body.message.strip())
+    db.add(req)
+    db.commit()
+    base = settings.public_url or str(request.base_url).rstrip("/")
+    try:
+        notified = await run_in_threadpool(mail.notify_support, user.email, p.name, req.message,
+                                           f"{base}/admin/support")
+    except Exception:  # noqa: BLE001 – Anfrage ist gespeichert, Mail nur Zusatz
+        notified = False
+    return {"id": req.id, "notified": notified}

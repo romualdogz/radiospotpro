@@ -10,10 +10,14 @@ from .accounts import (AccountError, accept_invitation, create_invitation, open_
 from .config import BASE_DIR, settings
 from .database import get_db
 from . import ai
-from . import storage
-from .models import LIBRARY_CATEGORIES, ROLES, Invitation, Library, LibraryItem, Project, StudioUser, StudioVoice
+from . import mail, storage, totp
+from .accounts import AccountError as _AccountError
+from .models import (LIBRARY_CATEGORIES, ROLES, AiUsage, Asset, Export, Invitation, Library, LibraryItem, Project,
+                     StudioUser, StudioVoice, SupportRequest, aware, now)
 from .security import (authenticate, check_csrf, client_ip, csrf_token, current_user, page_admin, page_user,
                        start_session, throttle, touch_login, verify_password)
+import time
+from datetime import datetime, timezone
 
 router = APIRouter(include_in_schema=False)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -55,6 +59,46 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), c
     if user is None:
         throttle.fail(*keys)
         return render(request, "login.html", 401, email=email, error="E-Mail oder Passwort falsch.")
+    throttle.reset(keys[1])
+    if user.totp_enabled and user.totp_secret:
+        request.session.clear()
+        request.session.update({"pending_uid": user.id, "pending_exp": int(time.time()) + 300})
+        return redirect("/login/2fa")
+    start_session(request, user)
+    touch_login(db, user)
+    return redirect("/")
+
+
+def _pending_user(request: Request, db: Session) -> StudioUser | None:
+    uid, exp = request.session.get("pending_uid"), request.session.get("pending_exp", 0)
+    if not uid or exp < time.time():
+        return None
+    user = db.get(StudioUser, uid)
+    return user if user and user.active and user.totp_enabled else None
+
+
+@router.get("/login/2fa", response_class=HTMLResponse)
+def login_2fa_form(request: Request, db: Session = Depends(get_db)):
+    if _pending_user(request, db) is None:
+        return redirect("/login")
+    return render(request, "login_2fa.html", error=None)
+
+
+@router.post("/login/2fa")
+def login_2fa(request: Request, code: str = Form(""), csrf: str = Form(""), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    user = _pending_user(request, db)
+    if user is None:
+        return redirect("/login", "Anmeldung abgelaufen – bitte erneut anmelden.", request)
+    keys = ("ip:" + client_ip(request), "mail:" + user.email)
+    if throttle.blocked(*keys):
+        return render(request, "login_2fa.html", 429, error="Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.")
+    step = totp.verify(user.totp_secret, code, user.totp_last_step)
+    if step is None:
+        throttle.fail(*keys)
+        return render(request, "login_2fa.html", 401, error="Der Code stimmt nicht. Bitte den aktuellen Code aus der App eingeben.")
+    user.totp_last_step = step
+    db.commit()
     throttle.reset(keys[1])
     start_session(request, user)
     touch_login(db, user)
@@ -104,9 +148,53 @@ def studio(request: Request, user: StudioUser = Depends(page_user)):
 
 # --------------------------------------------------------------------------- Mein Konto
 
+def _account_page(request: Request, user: StudioUser, error: str | None = None, status: int = 200):
+    setup = None
+    secret = request.session.get("totp_setup")
+    if secret and not user.totp_enabled:
+        setup = {"secret": secret, "qr": totp.qr_svg_data_uri(totp.uri(secret, user.email)),
+                 "pretty": " ".join(secret[i:i + 4] for i in range(0, len(secret), 4))}
+    return render(request, "account.html", status, user=user, error=error, setup=setup)
+
+
 @router.get("/account", response_class=HTMLResponse)
 def account(request: Request, user: StudioUser = Depends(page_user)):
-    return render(request, "account.html", user=user, error=None)
+    return _account_page(request, user)
+
+
+@router.post("/account/2fa/start")
+def totp_start(request: Request, csrf: str = Form(""), user: StudioUser = Depends(page_user)):
+    check_csrf(request, csrf)
+    if not user.totp_enabled:
+        request.session["totp_setup"] = totp.new_secret()
+    return redirect("/account#zwei-faktor")
+
+
+@router.post("/account/2fa/confirm")
+def totp_confirm(request: Request, code: str = Form(""), csrf: str = Form(""),
+                 user: StudioUser = Depends(page_user), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    secret = request.session.get("totp_setup")
+    step = totp.verify(secret, code) if secret else None
+    if step is None:
+        return _account_page(request, user, "Der Code stimmt nicht – bitte den aktuellen Code aus der App eingeben.", 400)
+    user.totp_secret, user.totp_enabled, user.totp_last_step = secret, True, step
+    user.session_epoch += 1  # andere Geräte neu anmelden (jetzt mit zweitem Faktor)
+    db.commit()
+    request.session.pop("totp_setup", None)
+    start_session(request, user)
+    return redirect("/account", "Zwei-Faktor-Anmeldung ist eingeschaltet.", request)
+
+
+@router.post("/account/2fa/disable")
+def totp_disable(request: Request, password: str = Form(""), code: str = Form(""), csrf: str = Form(""),
+                 user: StudioUser = Depends(page_user), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    if not verify_password(password, user.password_hash) or totp.verify(user.totp_secret or "", code, user.totp_last_step) is None:
+        return _account_page(request, user, "Passwort oder Code stimmt nicht.", 400)
+    user.totp_secret, user.totp_enabled, user.totp_last_step = None, False, None
+    db.commit()
+    return redirect("/account", "Zwei-Faktor-Anmeldung ist ausgeschaltet.", request)
 
 
 @router.post("/account/password")
@@ -125,7 +213,7 @@ def change_password(request: Request, current: str = Form(...), password: str = 
         except AccountError as e:
             error = str(e)
     if error:
-        return render(request, "account.html", 400, user=user, error=error)
+        return _account_page(request, user, error, 400)
     start_session(request, user)  # diese Session bleibt angemeldet, alle anderen nicht
     return redirect("/account", "Passwort geändert. Andere Geräte wurden abgemeldet.", request)
 
@@ -137,12 +225,55 @@ def _invite_url(request: Request, token: str) -> str:
     return f"{base}/invite/{token}"
 
 
+def _usage_overview(db: Session) -> dict[int, dict]:
+    from sqlalchemy import func
+    from .ai import month_start
+    out: dict[int, dict] = {}
+    for uid, b in db.query(Asset.user_id, func.sum(Asset.size_bytes)).group_by(Asset.user_id):
+        out.setdefault(uid, {})["bytes"] = int(b or 0)
+    for uid, b in db.query(Export.user_id, func.sum(Export.size_bytes)).filter(Export.status == "done").group_by(Export.user_id):
+        out.setdefault(uid, {})["bytes"] = out.get(uid, {}).get("bytes", 0) + int(b or 0)
+    for uid, n in db.query(Export.user_id, func.count(Export.id)).group_by(Export.user_id):
+        out.setdefault(uid, {})["exports"] = n
+    for uid, c in (db.query(AiUsage.user_id, func.sum(AiUsage.chars)).filter(AiUsage.kind == "voice",
+                   AiUsage.created_at >= month_start()).group_by(AiUsage.user_id)):
+        out.setdefault(uid, {})["voice_chars"] = int(c or 0)
+    return out
+
+
 def _users_page(request: Request, user: StudioUser, db: Session, error: str | None = None):
     return render(request, "users.html", 400 if error else 200, user=user, error=error,
-                  users=db.query(StudioUser).order_by(StudioUser.email).all(),
+                  users=db.query(StudioUser).order_by(StudioUser.email).all(), usage=_usage_overview(db),
+                  mail_enabled=mail.enabled(), now=now(), aware=aware,
                   invitations=db.query(Invitation).order_by(Invitation.created_at.desc()).limit(50).all(),
-                  private_libs=db.query(Library).filter_by(for_all=False).order_by(Library.name).all(),
                   new_link=request.session.pop("new_invite", None))
+
+
+@router.get("/admin/users/{user_id}", response_class=HTMLResponse)
+def user_detail(user_id: int, request: Request, user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    target = db.get(StudioUser, user_id)
+    if target is None:
+        return redirect("/admin/users", "Konto nicht gefunden.", request)
+    return _user_detail_page(request, user, db, target)
+
+
+def _user_detail_page(request: Request, user: StudioUser, db: Session, target: StudioUser,
+                      error: str | None = None, status: int = 200):
+    return render(request, "user_detail.html", status, user=user, target=target, error=error,
+                  usage=_usage_overview(db).get(target.id, {}), aware=aware,
+                  private_libs=db.query(Library).filter_by(for_all=False).order_by(Library.name).all())
+
+
+@router.post("/admin/users/{user_id}/reset-2fa")
+def reset_2fa(user_id: int, request: Request, csrf: str = Form(""),
+              user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    target = db.get(StudioUser, user_id)
+    if target:
+        target.totp_secret, target.totp_enabled, target.totp_last_step = None, False, None
+        target.session_epoch += 1
+        db.commit()
+    return redirect(f"/admin/users/{user_id}", "Zwei-Faktor-Anmeldung zurückgesetzt – das Konto meldet sich jetzt nur mit Passwort an.", request)
 
 
 @router.get("/admin/users", response_class=HTMLResponse)
@@ -151,14 +282,22 @@ def users(request: Request, user: StudioUser = Depends(page_admin), db: Session 
 
 
 @router.post("/admin/invitations")
-def invite(request: Request, email: str = Form(...), role: str = Form("pro"), csrf: str = Form(""),
-           user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+async def invite(request: Request, email: str = Form(...), role: str = Form("pro"), send_mail: str = Form(""),
+                 csrf: str = Form(""), user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
     check_csrf(request, csrf)
     try:
         inv, token = create_invitation(db, user, email, role)
     except AccountError as e:
         return _users_page(request, user, db, error=str(e))
-    request.session["new_invite"] = {"email": inv.email, "url": _invite_url(request, token)}
+    url = _invite_url(request, token)
+    mailed, mail_error = False, ""
+    if send_mail and mail.enabled():
+        try:
+            await run_in_threadpool(mail.send_invitation, inv.email, url, inv.role, inv.expires_at)
+            mailed = True
+        except Exception as e:  # noqa: BLE001 – Link bleibt sichtbar, Fehler wird angezeigt
+            mail_error = str(e)
+    request.session["new_invite"] = {"email": inv.email, "url": url, "mailed": mailed, "mail_error": mail_error}
     return redirect("/admin/users")
 
 
@@ -181,24 +320,28 @@ def _opt_int(value: str) -> int | None:
 def edit_user(user_id: int, request: Request, role: str = Form(...), active: str = Form(""),
               quota_mb: int = Form(0), export_limit: str = Form(""), name: str = Form(""), csrf: str = Form(""),
               tts_chars_month: str = Form(""), scripts_month: str = Form(""), libraries: list[int] = Form([]),
+              valid_until: str = Form(""), plan: str = Form(""), billing_note: str = Form(""),
               user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
     check_csrf(request, csrf)
     target = db.get(StudioUser, user_id)
     if target is None:
         return redirect("/admin/users", "Konto nicht gefunden.", request)
     try:
+        until = (datetime.strptime(valid_until.strip(), "%Y-%m-%d").replace(hour=23, minute=59, tzinfo=timezone.utc)
+                 if valid_until.strip() else None)
         update_user(db, user, target, role=role, active=bool(active), quota_mb=quota_mb,
                     export_limit=_opt_int(export_limit), name=name,
-                    tts_chars_month=_opt_int(tts_chars_month), scripts_month=_opt_int(scripts_month))
+                    tts_chars_month=_opt_int(tts_chars_month), scripts_month=_opt_int(scripts_month),
+                    valid_until=until, plan=plan, billing_note=billing_note)
         target.libraries = sorted({i for i in libraries if db.get(Library, i)})
         db.commit()
     except ValueError as e:  # AccountError oder ungültige Zahl
         db.rollback()
-        msg = str(e) if isinstance(e, AccountError) else "Bitte gültige Zahlen angeben."
-        return _users_page(request, user, db, error=msg)
+        msg = str(e) if isinstance(e, AccountError) else "Bitte gültige Zahlen bzw. ein gültiges Datum angeben."
+        return _user_detail_page(request, user, db, target, msg, 400)
     if target.id == user.id:
         start_session(request, target)  # eigene Rolle geändert – Session neu ausstellen
-    return redirect("/admin/users", f"Konto {target.email} gespeichert.", request)
+    return redirect(f"/admin/users/{target.id}", f"Konto {target.email} gespeichert.", request)
 
 
 # --------------------------------------------------------------------------- KI-Stimmen (nur Admin)
@@ -431,3 +574,65 @@ def delete_item(item_id: int, request: Request, csrf: str = Form(""),
         return redirect(f"/admin/library/{lib_id}", f"„{item.name}“ wird in Projekten verwendet – stattdessen deaktivieren.", request)
     storage.delete_library_item(db, item)
     return redirect(f"/admin/library/{lib_id}", f"„{item.name}“ gelöscht.", request)
+
+
+# --------------------------------------------------------------------------- An onaircraft geschickt (nur Admin)
+
+@router.get("/admin/support", response_class=HTMLResponse)
+def support_list(request: Request, user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    reqs = db.query(SupportRequest).order_by(SupportRequest.created_at.desc()).limit(200).all()
+    users = {u.id: u for u in db.query(StudioUser)}
+    return render(request, "support.html", user=user, reqs=reqs, users=users)
+
+
+@router.post("/admin/support/{req_id}/status")
+def support_status(req_id: int, request: Request, status: str = Form(...), csrf: str = Form(""),
+                   user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    req = db.get(SupportRequest, req_id)
+    if req and status in ("offen", "in Arbeit", "erledigt"):
+        req.status = status
+        db.commit()
+    return redirect("/admin/support")
+
+
+@router.post("/admin/support/{req_id}/copy")
+def support_copy(req_id: int, request: Request, csrf: str = Form(""),
+                 user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    """Projekt mit allen eigenen Dateien des Kunden ins Admin-Konto kopieren (Bibliotheksdateien bleiben Verweise)."""
+    import shutil
+    check_csrf(request, csrf)
+    req = db.get(SupportRequest, req_id)
+    if req is None:
+        return redirect("/admin/support", "Anfrage nicht gefunden.", request)
+    if req.copy_project_id and db.get(Project, req.copy_project_id):
+        return redirect("/", f"Die Kopie „{db.get(Project, req.copy_project_id).name}“ liegt schon in deinen Projekten.", request)
+    data = dict(req.snapshot or {})
+    clips = [dict(c) for c in data.get("clips", [])]
+    mapping: dict[int, int] = {}
+    for c in clips:
+        aid = c.get("asset_id")
+        if aid is None or aid in mapping:
+            continue
+        src = db.get(Asset, aid)
+        if src is None or src.user_id != req.user_id:
+            continue
+        copy = Asset(user_id=user.id, name=src.name, stored_name=src.stored_name, media_type=src.media_type,
+                     size_bytes=src.size_bytes, duration_s=src.duration_s, origin=src.origin)
+        dest = storage.user_dir(user.id, "assets") / src.stored_name
+        shutil.copyfile(storage.asset_path(src), dest)
+        if storage.peaks_path(src).exists():
+            shutil.copyfile(storage.peaks_path(src), dest.with_suffix(".peaks.json"))
+        db.add(copy)
+        db.flush()
+        mapping[aid] = copy.id
+    clips = [c | {"asset_id": mapping[c["asset_id"]]} if c.get("asset_id") in mapping else c for c in clips
+             if c.get("asset_id") is None or c.get("asset_id") in mapping]
+    owner = db.get(StudioUser, req.user_id)
+    project = Project(user_id=user.id, name=f"{owner.email if owner else 'Kunde'} – {req.project_name}"[:120],
+                      data={**data, "clips": clips})
+    db.add(project)
+    db.flush()
+    req.copy_project_id, req.status = project.id, "in Arbeit" if req.status == "offen" else req.status
+    db.commit()
+    return redirect("/", f"Kopie „{project.name}“ angelegt – im Projekt-Menü auswählen.", request)

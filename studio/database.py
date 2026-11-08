@@ -20,6 +20,12 @@ _ADDED_COLUMNS = [
     ("studio_users", "scripts_month", "INTEGER DEFAULT 100"),
     ("studio_assets", "origin", "VARCHAR(10) NOT NULL DEFAULT 'upload'"),
     ("studio_exports", "mode", "VARCHAR(10) NOT NULL DEFAULT 'master'"),
+    ("studio_users", "valid_until", "DATETIME"),
+    ("studio_users", "plan", "VARCHAR(80) NOT NULL DEFAULT ''"),
+    ("studio_users", "billing_note", "TEXT NOT NULL DEFAULT ''"),
+    ("studio_users", "totp_secret", "VARCHAR(64)"),
+    ("studio_users", "totp_enabled", "BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("studio_users", "totp_last_step", "INTEGER"),
 ]
 
 

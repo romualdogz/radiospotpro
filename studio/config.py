@@ -46,6 +46,10 @@ class StudioSettings:
     render_workers: int = int(os.getenv("STUDIO_RENDER_WORKERS", "1"))
     render_timeout_s: int = int(os.getenv("STUDIO_RENDER_TIMEOUT", "180"))
     max_queued_per_user: int = int(os.getenv("STUDIO_MAX_QUEUED", "2"))
+    # Testzugänge (Rolle trial) laufen nach so vielen Tagen ab Einrichtung ab
+    trial_days: int = int(os.getenv("STUDIO_TRIAL_DAYS", "14"))
+    # „Projekt an onaircraft schicken“: Benachrichtigung an diese Adresse (SMTP aus der .env)
+    support_email: str = os.getenv("STUDIO_SUPPORT_EMAIL", "").strip()
     # Exporte werden nach so vielen Tagen automatisch gelöscht
     export_days: int = int(os.getenv("STUDIO_EXPORT_DAYS", "14"))
 

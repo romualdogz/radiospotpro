@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Anfragen{% endblock %}
+{% block content %}
+<h1>An onaircraft geschickte Projekte</h1>
+<p class="help">Kunden schicken hier Projekte zur Fertigstellung oder mit Fragen. „Als Kopie öffnen“ legt das Projekt samt Dateien in deinen eigenen Projekten an – das Original des Kunden bleibt unverändert.</p>
+<section class="card">
+  {% if reqs %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Eingang</th><th>Konto</th><th>Projekt</th><th>Nachricht</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for r in reqs %}{% set u = users.get(r.user_id) %}
+      <tr>
+        <td class="muted">{{ r.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td>{% if u %}<a href="/admin/users/{{ u.id }}">{{ u.email }}</a>{% else %}–{% endif %}</td>
+        <td>{{ r.project_name }} <span class="muted small">({{ (r.snapshot.get('clips') or [])|length }} Clips, {{ r.snapshot.get('length', '?') }} s)</span></td>
+        <td class="message">{{ r.message or '–' }}</td>
+        <td><form method="post" action="/admin/support/{{ r.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}">
+          <select name="status" aria-label="Status">{% for st in ['offen', 'in Arbeit', 'erledigt'] %}<option {% if st == r.status %}selected{% endif %}>{{ st }}</option>{% endfor %}</select>
+          <button class="mini">OK</button></form></td>
+        <td><form method="post" action="/admin/support/{{ r.id }}/copy"><input type="hidden" name="csrf" value="{{ csrf }}"><button>{{ 'Kopie öffnen' if r.copy_project_id else 'Als Kopie öffnen' }}</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="help">Noch keine Anfragen.</p>{% endif %}
+</section>
+{% endblock %}

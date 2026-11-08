@@ -55,7 +55,8 @@ def active_admins(db: Session) -> int:
 
 def update_user(db: Session, actor: StudioUser, user: StudioUser, *, role: str, active: bool,
                 quota_mb: int, export_limit: int | None, name: str,
-                tts_chars_month: int | None = ..., scripts_month: int | None = ...) -> None:
+                tts_chars_month: int | None = ..., scripts_month: int | None = ...,
+                valid_until=..., plan: str = ..., billing_note: str = ...) -> None:
     role = check_role(role)
     losing_admin = user.role == "admin" and user.active and (role != "admin" or not active)
     if losing_admin and active_admins(db) <= 1:
@@ -73,6 +74,12 @@ def update_user(db: Session, actor: StudioUser, user: StudioUser, *, role: str, 
         user.tts_chars_month = tts_chars_month
     if scripts_month is not ...:
         user.scripts_month = scripts_month
+    if valid_until is not ...:
+        user.valid_until = valid_until
+    if plan is not ...:
+        user.plan = plan.strip()[:80]
+    if billing_note is not ...:
+        user.billing_note = billing_note.strip()[:4000]
     db.commit()
 
 
@@ -100,6 +107,8 @@ def accept_invitation(db: Session, token: str, password: str, name: str = "") ->
     if inv is None:
         raise AccountError("Dieser Einladungslink ist ungültig oder abgelaufen.")
     user = create_user(db, inv.email, password, inv.role, name)
+    if user.role == "trial":  # Testzugang läuft automatisch ab
+        user.valid_until = now() + timedelta(days=settings.trial_days)
     inv.used_at = now()
     db.commit()
     return user
@@ -117,3 +126,10 @@ def ensure_admin(db: Session) -> None:
     db.add(StudioUser(email=settings.admin_email, role="admin",
                       password_hash=hash_password(password)))
     db.commit()
+
+
+def check_active(user: StudioUser) -> None:
+    """Abgelaufene Konten dürfen ansehen und herunterladen, aber nichts Neues erzeugen."""
+    if user.expired():
+        raise AccountError(f"Dein Zugang ist am {aware(user.valid_until):%d.%m.%Y} abgelaufen – "
+                           "bitte onaircraft kontaktieren, um ihn zu verlängern.")

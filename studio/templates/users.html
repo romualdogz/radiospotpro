@@ -6,7 +6,8 @@
 {% if new_link %}
 <div class="card highlight">
   <h2>Einladungslink für {{ new_link.email }}</h2>
-  <p class="help">Nur jetzt sichtbar – bitte kopieren und an die Person schicken.</p>
+  {% if new_link.mailed %}<p class="flash">Per E-Mail verschickt.</p>{% elif new_link.mail_error %}<p class="error">E-Mail ging nicht raus: {{ new_link.mail_error }}</p>{% endif %}
+  <p class="help">Nur jetzt sichtbar – bitte kopieren{% if not new_link.mailed %} und an die Person schicken{% endif %}.</p>
   <input class="copy" readonly value="{{ new_link.url }}" aria-label="Einladungslink">
 </div>
 {% endif %}
@@ -18,29 +19,28 @@
   <label>Rolle
     <select name="role">{% for key, label in roles.items() %}<option value="{{ key }}" {% if key == 'pro' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
   </label>
+  {% if mail_enabled %}<label class="check"><input type="checkbox" name="send_mail" value="1" checked> per E-Mail schicken</label>{% endif %}
   <button class="primary">Einladungslink erzeugen</button>
 </form>
 
 <section class="card">
   <h2>Konten</h2>
-  {% if private_libs %}<p class="help small">Bibliotheken „für alle“ sieht jedes Konto; die übrigen nur, wenn sie hier angehakt sind. Administratoren sehen alle.</p>{% endif %}
   <div class="table-wrap">
   <table>
-    <thead><tr><th>E-Mail</th><th>Name</th><th>Rolle</th><th>Aktiv</th><th>Speicher (MB)</th><th>Exporte</th><th>KI-Zeichen/Monat</th><th>KI-Texte/Monat</th>{% if private_libs %}<th>Bibliotheken</th>{% endif %}<th>Letzte Anmeldung</th><th></th></tr></thead>
+    <thead><tr><th>E-Mail</th><th>Name</th><th>Rolle</th><th>Status</th><th>Freigeschaltet bis</th><th>Speicher</th><th>Exporte</th><th>KI-Zeichen (Monat)</th><th>Letzte Anmeldung</th><th></th></tr></thead>
     <tbody>
-    {% for u in users %}
+    {% for u in users %}{% set us = usage.get(u.id, {}) %}
       <tr>
-        <td>{{ u.email }}</td>
-        <td><input form="u{{ u.id }}" name="name" value="{{ u.name }}" aria-label="Name"></td>
-        <td><select form="u{{ u.id }}" name="role" aria-label="Rolle">{% for key, label in roles.items() %}<option value="{{ key }}" {% if key == u.role %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
-        <td><input form="u{{ u.id }}" type="checkbox" name="active" value="1" {% if u.active %}checked{% endif %} aria-label="Aktiv"></td>
-        <td><input form="u{{ u.id }}" type="number" min="0" name="quota_mb" value="{{ u.quota_mb }}" class="num" aria-label="Speicher"></td>
-        <td><input form="u{{ u.id }}" type="number" min="0" name="export_limit" value="{{ u.export_limit if u.export_limit is not none else '' }}" placeholder="∞" class="num" aria-label="Exporte"></td>
-        <td><input form="u{{ u.id }}" type="number" min="0" step="1000" name="tts_chars_month" value="{{ u.tts_chars_month if u.tts_chars_month is not none else '' }}" placeholder="∞" class="num" aria-label="KI-Zeichen pro Monat"></td>
-        <td><input form="u{{ u.id }}" type="number" min="0" name="scripts_month" value="{{ u.scripts_month if u.scripts_month is not none else '' }}" placeholder="∞" class="num" aria-label="KI-Texte pro Monat"></td>
-        {% if private_libs %}<td class="libs">{% for lib in private_libs %}<label class="check small"><input form="u{{ u.id }}" type="checkbox" name="libraries" value="{{ lib.id }}" {% if lib.id in (u.libraries or []) %}checked{% endif %}> {{ lib.name }}</label>{% endfor %}</td>{% endif %}
+        <td><a href="/admin/users/{{ u.id }}">{{ u.email }}</a></td>
+        <td>{{ u.name }}</td>
+        <td>{{ roles[u.role] }}{% if u.plan %} <span class="muted small">· {{ u.plan }}</span>{% endif %}</td>
+        <td>{% if not u.active %}<span class="badge failed">gesperrt</span>{% elif u.expired() %}<span class="badge failed">abgelaufen</span>{% else %}<span class="badge done">aktiv</span>{% endif %}{% if u.totp_enabled %} <span class="badge" title="Zwei-Faktor-Anmeldung">2FA</span>{% endif %}</td>
+        <td class="muted">{{ aware(u.valid_until).strftime('%d.%m.%Y') if u.valid_until else 'unbegrenzt' }}</td>
+        <td class="muted">{{ '%.0f'|format((us.get('bytes', 0)) / 1048576) }} / {{ u.quota_mb }} MB</td>
+        <td class="muted">{{ us.get('exports', 0) }}{% if u.export_limit is not none %} / {{ u.export_limit }}{% endif %}</td>
+        <td class="muted">{{ us.get('voice_chars', 0) }}{% if u.tts_chars_month is not none %} / {{ u.tts_chars_month }}{% endif %}</td>
         <td class="muted">{{ u.last_login_at.strftime('%d.%m.%Y %H:%M') if u.last_login_at else '–' }}</td>
-        <td><form id="u{{ u.id }}" method="post" action="/admin/users/{{ u.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Speichern</button></form></td>
+        <td><a href="/admin/users/{{ u.id }}">Bearbeiten</a></td>
       </tr>
     {% endfor %}
     </tbody>

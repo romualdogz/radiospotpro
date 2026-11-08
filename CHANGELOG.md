@@ -22,6 +22,13 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
   automatischem Speichern. Export als WAV (48 kHz, 24 Bit) über eine Render-Warteschlange mit eigenem
   Prozess und Zeitlimit pro Auftrag, wahlweise auf −8/−14/−23 LUFS gemastert, True Peak max. −1 dBTP.
   Speicher- und Exportkontingent werden jetzt durchgesetzt, alte Exporte automatisch gelöscht.
+- **Radiospot-Studio, Schritt 4 – Hüllkurven, Ducking, Loudness:** Lautstärke-Hüllkurven pro Spur,
+  automatisches Ducking (Musik/Atmo weichen der Stimme aus), Export normalisiert (−23/−16/−14 LUFS,
+  Dynamik bleibt) oder gemastert (−8/−11 LUFS). Vorhören und Export rechnen gleich.
+- **Radiospot-Studio, Schritt 5 – Konten, Abrechnung, Support, 2FA:** Kontenübersicht mit Verbrauch,
+  Detailseite mit Tarif, Laufzeit („Freigeschaltet bis“) und Notiz; abgelaufene Konten nur lesend;
+  Testzugänge laufen nach 14 Tagen ab; Einladungen per E-Mail; „An onaircraft schicken“ mit
+  Admin-Liste und „Als Kopie öffnen“; optionale Zwei-Faktor-Anmeldung (TOTP, QR-Code).
 - **Radiospot-Studio, Schritt 3 – Bibliothek, Atmo-Loop, Fades:** von onaircraft gepflegte
   Sammlungen (SFX, Musik, Atmo) mit Lizenzhinweis, für alle oder einzelne Konten; Admin-Upload und
   Ordner-Import per Kommandozeile; im Editor Reiter *Bibliothek* mit Suche, Kategorien und Vorhören.

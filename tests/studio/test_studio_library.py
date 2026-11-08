@@ -75,7 +75,7 @@ def test_private_library_needs_grant(sclient, sdb, lib):
     sclient.post("/logout", data={"csrf": csrf_of(sclient, "/")})
     login(sclient, *ADMIN)
     pro = sdb.query(StudioUser).filter_by(email=PRO[0]).one()
-    page = sclient.get("/admin/users").text
+    page = sclient.get(f"/admin/users/{pro.id}").text
     assert 'name="libraries"' in page
     sclient.post(f"/admin/users/{pro.id}", data={"role": "pro", "active": "1", "quota_mb": "100", "libraries": [str(lib.id)],
                                                 "csrf": csrf_of(sclient, "/admin/users")})

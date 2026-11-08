@@ -1190,5 +1190,15 @@
   bind();
   bindAi();
   bindEnvelopes();
+  // ------------------------------------------------------------------ An onaircraft schicken
+  $("support-open").addEventListener("click", () => { $("support-message").value = ""; $("support-dialog").showModal(); });
+  $("support-dialog").addEventListener("close", async () => {
+    if ($("support-dialog").returnValue !== "send" || !state.project) return;
+    try {
+      await flushSave();
+      const res = await api("POST", `/api/projects/${state.project.id}/support`, { message: $("support-message").value });
+      toast(res.notified ? "Verschickt – onaircraft ist benachrichtigt." : "Verschickt – onaircraft sieht es im Studio.");
+    } catch (e) { toast(e.message, true); }
+  });
   init().catch((e) => toast(e.message, true));
 })();

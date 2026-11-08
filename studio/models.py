@@ -37,6 +37,17 @@ class StudioUser(Base):
     # KI-Kontingente pro Kalendermonat; None = unbegrenzt
     tts_chars_month: Mapped[int | None] = mapped_column(Integer, nullable=True, default=20000)
     scripts_month: Mapped[int | None] = mapped_column(Integer, nullable=True, default=100)
+    # Abrechnung (manuell): bis wann freigeschaltet (None = unbegrenzt), Tarif und Notiz für onaircraft
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    plan: Mapped[str] = mapped_column(String(80), default="")
+    billing_note: Mapped[str] = mapped_column(Text, default="")
+    # Zwei-Faktor-Anmeldung (TOTP, z. B. Google Authenticator), optional pro Konto
+    totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    totp_last_step: Mapped[int | None] = mapped_column(Integer, nullable=True)  # gegen Wiederverwendung eines Codes
+
+    def expired(self) -> bool:
+        return self.valid_until is not None and aware(self.valid_until) < now()
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -179,4 +190,19 @@ class LibraryItem(Base):
     duration_s: Mapped[float] = mapped_column(Float, default=0.0)
     # Inaktiv = nicht mehr in der Auswahl, bestehende Projekte klingen aber weiter gleich
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class SupportRequest(Base):
+    """„Projekt an onaircraft schicken“: Kunde bittet um Fertigstellung oder Hilfe."""
+    __tablename__ = "studio_support"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("studio_users.id", ondelete="CASCADE"), index=True)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("studio_projects.id", ondelete="SET NULL"), nullable=True)
+    project_name: Mapped[str] = mapped_column(String(120))
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    message: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(12), default="offen")  # offen | in Arbeit | erledigt
+    copy_project_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Kopie im Admin-Konto
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
