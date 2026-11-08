@@ -15,14 +15,25 @@
 </div>
 
 <div class="studio-grid">
-  <aside class="library card" id="library" aria-label="Dateien">
-    <div class="library-head">
-      <h2>Dateien</h2>
-      <label class="button-like">Hochladen<input type="file" id="upload-input" accept=".wav,.mp3,.flac,.ogg,.oga,audio/*" multiple hidden></label>
+  <aside class="library card" id="library" aria-label="Dateien und Bibliothek">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-files" aria-selected="true" aria-controls="panel-files">Meine Dateien</button>
+      <button role="tab" id="tab-lib" aria-selected="false" aria-controls="panel-lib">Bibliothek</button>
     </div>
-    <p class="help small">WAV, MP3, FLAC oder OGG – hierher ziehen oder direkt auf eine Spur.</p>
-    <div class="usage"><div class="usage-bar"><span id="usage-fill"></span></div><span id="usage-text" class="small muted"></span></div>
-    <ul class="asset-list" id="asset-list"></ul>
+    <div id="panel-files" role="tabpanel" aria-labelledby="tab-files">
+      <div class="library-head">
+        <p class="help small">WAV, MP3, FLAC oder OGG – hierher ziehen oder direkt auf eine Spur.</p>
+        <label class="button-like">Hochladen<input type="file" id="upload-input" accept=".wav,.mp3,.flac,.ogg,.oga,audio/*" multiple hidden></label>
+      </div>
+      <div class="usage"><div class="usage-bar"><span id="usage-fill"></span></div><span id="usage-text" class="small muted"></span></div>
+      <ul class="asset-list" id="asset-list"></ul>
+    </div>
+    <div id="panel-lib" role="tabpanel" aria-labelledby="tab-lib" hidden>
+      <input type="search" id="lib-search" placeholder="Suchen (Name, Stichwort)" aria-label="Bibliothek durchsuchen">
+      <div class="chips" id="lib-cats"></div>
+      <ul class="asset-list" id="lib-list"></ul>
+      <p class="help small">▶ hört vor, ziehen legt auf eine Spur. Bibliotheksdateien zählen nicht zu deinem Speicher.</p>
+    </div>
   </aside>
 
   <section class="editor" aria-label="Mehrspur-Editor">
@@ -71,11 +82,13 @@
       <label class="inline">Lautstärke <input type="range" id="insp-gain" min="-30" max="12" step="0.5"><span id="insp-gain-val" class="small muted"></span></label>
       <label class="inline">Einblenden <input type="number" id="insp-fade-in" min="0" step="0.1" class="num"> s</label>
       <label class="inline">Ausblenden <input type="number" id="insp-fade-out" min="0" step="0.1" class="num"> s</label>
+      <label class="inline">Kurve <select id="insp-curve"><option value="smooth">weich (S-Kurve)</option><option value="linear">linear</option></select></label>
+      <label class="inline check" title="Datei wiederholen, solange der Clip dauert – Clip am rechten Rand verlängern"><input type="checkbox" id="insp-loop"> Loop</label>
       <span class="small muted" id="insp-pos"></span>
       <span class="spacer"></span>
       <button id="insp-delete" class="link danger">Clip entfernen (Entf)</button>
     </div>
-    <p class="help small hint-line">Clips ziehen zum Verschieben (auch auf eine andere Spur), Ränder ziehen zum Kürzen. Alt gedrückt halten: ohne Einrasten.</p>
+    <p class="help small hint-line">Clips ziehen zum Verschieben (auch auf eine andere Spur), Ränder ziehen zum Kürzen bzw. – mit Loop – Verlängern, die kleinen Griffe oben setzen Ein- und Ausblendung. Alt gedrückt halten: ohne Einrasten.</p>
   </section>
 </div>
 

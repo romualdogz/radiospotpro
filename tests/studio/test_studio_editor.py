@@ -146,7 +146,7 @@ def test_mix_places_clips_with_gain_fades_and_solo(tmp_path):
         {"id": "a", "asset_id": 1, "track": "voice", "start": 1.0, "offset": 0.5, "duration": 1.0, "gain_db": -6.0206},
         {"id": "b", "asset_id": 1, "track": "music", "start": 0, "duration": 2, "fade_in": 1.0},
     ], "tracks": {"music": {"mute": True}}})
-    out = render.mix_project(data, {1: f})
+    out = render.mix_project(data, {("a", 1): f})
     assert out.shape == (4 * SR, 2)
     assert np.abs(out[: SR - 10]).max() == 0                     # Musik stumm, Sprache erst ab 1 s
     assert np.abs(out[SR + 100: 2 * SR - 100]).max() == pytest.approx(0.25, abs=0.01)  # −6 dB
@@ -154,7 +154,7 @@ def test_mix_places_clips_with_gain_fades_and_solo(tmp_path):
 
     data.tracks["music"].mute = False
     data.tracks["music"].solo = True
-    out = render.mix_project(data, {1: f})
+    out = render.mix_project(data, {("a", 1): f})
     assert np.abs(out[SR + 100: 2 * SR]).max() == pytest.approx(0.5, abs=0.01)  # nur Musik
     assert np.abs(out[:2400]).max() < 0.03                       # Fade-in beginnt bei 0
 
@@ -163,7 +163,7 @@ def test_clip_past_project_end_is_cut(tmp_path):
     f = _wav_file(tmp_path, 3.0)
     data = ProjectData.model_validate({"length": 2, "clips": [
         {"id": "a", "asset_id": 1, "track": "sfx", "start": 1.5, "duration": 3.0}]})
-    assert len(render.mix_project(data, {1: f})) == 2 * SR
+    assert len(render.mix_project(data, {("a", 1): f})) == 2 * SR
 
 
 def test_finish_limits_peaks_or_masters(tmp_path):

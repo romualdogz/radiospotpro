@@ -143,3 +143,38 @@ class AiUsage(Base):
     kind: Mapped[str] = mapped_column(String(10))  # script | voice
     chars: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+
+LIBRARY_CATEGORIES = {"sfx": "SFX", "music": "Musik", "atmo": "Atmo"}
+
+
+class Library(Base):
+    """Von onaircraft gepflegte Sammlung (SFX, Musik, Atmo), die Studio-Nutzer verwenden dürfen."""
+    __tablename__ = "studio_libraries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str] = mapped_column(String(255), default="")
+    # True = alle Konten; sonst nur Konten, deren `libraries` die ID enthält
+    for_all: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Lizenzhinweis, gilt für alle Dateien dieser Sammlung (sofern die Datei keinen eigenen hat)
+    license_note: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class LibraryItem(Base):
+    __tablename__ = "studio_library_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    library_id: Mapped[int] = mapped_column(ForeignKey("studio_libraries.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    category: Mapped[str] = mapped_column(String(10), default="sfx")
+    tags: Mapped[str] = mapped_column(String(300), default="")
+    license_note: Mapped[str] = mapped_column(String(500), default="")
+    stored_name: Mapped[str] = mapped_column(String(80))
+    media_type: Mapped[str] = mapped_column(String(40))
+    size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    duration_s: Mapped[float] = mapped_column(Float, default=0.0)
+    # Inaktiv = nicht mehr in der Auswahl, bestehende Projekte klingen aber weiter gleich
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

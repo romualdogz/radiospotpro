@@ -79,7 +79,8 @@ th { font-size: .85rem; color: var(--muted); font-weight: 600; }
 .tick.major { height: 12px; }
 .tick.major::after { content: attr(data-label); position: absolute; bottom: 12px; left: 3px; font-size: .7rem; color: var(--muted); }
 .lane { position: relative; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; overflow: hidden;
-        background: linear-gradient(90deg, color-mix(in srgb, var(--c) 10%, var(--lane)), var(--lane)); border-left: 3px solid var(--c); }
+        /* gleiche Breite wie das Lineal: Farbkante als Schatten statt Rahmen */
+        background: linear-gradient(90deg, color-mix(in srgb, var(--c) 10%, var(--lane)), var(--lane)); box-shadow: inset 3px 0 0 var(--c); }
 .lane-hint { color: var(--muted); font-size: .85rem; border: 1px dashed var(--border); border-radius: 6px; padding: 6px 10px; }
 @media (max-width: 600px) {
   .timeline { grid-template-columns: 120px minmax(480px, 1fr); }
@@ -182,3 +183,27 @@ textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); bo
 .voices-table input[name=voice_id] { width: 150px; }
 .voices-table input.num { width: 64px; }
 .voices-table th, .voices-table td { padding: 6px 4px; }
+.library-table audio { width: 180px; height: 32px; }
+.library-table input[name=name] { width: 180px; }
+.library-table input[name=tags], .library-table input[name=license_note] { width: 150px; }
+td.libs { display: flex; flex-direction: column; gap: 2px; }
+td.libs label.check { margin: 0; }
+/* --- Schritt 3: Bibliothek, Loop, Fades ------------------------------- */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px -4px 10px; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 10px; font-weight: 600; color: var(--muted); }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.library-head .help { margin: 0; flex: 1; }
+.library-head { gap: 10px; margin-bottom: 8px; }
+#lib-search { width: 100%; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip { padding: 3px 10px; border-radius: 99px; font-size: .82rem; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.asset.lib-item { grid-template-columns: auto 1fr auto; }
+.mini.play { width: 26px; padding: 1px 0; }
+.fade-handle { position: absolute; top: 0; width: 10px; height: 10px; margin-left: -5px; background: var(--card);
+               border: 2px solid var(--c); border-radius: 2px; cursor: ew-resize; z-index: 2; opacity: 0; }
+.fade-handle.out { margin-left: 0; margin-right: -5px; }
+.clip:hover .fade-handle, .clip.selected .fade-handle { opacity: 1; }
+.clip .clip-label { left: 10px; right: 10px; }
+#panel-files .library-head { flex-wrap: wrap; justify-content: flex-end; }
+#panel-files .library-head .help { flex-basis: 100%; order: 2; }

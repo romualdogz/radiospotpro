@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ lib.name }} · Bibliothek{% endblock %}
+{% block content %}
+<p><a href="/admin/library">← Alle Sammlungen</a></p>
+<h1>{{ lib.name }}</h1>
+
+<div class="grid2">
+  <form method="post" action="/admin/library/{{ lib.id }}" class="card">
+    <h2>Einstellungen</h2>
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Name <input name="name" value="{{ lib.name }}" maxlength="120" required></label>
+    <label>Beschreibung <input name="description" value="{{ lib.description }}" maxlength="255"></label>
+    <label>Lizenzhinweis <input name="license_note" value="{{ lib.license_note }}" maxlength="500"></label>
+    <label class="check"><input type="checkbox" name="for_all" value="1" {% if lib.for_all %}checked{% endif %}> Für alle Konten sichtbar
+      <span class="help small">(sonst unter <a href="/admin/users">Benutzer</a> einzeln freigeben)</span></label>
+    <button class="primary">Speichern</button>
+  </form>
+
+  <form method="post" action="/admin/library/{{ lib.id }}/upload" enctype="multipart/form-data" class="card">
+    <h2>Dateien hinzufügen</h2>
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Dateien (WAV, MP3, FLAC, OGG – je max. {{ max_mb }} MB) <input type="file" name="files" multiple required accept=".wav,.mp3,.flac,.ogg,.oga"></label>
+    <label>Kategorie <select name="category">{% for k, v in categories.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label>Stichworte <input name="tags" maxlength="300" placeholder="z. B. tür, auto, applaus"></label>
+    <label>Lizenzhinweis (leer = der der Sammlung) <input name="license_note" maxlength="500"></label>
+    <button class="primary">Hochladen</button>
+    <p class="help small">Viele Dateien auf einmal: <code>python -m studio.cli import-library &lt;Ordner&gt; --library "{{ lib.name }}" --category sfx</code></p>
+  </form>
+</div>
+
+<section class="card">
+  <h2>Dateien ({{ items|length }})</h2>
+  {% if items %}
+  <div class="table-wrap"><table class="library-table">
+    <thead><tr><th>Anhören</th><th>Name</th><th>Kategorie</th><th>Stichworte</th><th>Lizenzhinweis</th><th>Länge</th><th>Aktiv</th><th>Verwendet</th><th></th><th></th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td><audio controls preload="none" src="/api/library/{{ i.id }}/audio"></audio></td>
+        <td><input form="i{{ i.id }}" name="name" value="{{ i.name }}" maxlength="200" aria-label="Name"></td>
+        <td><select form="i{{ i.id }}" name="category" aria-label="Kategorie">{% for k, v in categories.items() %}<option value="{{ k }}" {% if k == i.category %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></td>
+        <td><input form="i{{ i.id }}" name="tags" value="{{ i.tags }}" maxlength="300" aria-label="Stichworte"></td>
+        <td><input form="i{{ i.id }}" name="license_note" value="{{ i.license_note }}" maxlength="500" placeholder="wie Sammlung" aria-label="Lizenzhinweis"></td>
+        <td class="muted">{{ '%.1f'|format(i.duration_s) }} s</td>
+        <td><input form="i{{ i.id }}" type="checkbox" name="active" value="1" {% if i.active %}checked{% endif %} aria-label="Aktiv"></td>
+        <td class="muted">{{ used.get(i.id, 0) }}×</td>
+        <td><form id="i{{ i.id }}" method="post" action="/admin/library/items/{{ i.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Speichern</button></form></td>
+        <td>{% if not used.get(i.id) %}<form method="post" action="/admin/library/items/{{ i.id }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link danger">Löschen</button></form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="help">Noch keine Dateien.</p>{% endif %}
+</section>
+
+<form method="post" action="/admin/library/{{ lib.id }}/delete" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <button class="link danger">Ganze Sammlung löschen</button> <span class="help small">(nur möglich, solange keine Datei in einem Projekt steckt)</span>
+</form>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Bibliothek{% endblock %}
+{% block content %}
+<h1>Bibliothek</h1>
+<p class="help">Sammlungen von SFX, Musik und Atmos, die Studio-Nutzer in ihre Projekte ziehen können. Sie zählen nicht zum Speicherplatz der Nutzer.
+Bitte nur Material aufnehmen, dessen Lizenz die Weitergabe in kommerziellen Spots erlaubt – der Lizenzhinweis wird den Nutzern angezeigt.</p>
+
+<section class="card">
+  <h2>Sammlungen</h2>
+  {% if libs %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Beschreibung</th><th>Sichtbar für</th><th>Dateien</th><th></th></tr></thead>
+    <tbody>
+    {% for lib in libs %}
+      <tr><td><a href="/admin/library/{{ lib.id }}">{{ lib.name }}</a></td><td class="muted">{{ lib.description }}</td>
+          <td>{{ 'alle Konten' if lib.for_all else 'ausgewählte Konten' }}</td><td>{{ counts[lib.id] }}</td>
+          <td><a href="/admin/library/{{ lib.id }}">Bearbeiten</a></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="help">Noch keine Sammlung angelegt.</p>{% endif %}
+</section>
+
+<form method="post" action="/admin/library" class="card">
+  <h2>Neue Sammlung</h2>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Name <input name="name" maxlength="120" required placeholder="z. B. onaircraft SFX"></label>
+  <label>Beschreibung <input name="description" maxlength="255"></label>
+  <label>Lizenzhinweis <input name="license_note" maxlength="500" placeholder="z. B. Lizenz: onaircraft, Nutzung in Spots erlaubt"></label>
+  <label class="check"><input type="checkbox" name="for_all" value="1" checked> Für alle Konten sichtbar</label>
+  <button class="primary">Anlegen</button>
+</form>
+{% endblock %}

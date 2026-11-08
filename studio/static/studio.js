@@ -7,9 +7,10 @@
   const MIN_CLIP = 0.05;          // kürzeste Cliplänge (s)
   const SNAP = 0.05;              // Raster (s), mit Alt aus
   const DEFAULT_GAIN = { atmo: -12 };  // Atmo startet leise
+  const ATMO_FADE = 1.0;              // Atmo: weich ein- und ausblenden
 
   const state = {
-    me: null, assets: new Map(), peaks: new Map(), projects: [],
+    me: null, assets: new Map(), library: new Map(), libCats: {}, libFilter: "", peaks: new Map(), projects: [],
     project: null, selected: null, saveTimer: null, saving: null, dirty: false, exportPoll: null,
   };
 
@@ -54,6 +55,14 @@
   const uid = () => "c" + Math.random().toString(36).slice(2, 10);
   const data = () => state.project.data;
   const clipById = (id) => data().clips.find((c) => c.id === id);
+  // Quelle eines Clips: eigene Datei (a12) oder Bibliothek (l7)
+  const keyOf = (clip) => (clip.lib_id != null ? `l${clip.lib_id}` : `a${clip.asset_id}`);
+  function source(key) {
+    const lib = key[0] === "l", id = Number(key.slice(1));
+    const item = lib ? state.library.get(id) : state.assets.get(id);
+    const base = lib ? `/api/library/${id}` : `/api/assets/${id}`;
+    return { name: item?.name, duration: item?.duration, audio: `${base}/audio`, peaks: `${base}/peaks`, lib };
+  }
   function storageGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
   function storageSet(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* privat */ } }
 
@@ -61,7 +70,7 @@
   async function init() {
     state.me = await api("GET", "/api/me");
     updateUsage();
-    await loadAssets();
+    await Promise.all([loadAssets(), loadLibrary()]);
     state.projects = await api("GET", "/api/projects");
     if (!state.projects.length) {
       const p = await api("POST", "/api/projects", { name: "Mein erster Spot", length: 30 });
@@ -78,6 +87,73 @@
     renderAssets();
   }
 
+  async function loadLibrary() {
+    try {
+      const lib = await api("GET", "/api/library");
+      state.library = new Map(lib.items.map((i) => [i.id, i]));
+      state.libCats = lib.categories;
+      renderLibrary();
+    } catch (e) { toast(e.message, true); }
+  }
+
+  let previewAudio = null, previewBtn = null;
+  function preview(url, btn) {
+    if (previewAudio && previewBtn === btn) { stopPreview(); return; }
+    stopPreview();
+    previewAudio = new Audio(url);
+    previewBtn = btn; btn.textContent = "■"; btn.setAttribute("aria-label", "Vorhören stoppen");
+    previewAudio.addEventListener("ended", stopPreview);
+    previewAudio.play().catch(() => stopPreview());
+  }
+  function stopPreview() {
+    if (previewAudio) previewAudio.pause();
+    if (previewBtn) { previewBtn.textContent = "▶"; previewBtn.setAttribute("aria-label", "Vorhören"); }
+    previewAudio = null; previewBtn = null;
+  }
+
+  function renderLibrary() {
+    const cats = $("lib-cats");
+    if (!cats.childElementCount) {
+      for (const [k, label] of [["", "Alle"], ...Object.entries(state.libCats)]) {
+        const b = document.createElement("button");
+        b.className = "chip"; b.textContent = label; b.dataset.cat = k;
+        b.setAttribute("aria-pressed", String(k === state.libFilter));
+        b.addEventListener("click", () => {
+          state.libFilter = k;
+          cats.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.cat === k)));
+          renderLibrary();
+        });
+        cats.appendChild(b);
+      }
+    }
+    const q = $("lib-search").value.trim().toLowerCase();
+    const items = [...state.library.values()].filter((i) => (!state.libFilter || i.category === state.libFilter)
+      && (!q || `${i.name} ${i.tags}`.toLowerCase().includes(q)));
+    const ul = $("lib-list");
+    if (!items.length) {
+      const li = document.createElement("li"); li.className = "empty small muted";
+      li.textContent = state.library.size ? "Nichts gefunden." : "Noch keine Bibliothek freigeschaltet.";
+      ul.replaceChildren(li);
+      return;
+    }
+    ul.replaceChildren(...items.slice(0, 300).map((i) => {
+      const li = document.createElement("li");
+      li.className = "asset lib-item"; li.draggable = true;
+      li.title = [i.tags && `Stichworte: ${i.tags}`, i.license_note && `Lizenz: ${i.license_note}`, "Auf eine Spur ziehen"].filter(Boolean).join("\n");
+      const play = document.createElement("button"); play.className = "mini play"; play.textContent = "▶";
+      play.setAttribute("aria-label", "Vorhören");
+      play.addEventListener("click", () => preview(`/api/library/${i.id}/audio`, play));
+      const name = document.createElement("span"); name.className = "asset-name"; name.textContent = i.name;
+      const meta = document.createElement("span"); meta.className = "small muted"; meta.textContent = `${state.libCats[i.category] || ""} · ${fmtDur(i.duration)}`;
+      li.append(play, name, meta);
+      li.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("application/x-studio-lib", String(i.id));
+        e.dataTransfer.effectAllowed = "copy";
+      });
+      return li;
+    }));
+  }
+
   async function refreshMe() {
     try { state.me = await api("GET", "/api/me"); updateUsage(); } catch (_) { /* egal */ }
   }
@@ -88,12 +164,12 @@
     $("usage-text").textContent = `${fmtMB(used)} von ${state.me.quota_mb} MB belegt`;
   }
 
-  async function peaksFor(id) {
-    if (!state.peaks.has(id)) {
-      state.peaks.set(id, fetch(`/api/assets/${id}/peaks`, { credentials: "same-origin" })
+  async function peaksFor(key) {
+    if (!state.peaks.has(key)) {
+      state.peaks.set(key, fetch(source(key).peaks, { credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : [])).then((a) => Uint8Array.from(a)).catch(() => new Uint8Array()));
     }
-    return state.peaks.get(id);
+    return state.peaks.get(key);
   }
 
   // ------------------------------------------------------------------ Projekte
@@ -275,10 +351,12 @@
     const canvas = document.createElement("canvas");
     const label = document.createElement("span");
     label.className = "clip-label";
-    label.textContent = state.assets.get(clip.asset_id)?.name || "Datei fehlt";
+    label.textContent = (clip.loop ? "⟳ " : "") + (source(keyOf(clip)).name || "Datei fehlt");
     const hl = document.createElement("span"); hl.className = "handle left"; hl.dataset.mode = "left";
     const hr = document.createElement("span"); hr.className = "handle right"; hr.dataset.mode = "right";
-    el.append(canvas, label, hl, hr);
+    const fi = document.createElement("span"); fi.className = "fade-handle in"; fi.dataset.mode = "fadein"; fi.title = "Einblenden ziehen";
+    const fo = document.createElement("span"); fo.className = "fade-handle out"; fo.dataset.mode = "fadeout"; fo.title = "Ausblenden ziehen";
+    el.append(canvas, label, hl, hr, fi, fo);
     placeClip(el, clip);
     return el;
   }
@@ -288,12 +366,16 @@
     el.style.left = `${(clip.start / L) * 100}%`;
     el.style.width = `${(clip.duration / L) * 100}%`;
     el.classList.toggle("selected", state.selected === clip.id);
+    el.querySelector(".fade-handle.in").style.left = `${(clip.fade_in / clip.duration) * 100}%`;
+    el.querySelector(".fade-handle.out").style.right = `${(clip.fade_out / clip.duration) * 100}%`;
+    el.querySelector(".clip-label").textContent = (clip.loop ? "⟳ " : "") + (source(keyOf(clip)).name || "Datei fehlt");
     requestAnimationFrame(() => drawWave(el, clip));
   }
 
   async function drawWave(el, clip) {
     const canvas = el.querySelector("canvas");
-    const peaks = await peaksFor(clip.asset_id);
+    const peaks = await peaksFor(keyOf(clip));
+    const srcDur = source(keyOf(clip)).duration || peaks.length / 50;
     const dpr = window.devicePixelRatio || 1;
     const W = Math.max(1, Math.round(el.clientWidth * dpr)), H = Math.max(1, Math.round(el.clientHeight * dpr));
     canvas.width = W; canvas.height = H;
@@ -304,25 +386,39 @@
     g.fillStyle = color;
     const mid = H / 2, perPx = clip.duration / W;
     for (let x = 0; x < W; x++) {
-      const t0 = clip.offset + x * perPx, t1 = t0 + perPx;
+      let t0 = clip.offset + x * perPx;
+      if (clip.loop && srcDur > 0) t0 %= srcDur;
+      const t1 = t0 + perPx;
       let i = Math.floor(t0 * 50), end = Math.max(i + 1, Math.ceil(t1 * 50)), p = 0;
       for (; i < end && i < peaks.length; i++) p = Math.max(p, peaks[i]);
       const local = x * perPx;
-      let env = gain;
-      if (clip.fade_in > 0) env *= Math.min(1, local / clip.fade_in);
-      if (clip.fade_out > 0) env *= Math.min(1, (clip.duration - local) / clip.fade_out);
+      const env = gain * fadeGain(clip, local);
       const h = Math.min(1, (p / 255) * env) * (H / 2 - 2 * dpr);
       g.fillRect(x, mid - h, 1, Math.max(1, h * 2));
     }
-    // Fades als Linie
+    // Fades als Kurve
     g.strokeStyle = color; g.lineWidth = 1.5 * dpr; g.globalAlpha = 0.9;
-    const fx = (s) => (s / clip.duration) * W;
     g.beginPath();
-    g.moveTo(0, clip.fade_in > 0 ? H : 1);
-    if (clip.fade_in > 0) g.lineTo(fx(clip.fade_in), 1);
-    g.lineTo(W - fx(clip.fade_out), 1);
-    g.lineTo(W, clip.fade_out > 0 ? H : 1);
+    for (let x = 0; x <= W; x += 2) g[x ? "lineTo" : "moveTo"](x, 1 + (H - 2) * (1 - fadeGain(clip, x * perPx)));
     g.stroke();
+    // Nahtstellen eines Loops
+    if (clip.loop && srcDur > 0) {
+      g.globalAlpha = 0.5; g.setLineDash([4 * dpr, 4 * dpr]);
+      for (let t = srcDur - (clip.offset % srcDur); t < clip.duration; t += srcDur) {
+        const x = (t / clip.duration) * W;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+      }
+      g.setLineDash([]);
+    }
+  }
+
+  // Fade-Verlauf (0…1) an Stelle t im Clip – identisch zum Rendern auf dem Server
+  const curveFn = (x, curve) => (curve === "linear" ? x : 0.5 - 0.5 * Math.cos(Math.PI * x));
+  function fadeGain(clip, t) {
+    let v = 1;
+    if (clip.fade_in > 0) v *= curveFn(clamp(t / clip.fade_in, 0, 1), clip.fade_curve);
+    if (clip.fade_out > 0) v *= curveFn(clamp((clip.duration - t) / clip.fade_out, 0, 1), clip.fade_curve);
+    return v;
   }
 
   function select(id) {
@@ -335,7 +431,9 @@
     const clip = state.selected && clipById(state.selected);
     $("inspector").hidden = !clip;
     if (!clip) return;
-    $("insp-name").textContent = state.assets.get(clip.asset_id)?.name || "Clip";
+    $("insp-name").textContent = source(keyOf(clip)).name || "Clip";
+    $("insp-curve").value = clip.fade_curve || "linear";
+    $("insp-loop").checked = !!clip.loop;
     $("insp-gain").value = clip.gain_db;
     $("insp-gain-val").textContent = `${clip.gain_db > 0 ? "+" : ""}${clip.gain_db} dB`;
     $("insp-fade-in").value = clip.fade_in;
@@ -343,10 +441,17 @@
     $("insp-pos").textContent = `${fmtTime(clip.start)} – ${fmtTime(clip.start + clip.duration)}`;
   }
 
-  function addClip(asset, track, start) {
+  // item: eigene Datei oder Bibliotheksdatei; lib = true für Bibliothek
+  function addClip(item, track, start, lib = false) {
+    start = Math.max(0, start);
+    const atmo = track === "atmo";
+    // Atmo: als Loop bis zum Spotende, weich ein- und ausgeblendet
+    const duration = atmo ? Math.max(item.duration, data().length - start) : item.duration;
+    const fade = atmo ? Math.min(ATMO_FADE, duration / 2) : 0;
     const clip = {
-      id: uid(), asset_id: asset.id, track, start: Math.max(0, start), offset: 0,
-      duration: asset.duration, gain_db: DEFAULT_GAIN[track] || 0, fade_in: 0, fade_out: 0,
+      id: uid(), asset_id: lib ? null : item.id, lib_id: lib ? item.id : null, track, start, offset: 0,
+      duration: +duration.toFixed(4), gain_db: DEFAULT_GAIN[track] || 0, fade_in: fade, fade_out: fade,
+      fade_curve: "smooth", loop: atmo && duration > item.duration,
     };
     data().clips.push(clip);
     laneOf(track).appendChild(buildClip(clip));
@@ -383,7 +488,8 @@
     select(clip.id);
     el.focus({ preventScroll: true });
     drag = { el, clip, mode: e.target.dataset.mode || "move", x0: e.clientX, pps: pxPerSec(),
-             s0: clip.start, o0: clip.offset, d0: clip.duration, track0: clip.track, moved: false };
+             s0: clip.start, o0: clip.offset, d0: clip.duration, track0: clip.track, moved: false,
+             fi0: clip.fade_in, fo0: clip.fade_out };
     el.classList.add("dragging");
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp, { once: true });
@@ -397,7 +503,8 @@
     if (!drag.moved && Math.abs(e.clientX - drag.x0) < 3) return;
     drag.moved = true;
     const free = e.altKey;
-    const assetDur = state.assets.get(clip.asset_id)?.duration ?? drag.o0 + drag.d0;
+    const assetDur = source(keyOf(clip)).duration ?? drag.o0 + drag.d0;
+    const maxLen = state.me?.limits?.max_length_s || 120;
     if (drag.mode === "move") {
       clip.start = clamp(snap(drag.s0 + dx, free), 0, data().length - MIN_CLIP);
       const lane = document.elementFromPoint(e.clientX, e.clientY)?.closest(".lane[data-track]");
@@ -405,17 +512,24 @@
         clip.track = lane.dataset.track;
         lane.appendChild(el);
       }
+    } else if (drag.mode === "fadein") {
+      clip.fade_in = clamp(snap(drag.fi0 + dx, free), 0, clip.duration - clip.fade_out);
+    } else if (drag.mode === "fadeout") {
+      clip.fade_out = clamp(snap(drag.fo0 - dx, free), 0, clip.duration - clip.fade_in);
     } else if (drag.mode === "left") {
       const end = drag.s0 + drag.d0;
+      // mit Loop darf der Anfang nicht vor den Dateianfang, sonst wie ohne
       const start = clamp(snap(drag.s0 + dx, free), Math.max(0, drag.s0 - drag.o0), end - MIN_CLIP);
       clip.start = start;
       clip.offset = drag.o0 + (start - drag.s0);
       clip.duration = end - start;
     } else {
-      const end = clamp(snap(drag.s0 + drag.d0 + dx, free), drag.s0 + MIN_CLIP, drag.s0 + assetDur - drag.o0);
+      const longest = clip.loop ? maxLen : assetDur - drag.o0;
+      const end = clamp(snap(drag.s0 + drag.d0 + dx, free), drag.s0 + MIN_CLIP, drag.s0 + longest);
       clip.duration = end - drag.s0;
     }
     clip.start = +clip.start.toFixed(4); clip.offset = +clip.offset.toFixed(4); clip.duration = +clip.duration.toFixed(4);
+    clip.fade_in = +clip.fade_in.toFixed(4); clip.fade_out = +clip.fade_out.toFixed(4);
     fitFades(clip);
     placeClip(el, clip);
     $("insp-pos").textContent = `${fmtTime(clip.start)} – ${fmtTime(clip.start + clip.duration)}`;
@@ -438,7 +552,7 @@
 
     buffer(id) {
       if (!this.buffers.has(id)) {
-        this.buffers.set(id, fetch(`/api/assets/${id}/audio`, { credentials: "same-origin" })
+        this.buffers.set(id, fetch(source(id).audio, { credentials: "same-origin" })
           .then((r) => { if (!r.ok) throw new Error("Datei nicht ladbar"); return r.arrayBuffer(); })
           .then((b) => this.ctx.decodeAudioData(b))
           .catch((e) => { this.buffers.delete(id); throw e; }));
@@ -462,7 +576,7 @@
       const from = this.paused >= data().length ? 0 : this.paused;
       $("play").disabled = true;
       try {
-        await Promise.all([...new Set(data().clips.map((c) => c.asset_id))].map((id) => this.buffer(id)));
+        await Promise.all([...new Set(data().clips.map(keyOf))].map((k) => this.buffer(k)));
       } catch (e) { toast(e.message, true); $("play").disabled = false; return; }
       $("play").disabled = false;
       this.start(from);
@@ -482,22 +596,16 @@
         const dur = clip.duration - local;
         if (dur <= 0 || clip.start >= data().length) continue;
         let buf;
-        try { buf = await this.buffer(clip.asset_id); } catch (_) { continue; }
+        try { buf = await this.buffer(keyOf(clip)); } catch (_) { continue; }
         const src = ctx.createBufferSource();
         src.buffer = buf;
+        let offset = clip.offset + local;
+        if (clip.loop) { src.loop = true; src.loopStart = 0; src.loopEnd = buf.duration; offset %= buf.duration; }
         const g = ctx.createGain();
         const when = now + Math.max(0, clip.start - from);
-        const base = dbToLin(clip.gain_db), fi = clip.fade_in, fo = clip.fade_out, d = clip.duration;
-        const env = (t) => base * (fi > 0 ? Math.min(1, t / fi) : 1) * (fo > 0 ? Math.min(1, (d - t) / fo) : 1);
-        g.gain.setValueAtTime(env(local), when);
-        if (fi > 0 && local < fi) g.gain.linearRampToValueAtTime(base, when + (fi - local));
-        if (fo > 0) {
-          const foStart = Math.max(local, d - fo);
-          g.gain.setValueAtTime(env(foStart), when + (foStart - local));
-          g.gain.linearRampToValueAtTime(0, when + dur);
-        }
+        scheduleEnvelope(g.gain, clip, local, when, dbToLin(clip.gain_db));
         src.connect(g).connect(this.trackGains[clip.track]);
-        src.start(when, clip.offset + local, dur);
+        src.start(when, offset, dur);
         this.nodes.push(src, g);
       }
       this.t0 = now; this.from = from; this.playing = true;
@@ -529,6 +637,33 @@
       $("play").textContent = "▶"; $("play").setAttribute("aria-label", "Abspielen");
     },
   };
+
+  // Lautstärkeverlauf eines Clips planen: Fades als Kurve (wie beim Rendern), dazwischen konstant
+  function scheduleEnvelope(param, clip, local, when, base) {
+    const d = clip.duration, fi = clip.fade_in, fo = clip.fade_out;
+    const env = (t) => base * fadeGain(clip, t);
+    const curve = (t0, t1) => {
+      const n = Math.max(2, Math.ceil((t1 - t0) * 200));
+      const arr = new Float32Array(n);
+      for (let i = 0; i < n; i++) arr[i] = env(t0 + ((t1 - t0) * i) / (n - 1));
+      return arr;
+    };
+    // Kurven-Ereignisse dürfen sich mit keinem anderen Ereignis überschneiden
+    let t = local, busyUntil = -1;
+    const fadeOutStart = fo > 0 ? Math.max(local, d - fo) : d;
+    if (fi > 0 && t < fi) {
+      const end = Math.min(fi, fadeOutStart);
+      param.setValueCurveAtTime(curve(t, end), when, end - t);
+      busyUntil = when + (end - t);
+      t = end;
+    } else if (!(fo > 0 && fadeOutStart <= local)) {
+      param.setValueAtTime(env(t), when);
+    }
+    if (fo > 0 && fadeOutStart < d) {
+      const start = Math.max(when + (fadeOutStart - local), busyUntil + 0.0005);
+      param.setValueCurveAtTime(curve(fadeOutStart, d), start, Math.max(0.001, when + (d - local) - start));
+    }
+  }
 
   function stopPlayback(reset) {
     if (!state.project) return;
@@ -619,7 +754,7 @@
 
     for (const lane of lanes()) {
       lane.addEventListener("dragover", (e) => {
-        if ([...e.dataTransfer.types].some((t) => t === "application/x-studio-asset" || t === "Files")) {
+        if ([...e.dataTransfer.types].some((t) => t === "application/x-studio-asset" || t === "application/x-studio-lib" || t === "Files")) {
           e.preventDefault(); lane.classList.add("drop");
         }
       });
@@ -629,6 +764,8 @@
         let start = snap(timeAt(e.clientX, lane), e.altKey);
         const id = Number(e.dataTransfer.getData("application/x-studio-asset"));
         if (id && state.assets.has(id)) { addClip(state.assets.get(id), lane.dataset.track, start); return; }
+        const libId = Number(e.dataTransfer.getData("application/x-studio-lib"));
+        if (libId && state.library.has(libId)) { stopPreview(); addClip(state.library.get(libId), lane.dataset.track, start, true); return; }
         if (e.dataTransfer.files.length) {
           for (const a of await upload([...e.dataTransfer.files])) {
             addClip(a, lane.dataset.track, start);
@@ -672,6 +809,30 @@
       });
     }
     $("insp-delete").addEventListener("click", () => state.selected && removeClip(state.selected));
+    $("insp-curve").addEventListener("change", (e) => {
+      const clip = clipById(state.selected); if (!clip) return;
+      clip.fade_curve = e.target.value;
+      placeClip(document.querySelector(`.clip[data-clip="${clip.id}"]`), clip); changed();
+    });
+    $("insp-loop").addEventListener("change", (e) => {
+      const clip = clipById(state.selected); if (!clip) return;
+      clip.loop = e.target.checked;
+      const srcDur = source(keyOf(clip)).duration;
+      if (!clip.loop && srcDur && clip.offset + clip.duration > srcDur) {  // ohne Loop auf Dateilänge kürzen
+        clip.duration = +(srcDur - clip.offset).toFixed(4);
+        fitFades(clip);
+      }
+      renderInspector(); placeClip(document.querySelector(`.clip[data-clip="${clip.id}"]`), clip); changed();
+    });
+
+    for (const [tab, panel, other, otherPanel] of [["tab-files", "panel-files", "tab-lib", "panel-lib"], ["tab-lib", "panel-lib", "tab-files", "panel-files"]]) {
+      $(tab).addEventListener("click", () => {
+        $(tab).setAttribute("aria-selected", "true"); $(other).setAttribute("aria-selected", "false");
+        $(panel).hidden = false; $(otherPanel).hidden = true;
+        if (tab === "tab-files") stopPreview();
+      });
+    }
+    $("lib-search").addEventListener("input", renderLibrary);
 
     $("play").addEventListener("click", () => (player.playing ? player.stop() : player.play()));
     $("stop").addEventListener("click", () => stopPlayback(true));

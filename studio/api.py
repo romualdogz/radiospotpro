@@ -13,8 +13,8 @@ from sqlalchemy.orm import Session
 from . import ai, storage
 from .config import settings
 from .database import get_db
-from .models import ROLES, TRACKS, Asset, Export, Project, StudioUser, StudioVoice, now
-from .projects import ProjectData, check_assets, empty_project
+from .models import LIBRARY_CATEGORIES, ROLES, TRACKS, Asset, Export, Library, LibraryItem, Project, StudioUser, StudioVoice, now
+from .projects import ProjectData, accessible_libraries, empty_project, resolve_sources
 from .security import api_admin, api_user
 
 router = APIRouter(prefix="/api", dependencies=[Depends(api_user)], tags=["studio"])
@@ -136,6 +136,41 @@ def delete_asset(asset_id: int, user: StudioUser = Depends(api_user), db: Sessio
     storage.delete_asset(db, a)
 
 
+# --------------------------------------------------------------------------- Bibliothek (von onaircraft gepflegt)
+
+@router.get("/library")
+def library(user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    allowed = accessible_libraries(db, user)
+    libs = db.query(Library).filter(Library.id.in_(allowed)).order_by(Library.name).all() if allowed else []
+    notes = {lib.id: lib.license_note for lib in libs}
+    items = (db.query(LibraryItem).filter(LibraryItem.library_id.in_(allowed), LibraryItem.active.is_(True))
+             .order_by(LibraryItem.category, LibraryItem.name).all()) if allowed else []
+    return {"categories": LIBRARY_CATEGORIES,
+            "libraries": [{"id": lib.id, "name": lib.name, "description": lib.description} for lib in libs],
+            "items": [{"id": i.id, "library_id": i.library_id, "name": i.name, "category": i.category, "tags": i.tags,
+                       "duration": i.duration_s, "license_note": i.license_note or notes.get(i.library_id, "")}
+                      for i in items]}
+
+
+def _library_item(db: Session, item_id: int, user: StudioUser) -> LibraryItem:
+    item = db.get(LibraryItem, item_id)
+    if item is None or item.library_id not in accessible_libraries(db, user):
+        raise HTTPException(404, "Nicht gefunden")
+    return item
+
+
+@router.get("/library/{item_id}/audio")
+def library_audio(item_id: int, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    item = _library_item(db, item_id, user)
+    return FileResponse(storage.library_path(item), media_type=item.media_type, headers=_PRIVATE_CACHE)
+
+
+@router.get("/library/{item_id}/peaks")
+def library_peaks(item_id: int, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    item = _library_item(db, item_id, user)
+    return FileResponse(storage.library_peaks_path(item), media_type="application/json", headers=_PRIVATE_CACHE)
+
+
 # --------------------------------------------------------------------------- Projekte
 
 class ProjectCreate(BaseModel):
@@ -183,7 +218,7 @@ def save_project(project_id: int, body: ProjectUpdate, user: StudioUser = Depend
     p = _owned(db, Project, project_id, user)
     try:
         data = ProjectData.model_validate(body.data)
-        check_assets(db, user.id, data)
+        resolve_sources(db, user, data)
     except ValidationError as e:
         raise HTTPException(422, _validation_message(e)) from e
     except ValueError as e:
@@ -228,7 +263,7 @@ def start_export(project_id: int, body: ExportRequest, user: StudioUser = Depend
     except storage.StorageError as e:
         raise HTTPException(e.status, str(e)) from e
     try:
-        check_assets(db, user.id, data)
+        resolve_sources(db, user, data)
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
     job = Export(user_id=user.id, project_id=p.id, name=p.name, snapshot=data.model_dump(), loudness=body.loudness)

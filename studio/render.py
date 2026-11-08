@@ -6,14 +6,13 @@ als eigenen Prozess mit Zeitlimit.
 import secrets
 import sys
 import traceback
-from pathlib import Path
 
 import numpy as np
 
 from app import audio
 
-from .models import TRACKS, Asset, Export, now
-from .projects import ProjectData
+from .models import Export, StudioUser, now
+from .projects import ProjectData, resolve_sources
 
 SR = audio.SAMPLE_RATE
 PEAK_CEILING = -1.0  # dBTP
@@ -23,16 +22,48 @@ def _db(x: float) -> float:
     return 10 ** (x / 20)
 
 
-def _envelope(n: int, gain: float, fade_in: int, fade_out: int) -> np.ndarray:
+LOOP_XFADE = 0.05  # s – Überblendung an der Nahtstelle eines Loops (gegen Klicks)
+
+
+def fade_curve(x: np.ndarray, curve: str) -> np.ndarray:
+    """0 → 1 entlang x ∈ [0, 1]. „smooth“ = S-Kurve (Kosinus), muss mit dem Browser übereinstimmen."""
+    return x if curve == "linear" else (0.5 - 0.5 * np.cos(np.pi * x)).astype(np.float32)
+
+
+def _envelope(n: int, gain: float, fade_in: int, fade_out: int, curve: str = "linear") -> np.ndarray:
     env = np.full(n, gain, dtype=np.float32)
     if fade_in:
-        env[:fade_in] *= np.linspace(0, 1, fade_in, endpoint=False, dtype=np.float32)
+        env[:fade_in] *= fade_curve(np.linspace(0, 1, fade_in, endpoint=False, dtype=np.float32), curve)
     if fade_out:
-        env[n - fade_out:] *= np.linspace(1, 0, fade_out, dtype=np.float32)
+        env[n - fade_out:] *= fade_curve(np.linspace(1, 0, fade_out, dtype=np.float32), curve)
     return env
 
 
-def mix_project(data: ProjectData, files: dict[int, Path]) -> np.ndarray:
+def looped(src: np.ndarray, offset: int, n: int) -> np.ndarray:
+    """`n` Samples ab `offset`, die Datei wird dabei wiederholt (Nahtstellen mit gleichlauter Überblendung)."""
+    length = len(src)
+    xf = min(int(LOOP_XFADE * SR), length // 4)
+    if offset + n <= length or xf == 0:
+        reps = -(-(offset + n) // max(length, 1))
+        return np.tile(src, (reps, 1))[offset:offset + n] if offset + n > length else src[offset:offset + n]
+    period = length - xf
+    total = offset + n
+    out = np.zeros((total + length, src.shape[1]), dtype=np.float32)
+    t = np.linspace(0, 1, xf, dtype=np.float32)[:, None]
+    fade_in, fade_out = np.sin(t * np.pi / 2), np.cos(t * np.pi / 2)
+    pos, first = 0, True
+    while pos < total:
+        piece = src.copy()
+        if not first:
+            piece[:xf] *= fade_in
+        piece[-xf:] *= fade_out
+        out[pos:pos + length] += piece
+        pos += period
+        first = False
+    return out[offset:total]
+
+
+def mix_project(data: ProjectData, files: dict) -> np.ndarray:
     """Clips platzieren, Clip- und Spurlautstärke, Fades, Mute/Solo anwenden → Stereo-Mix (float32)."""
     total = int(round(data.length * SR))
     out = np.zeros((total, 2), dtype=np.float32)
@@ -45,16 +76,20 @@ def mix_project(data: ProjectData, files: dict[int, Path]) -> np.ndarray:
         start = int(round(clip.start * SR))
         if start >= total:
             continue
-        if clip.asset_id not in cache:
-            cache[clip.asset_id] = audio.stereo(audio.decode_file(files[clip.asset_id], channels=2))
-        src = cache[clip.asset_id]
+        key = clip.source
+        if key not in cache:
+            path = files[key]
+            cache[key] = audio.stereo(audio.decode_file(getattr(path, "path", path), channels=2))
+        src = cache[key]
         a = int(round(clip.offset * SR))
-        piece = src[a:a + int(round(clip.duration * SR))]
+        want = min(int(round(clip.duration * SR)), total - start)
+        piece = looped(src, a, want) if clip.loop else src[a:a + want]
         n = len(piece)
         if not n:
             continue
-        env = _envelope(n, _db(clip.gain_db + track.gain_db),
-                        min(int(clip.fade_in * SR), n), min(int(clip.fade_out * SR), n))
+        full = int(round(clip.duration * SR))  # Fade-out bezieht sich auf das Clip-Ende, auch wenn es abgeschnitten ist
+        env = _envelope(full, _db(clip.gain_db + track.gain_db),
+                        min(int(clip.fade_in * SR), full), min(int(clip.fade_out * SR), full), clip.fade_curve)[:n]
         end = min(start + n, total)
         out[start:end] += piece[:end - start] * env[:end - start, None]
     return out
@@ -90,12 +125,14 @@ def run(export_id: int) -> int:
             return 1
         try:
             data = ProjectData.model_validate(job.snapshot)
-            ids = {c.asset_id for c in data.clips}
-            assets = {a.id: a for a in db.query(Asset).filter(Asset.user_id == job.user_id, Asset.id.in_(ids))} if ids else {}
-            missing = ids - set(assets)
-            if missing:
-                raise RuntimeError("Eine verwendete Datei wurde inzwischen gelöscht.")
-            result = finish(mix_project(data, {i: storage.asset_path(a) for i, a in assets.items()}), job.loudness)
+            owner = db.get(StudioUser, job.user_id)
+            if owner is None:
+                raise RuntimeError("Konto nicht gefunden.")
+            try:
+                sources = resolve_sources(db, owner, data)
+            except ValueError as e:
+                raise RuntimeError("Eine verwendete Datei wurde inzwischen gelöscht.") from e
+            result = finish(mix_project(data, sources), job.loudness)
             job.stored_name = secrets.token_hex(12) + ".wav"
             path = storage.export_path(job)
             path.write_bytes(audio.to_wav(result, bits=24))

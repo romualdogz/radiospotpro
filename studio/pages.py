@@ -1,5 +1,6 @@
 """HTML-Seiten des Studios: Anmeldung, Einladung, Arbeitsfläche, Konto, Benutzerverwaltung."""
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -9,13 +10,15 @@ from .accounts import (AccountError, accept_invitation, create_invitation, open_
 from .config import BASE_DIR, settings
 from .database import get_db
 from . import ai
-from .models import ROLES, Invitation, StudioUser, StudioVoice
+from . import storage
+from .models import LIBRARY_CATEGORIES, ROLES, Invitation, Library, LibraryItem, Project, StudioUser, StudioVoice
 from .security import (authenticate, check_csrf, client_ip, csrf_token, current_user, page_admin, page_user,
                        start_session, throttle, touch_login, verify_password)
 
 router = APIRouter(include_in_schema=False)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.globals["roles"] = ROLES
+templates.env.globals["categories"] = LIBRARY_CATEGORIES
 
 
 def render(request: Request, template: str, status_code: int = 200, **ctx) -> HTMLResponse:
@@ -138,6 +141,7 @@ def _users_page(request: Request, user: StudioUser, db: Session, error: str | No
     return render(request, "users.html", 400 if error else 200, user=user, error=error,
                   users=db.query(StudioUser).order_by(StudioUser.email).all(),
                   invitations=db.query(Invitation).order_by(Invitation.created_at.desc()).limit(50).all(),
+                  private_libs=db.query(Library).filter_by(for_all=False).order_by(Library.name).all(),
                   new_link=request.session.pop("new_invite", None))
 
 
@@ -176,7 +180,7 @@ def _opt_int(value: str) -> int | None:
 @router.post("/admin/users/{user_id}")
 def edit_user(user_id: int, request: Request, role: str = Form(...), active: str = Form(""),
               quota_mb: int = Form(0), export_limit: str = Form(""), name: str = Form(""), csrf: str = Form(""),
-              tts_chars_month: str = Form(""), scripts_month: str = Form(""),
+              tts_chars_month: str = Form(""), scripts_month: str = Form(""), libraries: list[int] = Form([]),
               user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
     check_csrf(request, csrf)
     target = db.get(StudioUser, user_id)
@@ -186,6 +190,8 @@ def edit_user(user_id: int, request: Request, role: str = Form(...), active: str
         update_user(db, user, target, role=role, active=bool(active), quota_mb=quota_mb,
                     export_limit=_opt_int(export_limit), name=name,
                     tts_chars_month=_opt_int(tts_chars_month), scripts_month=_opt_int(scripts_month))
+        target.libraries = sorted({i for i in libraries if db.get(Library, i)})
+        db.commit()
     except ValueError as e:  # AccountError oder ungültige Zahl
         db.rollback()
         msg = str(e) if isinstance(e, AccountError) else "Bitte gültige Zahlen angeben."
@@ -271,3 +277,157 @@ def delete_voice(vid: int, request: Request, csrf: str = Form(""),
         db.delete(voice)
         db.commit()
     return redirect("/admin/voices", "Stimme entfernt. Bereits erzeugte Aufnahmen bleiben erhalten.", request)
+
+
+# --------------------------------------------------------------------------- Bibliothek (nur Admin)
+
+def _usage_count(db: Session) -> dict[int, int]:
+    """Wie oft jede Bibliotheksdatei in Projekten verwendet wird."""
+    counts: dict[int, int] = {}
+    for (data,) in db.query(Project.data):
+        for c in (data or {}).get("clips", []):
+            if c.get("lib_id") is not None:
+                counts[c["lib_id"]] = counts.get(c["lib_id"], 0) + 1
+    return counts
+
+
+@router.get("/admin/library", response_class=HTMLResponse)
+def libraries(request: Request, user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    libs = db.query(Library).order_by(Library.name).all()
+    counts = {lib.id: db.query(LibraryItem).filter_by(library_id=lib.id).count() for lib in libs}
+    return render(request, "libraries.html", user=user, libs=libs, counts=counts, error=None)
+
+
+def _lib_values(name: str, description: str, for_all: str, license_note: str) -> dict:
+    if not name.strip():
+        raise ValueError("Bitte einen Namen angeben.")
+    return {"name": name.strip()[:120], "description": description.strip()[:255], "for_all": bool(for_all),
+            "license_note": license_note.strip()[:500]}
+
+
+@router.post("/admin/library")
+def add_library(request: Request, name: str = Form(""), description: str = Form(""), for_all: str = Form(""),
+                license_note: str = Form(""), csrf: str = Form(""),
+                user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    try:
+        lib = Library(**_lib_values(name, description, for_all, license_note))
+    except ValueError as e:
+        return redirect("/admin/library", str(e), request)
+    db.add(lib)
+    db.commit()
+    return redirect(f"/admin/library/{lib.id}", f"Bibliothek „{lib.name}“ angelegt – jetzt Dateien hochladen.", request)
+
+
+def _lib_or_404(db: Session, lib_id: int) -> Library:
+    from fastapi import HTTPException
+    lib = db.get(Library, lib_id)
+    if lib is None:
+        raise HTTPException(404, "Bibliothek nicht gefunden")
+    return lib
+
+
+def _library_page(request: Request, user: StudioUser, db: Session, lib: Library, error: str | None = None,
+                  status: int = 200):
+    items = db.query(LibraryItem).filter_by(library_id=lib.id).order_by(LibraryItem.category, LibraryItem.name).all()
+    return render(request, "library.html", status, user=user, lib=lib, items=items, used=_usage_count(db),
+                  error=error, max_mb=storage.settings.max_upload_mb)
+
+
+@router.get("/admin/library/{lib_id}", response_class=HTMLResponse)
+def library_page(lib_id: int, request: Request, user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    return _library_page(request, user, db, _lib_or_404(db, lib_id))
+
+
+@router.post("/admin/library/{lib_id}")
+def edit_library(lib_id: int, request: Request, name: str = Form(""), description: str = Form(""),
+                 for_all: str = Form(""), license_note: str = Form(""), csrf: str = Form(""),
+                 user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    lib = _lib_or_404(db, lib_id)
+    try:
+        for k, v in _lib_values(name, description, for_all, license_note).items():
+            setattr(lib, k, v)
+    except ValueError as e:
+        db.rollback()
+        return _library_page(request, user, db, lib, str(e), 400)
+    db.commit()
+    return redirect(f"/admin/library/{lib.id}", "Bibliothek gespeichert.", request)
+
+
+@router.post("/admin/library/{lib_id}/delete")
+def delete_library(lib_id: int, request: Request, csrf: str = Form(""),
+                   user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    lib = _lib_or_404(db, lib_id)
+    items = db.query(LibraryItem).filter_by(library_id=lib.id).all()
+    used = _usage_count(db)
+    if any(used.get(i.id) for i in items):
+        return _library_page(request, user, db, lib, "Dateien dieser Bibliothek werden in Projekten verwendet – "
+                             "bitte stattdessen einzelne Dateien deaktivieren.", 409)
+    for item in items:
+        storage.delete_library_item(db, item)
+    db.delete(lib)
+    db.commit()
+    return redirect("/admin/library", f"Bibliothek „{lib.name}“ gelöscht.", request)
+
+
+@router.post("/admin/library/{lib_id}/upload")
+async def upload_library(lib_id: int, request: Request, files: list[UploadFile] = File(...),
+                         category: str = Form("sfx"), tags: str = Form(""), license_note: str = Form(""),
+                         csrf: str = Form(""), user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    lib = _lib_or_404(db, lib_id)
+    if category not in LIBRARY_CATEGORIES:
+        category = "sfx"
+    limit = storage.settings.max_upload_mb * 1024 * 1024
+    added, errors = 0, []
+    for f in files:
+        tmp = storage.library_dir() / (f"tmp-{user.id}-" + __import__("secrets").token_hex(8) + ".part")
+        try:
+            storage.check_upload_name(f.filename or "")
+            size = 0
+            with tmp.open("wb") as out:
+                while chunk := await f.read(1024 * 1024):
+                    size += len(chunk)
+                    if size > limit:
+                        raise storage.StorageError(f"größer als {storage.settings.max_upload_mb} MB")
+                    out.write(chunk)
+            await run_in_threadpool(storage.add_library_item, db, lib.id, f.filename or "", tmp, category, tags, license_note)
+            added += 1
+        except storage.StorageError as e:
+            errors.append(f"{f.filename}: {e}")
+        finally:
+            tmp.unlink(missing_ok=True)
+    msg = f"{added} Datei(en) hinzugefügt." + (" Nicht übernommen – " + "; ".join(errors) if errors else "")
+    return redirect(f"/admin/library/{lib.id}", msg, request)
+
+
+@router.post("/admin/library/items/{item_id}")
+def edit_item(item_id: int, request: Request, name: str = Form(""), category: str = Form("sfx"), tags: str = Form(""),
+              license_note: str = Form(""), active: str = Form(""), csrf: str = Form(""),
+              user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    item = db.get(LibraryItem, item_id)
+    if item is None:
+        return redirect("/admin/library", "Datei nicht gefunden.", request)
+    if name.strip():
+        item.name = name.strip()[:200]
+    item.category = category if category in LIBRARY_CATEGORIES else item.category
+    item.tags, item.license_note, item.active = tags.strip()[:300], license_note.strip()[:500], bool(active)
+    db.commit()
+    return redirect(f"/admin/library/{item.library_id}", f"„{item.name}“ gespeichert.", request)
+
+
+@router.post("/admin/library/items/{item_id}/delete")
+def delete_item(item_id: int, request: Request, csrf: str = Form(""),
+                user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    item = db.get(LibraryItem, item_id)
+    if item is None:
+        return redirect("/admin/library", "Datei nicht gefunden.", request)
+    lib_id = item.library_id
+    if _usage_count(db).get(item.id):
+        return redirect(f"/admin/library/{lib_id}", f"„{item.name}“ wird in Projekten verwendet – stattdessen deaktivieren.", request)
+    storage.delete_library_item(db, item)
+    return redirect(f"/admin/library/{lib_id}", f"„{item.name}“ gelöscht.", request)

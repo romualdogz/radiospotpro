@@ -314,6 +314,26 @@ uvicorn studio.main:app --port 8001      # Mac: Doppelklick auf start-studio-mac
   immer bei höchstens −1 dBTP. Gemessene Lautheit und Spitze stehen beim Export. Exporte werden nach
   `STUDIO_EXPORT_DAYS` Tagen gelöscht; das Exportkontingent zählt alle gestarteten Exporte.
 
+**Bibliothek (Schritt 3):** Sammlungen von SFX, Musik und Atmos, die onaircraft pflegt
+(Admin → *Bibliothek*). Dateien per Browser hochladen oder ganze Ordner per Kommandozeile übernehmen:
+
+```bash
+python -m studio.cli import-library ~/SFX/Tueren --library "onaircraft SFX" --category sfx --tags "tür"
+```
+
+Jede Sammlung hat einen Lizenzhinweis (die Nutzer sehen ihn beim Überfahren); eine Datei kann einen
+eigenen haben. Sammlungen sind „für alle Konten“ oder nur für einzeln freigeschaltete Konten
+(Admin → *Benutzer*, Spalte *Bibliotheken*). Im Editor: Reiter *Bibliothek* mit Suche, Kategorien und
+▶ zum Vorhören, dann auf eine Spur ziehen. Bibliotheksdateien zählen nicht zum Speicher der Nutzer.
+Dateien, die in Projekten stecken, lassen sich nicht löschen, nur deaktivieren (bestehende Projekte
+klingen dann weiter gleich).
+
+**Atmo, Loop & Fades:** Auf die Atmo-Spur gezogene Dateien laufen automatisch als Loop bis zum
+Spotende, bei −12 dB mit 1 s weicher Ein- und Ausblendung. Loop lässt sich für jeden Clip ein- und
+ausschalten; mit Loop wird ein Clip über das Dateiende hinaus verlängert (Nahtstellen mit 50 ms
+Überblendung, in der Wellenform gestrichelt). Ein- und Ausblendung über die kleinen Griffe oben am
+Clip oder im Clip-Panel, Kurve „weich (S-Kurve)“ oder „linear“ – Vorhören und Export klingen gleich.
+
 **KI-Text & Stimme** (Button im Editor): Briefing eingeben → Claude schreibt drei Vorschläge →
 übernehmen und frei bearbeiten (der Sprechtext wird mit dem Projekt gespeichert) → mit einer
 freigegebenen Stimme einsprechen lassen. Die Aufnahme landet als Datei (Kennzeichen „KI“) in der
