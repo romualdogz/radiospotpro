@@ -31,10 +31,6 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 ## 01.11.2026
 
 ### Neu
-- **Glücksrad als Rubbellos** (*Glücksrad → Darstellung → „Rubbellos“*): gelbes Los mit Losnummer und drei Feldern unter
-  einer Silberschicht. Der Kunde rubbelt mit Maus oder Finger frei (ab gut der Hälfte deckt sich der Rest auf) oder
-  tippt „Aufdecken“. Gewinn = dreimal dasselbe Feld (z. B. „5 % | 5 % | 5 %“, die Felder hüpfen), Niete = gemischte
-  Symbole. Eingebettet und als Pop-up („🎟️ Rubbellos“); die Auslosung bleibt beim Server.
 - **Zwei lustige Gaming-Varianten** (*Design → Layout-Varianten*, je mit eigener Farbvorlage):
   - **„Jump & Run“** – Plattform-Spiel: blauer Himmel mit Wolken, grüne Hügel, Ziegelboden, hüpfender „?“-Block, Münzen
     über der Überschrift, Schritte als Münzen (die aktuelle dreht sich), dicke Knöpfe zum „Draufhüpfen“, Schrift „Bungee“.

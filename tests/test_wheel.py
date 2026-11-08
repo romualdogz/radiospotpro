@@ -129,8 +129,3 @@ def test_radio_style(client, db):
 def test_slot_style(client, db):
     wheel.save_config(db, True, False, 72, SEGMENTS, style="slot")
     assert client.get("/api/catalog").json()["wheel"]["style"] == "slot"
-
-
-def test_scratch_style(client, db):
-    wheel.save_config(db, True, False, 72, SEGMENTS, style="scratch")
-    assert client.get("/api/catalog").json()["wheel"]["style"] == "scratch"
