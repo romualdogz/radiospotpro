@@ -1,5 +1,8 @@
 # Radiospot-Konfigurator (FastAPI)
 
+> **Radiospot-Studio (neu, eigenständig):** Profi-Mehrspur-Editor für eingeladene Nutzer – siehe
+> [Radiospot-Studio](#radiospot-studio) weiter unten. Läuft als eigener Server mit eigener Datenbank.
+
 Bestellformular für Radiospots (Design und Ablauf nach der onaircraft-Vorlage) mit Backend:
 Preisberechnung, Rabatte, Werbeabgabe, KI-Textvorschlag, Angebotsanfragen und eine
 Admin-Oberfläche zum Pflegen aller Produkte.
@@ -284,3 +287,46 @@ tests/
 - E-Mail-Benachrichtigung bei neuen Anfragen ist noch nicht eingebaut
 - Neue Spalten werden beim Start automatisch ergänzt (`app/database.py`); für größere Umbauten Alembic einführen
 - Rate-Limiting für `/api/quote-requests` (Spam) z. B. per Reverse-Proxy
+
+
+## Radiospot-Studio
+
+Eigenständiges Profiprodukt im Ordner `studio/` – eigener Server, eigene Datenbank (`studio.db`),
+eigenes Login-Cookie. Der Konfigurator bleibt davon unberührt; gemeinsam genutzt wird später nur der
+Audio-Kern (`app/audio.py`).
+
+```bash
+uvicorn studio.main:app --port 8001      # Mac: Doppelklick auf start-studio-mac.command
+```
+
+**Zugang nur mit Login.** Es gibt keine öffentliche Registrierung. Konten entstehen über einen
+Einladungslink (Admin → *Benutzer*) oder auf dem Server per Kommandozeile:
+
+```bash
+python -m studio.cli invite kollege@example.com --role pro
+python -m studio.cli create-user ron@onaircraft.net --role admin
+python -m studio.cli set-password ron@onaircraft.net
+python -m studio.cli list
+```
+
+Das erste Admin-Konto kommt aus `STUDIO_ADMIN_EMAIL` / `STUDIO_ADMIN_PASSWORD`; ohne Passwort wird
+beim ersten Start eines erzeugt und einmal im Terminal angezeigt.
+
+| Rolle | Darf |
+|---|---|
+| **Administrator** | Studio plus Benutzerverwaltung: einladen, Rollen, sperren, Speicher- und Exportkontingent |
+| **Pro** | Studio |
+| **Testzugang** | Studio (Einschränkungen folgen mit den Kontingenten) |
+
+**Sicherheit:** Jede Seite und jede `/api`-Route prüft die Session serverseitig (Test:
+`tests/studio/test_studio_access.py` geht alle Routen durch). Sessions laufen nach
+`STUDIO_SESSION_HOURS` ab; Passwortwechsel, Sperre oder Rollenänderung melden alle Geräte ab.
+Nach `STUDIO_LOGIN_ATTEMPTS` Fehlversuchen (je IP und E-Mail) 15 Minuten Sperre. Einladungslinks
+sind nur als Hash gespeichert, einmal verwendbar und laufen nach `STUDIO_INVITE_DAYS` ab.
+API-Schreibzugriffe brauchen den Header `X-CSRF-Token` (steht im `<meta name="csrf-token">`).
+Keine öffentliche API-Doku (`/docs` ist im Studio abgeschaltet).
+
+**Produktion** (z. B. `studio.onaircraft.net` hinter nginx/Caddy mit HTTPS):
+`STUDIO_HOSTS=studio.onaircraft.net`, `STUDIO_PUBLIC_URL=https://studio.onaircraft.net`,
+`STUDIO_HTTPS_ONLY=1`, eigenen `STUDIO_SECRET_KEY` setzen und uvicorn mit `--proxy-headers` starten
+(sonst zählt die Login-Sperre die IP des Proxys).

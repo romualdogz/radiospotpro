@@ -8,6 +8,17 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 
 ---
 
+## 08.11.2026
+
+### Neu
+- **Radiospot-Studio, Schritt 1:** eigenständige App (`uvicorn studio.main:app --port 8001`) mit
+  eigener Datenbank und eigenem Login. Rollen Administrator / Pro / Testzugang, keine öffentliche
+  Registrierung, Einladungslinks (einmalig, ablaufend), Benutzerverwaltung mit Speicher- und
+  Exportkontingent, Sperre nach Fehlversuchen, Sessions mit Ablauf, Kommandozeile `python -m studio.cli`.
+  Leere Mehrspur-Arbeitsfläche (Sprache, Musik, SFX, Atmo) als Grundlage für Schritt 2.
+
+---
+
 ## 03.11.2026
 
 ### Neu

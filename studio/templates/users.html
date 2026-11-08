@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Benutzer{% endblock %}
+{% block content %}
+<h1>Benutzer</h1>
+
+{% if new_link %}
+<div class="card highlight">
+  <h2>Einladungslink für {{ new_link.email }}</h2>
+  <p class="help">Nur jetzt sichtbar – bitte kopieren und an die Person schicken.</p>
+  <input class="copy" readonly value="{{ new_link.url }}" aria-label="Einladungslink">
+</div>
+{% endif %}
+
+<form method="post" action="/admin/invitations" class="card inline-form">
+  <h2>Einladen</h2>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>E-Mail <input name="email" type="email" required></label>
+  <label>Rolle
+    <select name="role">{% for key, label in roles.items() %}<option value="{{ key }}" {% if key == 'pro' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  </label>
+  <button class="primary">Einladungslink erzeugen</button>
+</form>
+
+<section class="card">
+  <h2>Konten</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>E-Mail</th><th>Name</th><th>Rolle</th><th>Aktiv</th><th>Speicher (MB)</th><th>Exporte</th><th>Letzte Anmeldung</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.email }}</td>
+        <td><input form="u{{ u.id }}" name="name" value="{{ u.name }}" aria-label="Name"></td>
+        <td><select form="u{{ u.id }}" name="role" aria-label="Rolle">{% for key, label in roles.items() %}<option value="{{ key }}" {% if key == u.role %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
+        <td><input form="u{{ u.id }}" type="checkbox" name="active" value="1" {% if u.active %}checked{% endif %} aria-label="Aktiv"></td>
+        <td><input form="u{{ u.id }}" type="number" min="0" name="quota_mb" value="{{ u.quota_mb }}" class="num" aria-label="Speicher"></td>
+        <td><input form="u{{ u.id }}" type="number" min="0" name="export_limit" value="{{ u.export_limit if u.export_limit is not none else '' }}" placeholder="∞" class="num" aria-label="Exporte"></td>
+        <td class="muted">{{ u.last_login_at.strftime('%d.%m.%Y %H:%M') if u.last_login_at else '–' }}</td>
+        <td><form id="u{{ u.id }}" method="post" action="/admin/users/{{ u.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Speichern</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Einladungen</h2>
+  {% if invitations %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>E-Mail</th><th>Rolle</th><th>Erstellt</th><th>Gültig bis</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for i in invitations %}
+      {% set st = i.status() %}
+      <tr>
+        <td>{{ i.email }}</td><td>{{ roles[i.role] }}</td>
+        <td class="muted">{{ i.created_at.strftime('%d.%m.%Y') }}</td>
+        <td class="muted">{{ i.expires_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td><span class="badge {{ st }}">{{ st }}</span></td>
+        <td>{% if st == 'offen' %}<form method="post" action="/admin/invitations/{{ i.id }}/revoke"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link">Widerrufen</button></form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="help">Noch keine Einladungen.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Arbeitsfläche{% endblock %}
+{% block body_class %}workspace{% endblock %}
+{% block content %}
+<section class="editor" aria-label="Mehrspur-Editor">
+  <div class="transport">
+    <button class="tbtn" disabled title="Abspielen (folgt in Schritt 2)">▶</button>
+    <button class="tbtn" disabled title="Stopp">■</button>
+    <span class="time" id="playhead-time">00:00.0</span>
+    <label class="len">Spotlänge
+      <select id="spot-length">
+        <option value="15">15 s</option><option value="20">20 s</option><option value="30" selected>30 s</option>
+        <option value="45">45 s</option><option value="60">60 s</option>
+      </select>
+    </label>
+    <span class="spacer"></span>
+    <button class="primary" disabled title="Export folgt in Schritt 2">Exportieren</button>
+  </div>
+
+  <div class="timeline">
+    <div class="track-head ruler-head"></div>
+    <div class="ruler" id="ruler"></div>
+    {% for key, label, hint in [('voice', 'Sprache', 'Sprecheraufnahme oder KI-Stimme'),
+                                ('music', 'Musik', 'frei verschiebbar'),
+                                ('sfx', 'SFX', 'per Drag & Drop platzieren'),
+                                ('atmo', 'Atmo', 'leise im Hintergrund')] %}
+    <div class="track-head" data-track="{{ key }}">
+      <span class="track-name"><span class="swatch {{ key }}"></span>{{ label }}</span>
+      <span class="track-ctrls">
+        <button class="mini" disabled title="Stumm">M</button><button class="mini" disabled title="Solo">S</button>
+        <input type="range" min="-30" max="6" value="0" disabled aria-label="Lautstärke {{ label }}">
+      </span>
+    </div>
+    <div class="lane {{ key }}" data-track="{{ key }}"><span class="lane-hint">{{ hint }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+
+<aside class="card roadmap">
+  <h2>Aufbau des Studios</h2>
+  <ol>
+    <li class="done">Login, Rollen und Studio-Oberfläche</li>
+    <li>Mehrspur-Timeline mit Upload und Export</li>
+    <li>SFX-Bibliothek, Atmo-Spur, Fades</li>
+    <li>Hüllkurven, Ducking, Loudness-Normalisierung</li>
+    <li>Kontingente, Abrechnung, Einladungen per E-Mail</li>
+  </ol>
+</aside>
+{% endblock %}
+{% block scripts %}<script src="/static/studio.js" defer></script>{% endblock %}

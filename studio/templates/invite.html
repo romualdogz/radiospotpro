@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Einladung{% endblock %}
+{% block body_class %}auth{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <div class="brand big"><span class="dot"></span>Radiospot-Studio</div>
+{% if invitation %}
+  <form method="post">
+    <p>Konto einrichten für <strong>{{ invitation.email }}</strong> ({{ roles[invitation.role] }}).</p>
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Name <input name="name" value="{{ name or '' }}" autocomplete="name"></label>
+    <label>Passwort (mind. 10 Zeichen) <input name="password" type="password" minlength="10" autocomplete="new-password" required></label>
+    <label>Passwort wiederholen <input name="password2" type="password" minlength="10" autocomplete="new-password" required></label>
+    <button class="primary">Konto einrichten</button>
+  </form>
+{% else %}
+  <p>Dieser Einladungslink ist ungültig, abgelaufen oder wurde schon verwendet.</p>
+  <p class="help">Bitte bei onaircraft einen neuen Link anfordern.</p>
+  <p><a href="/login">Zur Anmeldung</a></p>
+{% endif %}
+</div>
+{% endblock %}

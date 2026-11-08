@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Mein Konto{% endblock %}
+{% block content %}
+<h1>Mein Konto</h1>
+<div class="grid2">
+  <section class="card">
+    <h2>Zugang</h2>
+    <dl class="facts">
+      <dt>E-Mail</dt><dd>{{ user.email }}</dd>
+      <dt>Rolle</dt><dd>{{ roles[user.role] }}</dd>
+      <dt>Speicherplatz</dt><dd>{{ user.quota_mb }} MB</dd>
+      <dt>Exporte</dt><dd>{{ user.export_limit if user.export_limit is not none else 'unbegrenzt' }}</dd>
+    </dl>
+  </section>
+  <form method="post" action="/account/password" class="card">
+    <h2>Passwort ändern</h2>
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Aktuelles Passwort <input name="current" type="password" autocomplete="current-password" required></label>
+    <label>Neues Passwort (mind. 10 Zeichen) <input name="password" type="password" minlength="10" autocomplete="new-password" required></label>
+    <label>Neues Passwort wiederholen <input name="password2" type="password" minlength="10" autocomplete="new-password" required></label>
+    <button class="primary">Passwort ändern</button>
+    <p class="help">Alle anderen Geräte werden dabei abgemeldet.</p>
+  </form>
+</div>
+{% endblock %}
