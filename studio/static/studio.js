@@ -121,6 +121,8 @@
       $("spot-length").appendChild(o); $("spot-length").value = String(data().length);
     }
     renderProjectSelect();
+    $("ai-script").value = data().script || "";
+    updateScriptInfo();
     renderTracks();
     renderAll();
     setSaveState("Gespeichert");
@@ -181,6 +183,7 @@
       li.dataset.asset = a.id;
       li.title = "Auf eine Spur ziehen";
       const name = document.createElement("span"); name.className = "asset-name"; name.textContent = a.name;
+      if (a.origin === "ai") { const b = document.createElement("span"); b.className = "ai-badge"; b.textContent = "KI"; name.prepend(b); }
       const meta = document.createElement("span"); meta.className = "small muted"; meta.textContent = fmtDur(a.duration);
       const del = document.createElement("button"); del.className = "mini"; del.textContent = "×";
       del.title = "Datei löschen"; del.setAttribute("aria-label", `${a.name} löschen`);
@@ -719,6 +722,118 @@
     window.addEventListener("beforeunload", (e) => { if (state.dirty) { saveNow(); e.preventDefault(); } });
   }
 
+
+  // ------------------------------------------------------------------ KI: Text & Stimme
+  const ai = { status: null, lastAsset: null };
+
+  function updateScriptInfo() {
+    const text = $("ai-script").value;
+    const spoken = text.replace(/\[[^\]\n]{1,40}\]/g, " ").replace(/<break[^>]*>/g, " ");
+    const words = spoken.split(/\s+/).filter(Boolean).length;
+    const max = ai.status?.max_chars || 1000;
+    // gezählt wird wie auf dem Server: Regieanweisungen zählen mit, wenn das Modell sie versteht
+    const chars = (ai.status?.tags_supported ? text : spoken).replace(/\s+/g, " ").trim().length;
+    const info = $("ai-script-info");
+    info.textContent = `${chars} Zeichen · ca. ${Math.round(words / 2.5)} s gesprochen` + (chars > max ? ` · zu lang für eine Aufnahme (max. ${max})` : "");
+    info.classList.toggle("error-text", chars > max);
+  }
+
+  function renderUsage() {
+    const st = ai.status; if (!st) return;
+    const u = st.usage, l = st.limits;
+    const part = (used, limit, label) => `${label}: ${used.toLocaleString("de-AT")}${limit == null ? "" : ` von ${limit.toLocaleString("de-AT")}`}`;
+    $("ai-usage").textContent = `Diesen Monat – ${part(u.voice_chars, l.voice_chars, "KI-Stimme (Zeichen)")} · ${part(u.scripts, l.scripts, "KI-Texte")}`;
+  }
+
+  async function openAi() {
+    try { ai.status = await api("GET", "/api/ai"); } catch (e) { toast(e.message, true); return; }
+    const st = ai.status;
+    $("ai-text-off").hidden = st.text_enabled;
+    $("ai-brief").querySelectorAll("input, textarea, select, button").forEach((el) => { el.disabled = !st.text_enabled; });
+    $("ai-tags-row").hidden = !st.tags_supported;
+    const ton = $("ai-tonality");
+    if (!ton.options.length) ton.replaceChildren(...st.tonalities.map((t) => new Option(t[0].toUpperCase() + t.slice(1), t)));
+    $("ai-seconds").value = data().length;
+    const voiceOff = !st.voice_enabled ? "Die KI-Stimme ist nicht eingerichtet (ELEVENLABS_API_KEY fehlt)."
+      : !st.voices.length ? "Es ist noch keine Stimme freigegeben – Administrator: Menü „KI-Stimmen“." : "";
+    $("ai-voice-off").textContent = voiceOff;
+    $("ai-voice-off").hidden = !voiceOff;
+    $("ai-voice-box").hidden = !!voiceOff;
+    const sel = $("ai-voice"), current = sel.value;
+    sel.replaceChildren(...st.voices.map((v) => new Option(v.name, v.id)));
+    if (current) sel.value = current;
+    showVoiceDesc();
+    updateScriptInfo();
+    renderUsage();
+    $("ai-dialog").showModal();
+  }
+
+  function showVoiceDesc() {
+    const v = ai.status?.voices.find((x) => String(x.id) === $("ai-voice").value);
+    $("ai-voice-desc").textContent = v?.description || "";
+  }
+
+  async function generateScripts(e) {
+    e.preventDefault();
+    const f = new FormData($("ai-brief"));
+    const btn = $("ai-generate");
+    btn.disabled = true; btn.textContent = "Schreibt …";
+    try {
+      const res = await api("POST", "/api/ai/script", {
+        occasion: f.get("occasion"), firma: f.get("firma"), botschaft: f.get("botschaft"), cta: f.get("cta"),
+        tonality: f.get("tonality"), seconds: Number(f.get("seconds")) || data().length, audio_tags: f.get("audio_tags") === "on",
+      });
+      ai.status.usage = res.usage; renderUsage();
+      $("ai-suggestions").replaceChildren(...res.scripts.map((text, i) => {
+        const card = document.createElement("div"); card.className = "ai-suggestion";
+        const p = document.createElement("p"); p.textContent = text;
+        const b = document.createElement("button"); b.textContent = `Vorschlag ${i + 1} übernehmen`;
+        b.addEventListener("click", () => {
+          $("ai-script").value = text; updateScriptInfo();
+          data().script = text; changed({ replay: false });
+          $("ai-script").focus();
+        });
+        card.append(p, b);
+        return card;
+      }));
+    } catch (err) { toast(err.message, true); } finally { btn.disabled = false; btn.textContent = "3 Vorschläge erstellen"; }
+  }
+
+  async function speak() {
+    const text = $("ai-script").value.trim();
+    if (!text) { toast("Bitte zuerst einen Sprechtext eingeben.", true); return; }
+    const btn = $("ai-speak");
+    btn.disabled = true; btn.textContent = "Spricht ein …";
+    try {
+      const res = await api("POST", "/api/ai/voice", { voice_id: Number($("ai-voice").value), text });
+      const a = res.asset;
+      state.assets = new Map([[a.id, a], ...state.assets]);
+      renderAssets(); refreshMe();
+      ai.status.usage = res.usage; renderUsage();
+      ai.lastAsset = a;
+      $("ai-audio").src = `/api/assets/${a.id}/audio`;
+      $("ai-result").hidden = false;
+      toast(`„${a.name}“ liegt in den Dateien`);
+    } catch (err) { toast(err.message, true); } finally { btn.disabled = false; btn.textContent = "Stimme erzeugen"; }
+  }
+
+  function bindAi() {
+    $("ai-open").addEventListener("click", openAi);
+    $("ai-brief").addEventListener("submit", generateScripts);
+    $("ai-voice").addEventListener("change", showVoiceDesc);
+    $("ai-speak").addEventListener("click", speak);
+    $("ai-script").addEventListener("input", () => { data().script = $("ai-script").value; updateScriptInfo(); changed({ replay: false }); });
+    $("ai-place").addEventListener("click", () => {
+      if (!ai.lastAsset) return;
+      addClip(ai.lastAsset, "voice", Math.min(player.paused, data().length - MIN_CLIP));
+      $("ai-audio").pause();
+      $("ai-dialog").close();
+      toast("Auf die Sprach-Spur gelegt");
+    });
+    $("ai-dialog").addEventListener("close", () => $("ai-audio").pause());
+  }
+
   bind();
+  bindAi();
   init().catch((e) => toast(e.message, true));
 })();

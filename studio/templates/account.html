@@ -10,6 +10,8 @@
       <dt>Rolle</dt><dd>{{ roles[user.role] }}</dd>
       <dt>Speicherplatz</dt><dd>{{ user.quota_mb }} MB</dd>
       <dt>Exporte</dt><dd>{{ user.export_limit if user.export_limit is not none else 'unbegrenzt' }}</dd>
+      <dt>KI-Stimme</dt><dd>{{ user.tts_chars_month if user.tts_chars_month is not none else 'unbegrenzt' }} Zeichen pro Monat</dd>
+      <dt>KI-Texte</dt><dd>{{ user.scripts_month if user.scripts_month is not none else 'unbegrenzt' }} pro Monat</dd>
     </dl>
   </section>
   <form method="post" action="/account/password" class="card">

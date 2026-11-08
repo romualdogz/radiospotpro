@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}KI-Stimmen{% endblock %}
+{% block content %}
+<h1>KI-Stimmen</h1>
+{% if not tts %}<div class="error">Die KI-Stimme ist nicht eingerichtet: <code>ELEVENLABS_API_KEY</code> in der <code>.env</code> eintragen und den Server neu starten.</div>{% endif %}
+<p class="help">Nur die hier freigegebenen Stimmen sehen die Studio-Nutzer. {% if tags %}Das eingestellte Modell versteht Regieanweisungen wie <code>[excited]</code>; Style und Tempo wirken dabei nicht.{% else %}Das eingestellte Modell nutzt Style und Tempo, keine Regieanweisungen.{% endif %}</p>
+
+<form method="post" action="/admin/voices" class="card voice-form">
+  <h2>Stimme freigeben</h2>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if account %}
+  <label>Aus dem ElevenLabs-Konto
+    <select name="account_voice_id">
+      <option value="">– wählen –</option>
+      {% for v in account %}<option value="{{ v.id }}">{{ v.name }}{% if v.info %} ({{ v.info }}){% endif %}</option>{% endfor %}
+    </select>
+  </label>
+  <p class="help small">Oder unten eine Voice-ID von Hand eintragen (z. B. aus der Voice Library). <a href="/admin/voices?refresh=1">Liste neu laden</a></p>
+  {% endif %}
+  <div class="voice-grid">
+    <label>Name im Studio <input name="name" maxlength="80" placeholder="{% if account %}leer = Name aus ElevenLabs{% else %}z. B. Markus – warm, männlich{% endif %}"></label>
+    <label>ElevenLabs-Voice-ID <input name="voice_id" maxlength="64" class="mono" {% if not account %}required{% endif %}></label>
+    <label class="wide">Beschreibung <input name="description" maxlength="255" placeholder="z. B. sympathisch, mittleres Alter, ideal für Handel"></label>
+    <label>Stabilität <input type="number" name="stability" min="0" max="1" step="0.05" value="0.5" class="num"></label>
+    <label>Ähnlichkeit <input type="number" name="similarity" min="0" max="1" step="0.05" value="0.75" class="num"></label>
+    <label>Style <input type="number" name="style" min="0" max="1" step="0.05" value="0" class="num"></label>
+    <label>Tempo <input type="number" name="speed" min="0.7" max="1.2" step="0.05" value="1" class="num"></label>
+    <label>Reihenfolge <input type="number" name="sort" value="0" class="num"></label>
+  </div>
+  <button class="primary">Freigeben</button>
+</form>
+
+<section class="card">
+  <h2>Freigegebene Stimmen</h2>
+  {% if voices %}
+  <div class="table-wrap">
+  <table class="voices-table">
+    <thead><tr><th>Name</th><th>Beschreibung</th><th>Voice-ID</th><th>Stab.</th><th>Ähnl.</th><th>Style</th><th>Tempo</th><th>Reihenf.</th><th>Aktiv</th><th></th><th></th></tr></thead>
+    <tbody>
+    {% for v in voices %}
+      <tr>
+        <td><input form="v{{ v.id }}" name="name" value="{{ v.name }}" maxlength="80" aria-label="Name"></td>
+        <td><input form="v{{ v.id }}" name="description" value="{{ v.description }}" maxlength="255" aria-label="Beschreibung"></td>
+        <td><input form="v{{ v.id }}" name="voice_id" value="{{ v.elevenlabs_voice_id }}" maxlength="64" class="mono" aria-label="Voice-ID"></td>
+        <td><input form="v{{ v.id }}" type="number" name="stability" min="0" max="1" step="0.05" value="{{ v.stability }}" class="num" aria-label="Stabilität"></td>
+        <td><input form="v{{ v.id }}" type="number" name="similarity" min="0" max="1" step="0.05" value="{{ v.similarity }}" class="num" aria-label="Ähnlichkeit"></td>
+        <td><input form="v{{ v.id }}" type="number" name="style" min="0" max="1" step="0.05" value="{{ v.style }}" class="num" aria-label="Style"></td>
+        <td><input form="v{{ v.id }}" type="number" name="speed" min="0.7" max="1.2" step="0.05" value="{{ v.speed }}" class="num" aria-label="Tempo"></td>
+        <td><input form="v{{ v.id }}" type="number" name="sort" value="{{ v.sort }}" class="num" aria-label="Reihenfolge"></td>
+        <td><input form="v{{ v.id }}" type="checkbox" name="active" value="1" {% if v.active %}checked{% endif %} aria-label="Aktiv"></td>
+        <td><form id="v{{ v.id }}" method="post" action="/admin/voices/{{ v.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Speichern</button></form></td>
+        <td><form method="post" action="/admin/voices/{{ v.id }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link danger">Entfernen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="help">Noch keine Stimme freigegeben – ohne Stimme ist „Stimme erzeugen“ im Studio ausgeblendet.</p>{% endif %}
+</section>
+{% endblock %}

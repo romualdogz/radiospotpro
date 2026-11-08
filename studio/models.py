@@ -34,6 +34,9 @@ class StudioUser(Base):
     quota_mb: Mapped[int] = mapped_column(Integer, default=2000)
     export_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     libraries: Mapped[list] = mapped_column(JSON, default=list)
+    # KI-Kontingente pro Kalendermonat; None = unbegrenzt
+    tts_chars_month: Mapped[int | None] = mapped_column(Integer, nullable=True, default=20000)
+    scripts_month: Mapped[int | None] = mapped_column(Integer, nullable=True, default=100)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -76,6 +79,7 @@ class Asset(Base):
     media_type: Mapped[str] = mapped_column(String(40))
     size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
     duration_s: Mapped[float] = mapped_column(Float, default=0.0)
+    origin: Mapped[str] = mapped_column(String(10), default="upload")  # upload | ai
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
@@ -111,3 +115,31 @@ class Export(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class StudioVoice(Base):
+    """KI-Stimme, die der Admin für das Studio freigibt (ElevenLabs)."""
+    __tablename__ = "studio_voices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    description: Mapped[str] = mapped_column(String(255), default="")
+    elevenlabs_voice_id: Mapped[str] = mapped_column(String(64))
+    stability: Mapped[float] = mapped_column(Float, default=0.5)
+    similarity: Mapped[float] = mapped_column(Float, default=0.75)
+    style: Mapped[float] = mapped_column(Float, default=0.0)   # nur ältere Modelle ohne Regieanweisungen
+    speed: Mapped[float] = mapped_column(Float, default=1.0)   # dito
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class AiUsage(Base):
+    """Verbrauch der KI-Funktionen (für Monatskontingente und Übersicht)."""
+    __tablename__ = "studio_ai_usage"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("studio_users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # script | voice
+    chars: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)

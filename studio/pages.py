@@ -8,7 +8,8 @@ from .accounts import (AccountError, accept_invitation, create_invitation, open_
                        update_user)
 from .config import BASE_DIR, settings
 from .database import get_db
-from .models import ROLES, Invitation, StudioUser
+from . import ai
+from .models import ROLES, Invitation, StudioUser, StudioVoice
 from .security import (authenticate, check_csrf, client_ip, csrf_token, current_user, page_admin, page_user,
                        start_session, throttle, touch_login, verify_password)
 
@@ -168,18 +169,23 @@ def revoke(inv_id: int, request: Request, csrf: str = Form(""),
     return redirect("/admin/users", "Einladung widerrufen.", request)
 
 
+def _opt_int(value: str) -> int | None:
+    return int(value) if value.strip() else None
+
+
 @router.post("/admin/users/{user_id}")
 def edit_user(user_id: int, request: Request, role: str = Form(...), active: str = Form(""),
               quota_mb: int = Form(0), export_limit: str = Form(""), name: str = Form(""), csrf: str = Form(""),
+              tts_chars_month: str = Form(""), scripts_month: str = Form(""),
               user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
     check_csrf(request, csrf)
     target = db.get(StudioUser, user_id)
     if target is None:
         return redirect("/admin/users", "Konto nicht gefunden.", request)
     try:
-        limit = int(export_limit) if export_limit.strip() else None
         update_user(db, user, target, role=role, active=bool(active), quota_mb=quota_mb,
-                    export_limit=limit, name=name)
+                    export_limit=_opt_int(export_limit), name=name,
+                    tts_chars_month=_opt_int(tts_chars_month), scripts_month=_opt_int(scripts_month))
     except ValueError as e:  # AccountError oder ungültige Zahl
         db.rollback()
         msg = str(e) if isinstance(e, AccountError) else "Bitte gültige Zahlen angeben."
@@ -187,3 +193,81 @@ def edit_user(user_id: int, request: Request, role: str = Form(...), active: str
     if target.id == user.id:
         start_session(request, target)  # eigene Rolle geändert – Session neu ausstellen
     return redirect("/admin/users", f"Konto {target.email} gespeichert.", request)
+
+
+# --------------------------------------------------------------------------- KI-Stimmen (nur Admin)
+
+def _voices_page(request: Request, user: StudioUser, db: Session, error: str | None = None, refresh: bool = False):
+    voices = db.query(StudioVoice).order_by(StudioVoice.sort, StudioVoice.name).all()
+    taken = {v.elevenlabs_voice_id for v in voices}
+    account = [v for v in ai.account_voices(force=refresh) if v["id"] not in taken]
+    return render(request, "voices.html", 400 if error else 200, user=user, error=error, voices=voices,
+                  account=account, tts=ai.voice_enabled(), tags=ai.tags_supported())
+
+
+@router.get("/admin/voices", response_class=HTMLResponse)
+def voices(request: Request, refresh: int = 0, user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    return _voices_page(request, user, db, refresh=bool(refresh))
+
+
+def _voice_values(name: str, voice_id: str, description: str, stability: float, similarity: float,
+                  style: float, speed: float, sort: int) -> dict:
+    name, voice_id = name.strip(), voice_id.strip()
+    if not name or not voice_id:
+        raise ValueError("Name und ElevenLabs-Voice-ID sind Pflicht.")
+    if not all(c.isalnum() for c in voice_id) or len(voice_id) > 64:
+        raise ValueError("Die Voice-ID besteht nur aus Buchstaben und Ziffern.")
+    clamp = lambda v, lo, hi: min(max(float(v), lo), hi)  # noqa: E731
+    return {"name": name[:80], "elevenlabs_voice_id": voice_id, "description": description.strip()[:255],
+            "stability": clamp(stability, 0, 1), "similarity": clamp(similarity, 0, 1),
+            "style": clamp(style, 0, 1), "speed": clamp(speed, 0.7, 1.2), "sort": sort}
+
+
+@router.post("/admin/voices")
+def add_voice(request: Request, name: str = Form(""), voice_id: str = Form(""), account_voice_id: str = Form(""),
+              description: str = Form(""),
+              stability: float = Form(0.5), similarity: float = Form(0.75), style: float = Form(0.0),
+              speed: float = Form(1.0), sort: int = Form(0), csrf: str = Form(""),
+              user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    voice_id = voice_id.strip() or account_voice_id.strip()
+    if not name.strip():  # aus der Kontoliste gewählt: Name übernehmen
+        name = next((v["name"] for v in ai.account_voices() if v["id"] == voice_id.strip()), "")
+    try:
+        values = _voice_values(name, voice_id, description, stability, similarity, style, speed, sort)
+    except ValueError as e:
+        return _voices_page(request, user, db, error=str(e))
+    db.add(StudioVoice(**values))
+    db.commit()
+    return redirect("/admin/voices", f"Stimme „{values['name']}“ freigegeben.", request)
+
+
+@router.post("/admin/voices/{vid}")
+def edit_voice(vid: int, request: Request, name: str = Form(""), voice_id: str = Form(""),
+               description: str = Form(""), stability: float = Form(0.5), similarity: float = Form(0.75),
+               style: float = Form(0.0), speed: float = Form(1.0), sort: int = Form(0), active: str = Form(""),
+               csrf: str = Form(""), user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    voice = db.get(StudioVoice, vid)
+    if voice is None:
+        return redirect("/admin/voices", "Stimme nicht gefunden.", request)
+    try:
+        values = _voice_values(name, voice_id, description, stability, similarity, style, speed, sort)
+    except ValueError as e:
+        return _voices_page(request, user, db, error=str(e))
+    for k, v in values.items():
+        setattr(voice, k, v)
+    voice.active = bool(active)
+    db.commit()
+    return redirect("/admin/voices", f"Stimme „{voice.name}“ gespeichert.", request)
+
+
+@router.post("/admin/voices/{vid}/delete")
+def delete_voice(vid: int, request: Request, csrf: str = Form(""),
+                 user: StudioUser = Depends(page_admin), db: Session = Depends(get_db)):
+    check_csrf(request, csrf)
+    voice = db.get(StudioVoice, vid)
+    if voice:
+        db.delete(voice)
+        db.commit()
+    return redirect("/admin/voices", "Stimme entfernt. Bereits erzeugte Aufnahmen bleiben erhalten.", request)

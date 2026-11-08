@@ -73,7 +73,7 @@ def check_upload_name(filename: str) -> tuple[str, str]:
     return name, ext
 
 
-def save_upload(db: Session, user: StudioUser, filename: str, tmp: Path) -> Asset:
+def save_upload(db: Session, user: StudioUser, filename: str, tmp: Path, origin: str = "upload") -> Asset:
     """Zwischengespeicherte Datei prüfen (Kontingent, Audio, Länge), Wellenform berechnen, übernehmen.
     Die Datei `tmp` wird in jedem Fall verschoben oder gelöscht."""
     name, ext = check_upload_name(filename)
@@ -94,7 +94,7 @@ def save_upload(db: Session, user: StudioUser, filename: str, tmp: Path) -> Asse
         if duration > settings.max_asset_minutes * 60:
             raise StorageError(f"Die Datei ist länger als {settings.max_asset_minutes:g} Minuten.", 413)
         asset = Asset(user_id=user.id, name=name, stored_name=path.name, media_type=EXTENSIONS[ext],
-                      size_bytes=size, duration_s=round(duration, 4))
+                      size_bytes=size, duration_s=round(duration, 4), origin=origin)
         peaks_path(asset).write_text(json.dumps(compute_peaks(samples), separators=(",", ":")))
     except BaseException:
         tmp.unlink(missing_ok=True)

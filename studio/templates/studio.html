@@ -7,6 +7,7 @@
     <select id="project-select" aria-label="Projekt wählen"></select>
   </label>
   <button id="project-new">Neues Projekt</button>
+  <button id="ai-open" class="ai-button">KI-Text &amp; Stimme</button>
   <input id="project-name" aria-label="Projektname" maxlength="120">
   <span class="save-state" id="save-state" aria-live="polite"></span>
   <span class="spacer"></span>
@@ -83,6 +84,49 @@
   <p class="help small">WAV, 48 kHz, Stereo, 24 Bit. Exporte werden nach {{ export_days }} Tagen automatisch gelöscht.</p>
   <ul id="export-list" class="export-list"></ul>
 </section>
+<dialog id="ai-dialog" class="ai-dialog" aria-labelledby="ai-title">
+  <div class="ai-head">
+    <h2 id="ai-title">KI-Text &amp; Stimme</h2>
+    <form method="dialog"><button class="link" aria-label="Schließen">Schließen ×</button></form>
+  </div>
+  <div class="ai-grid">
+    <section>
+      <h3>1 · Text vorschlagen lassen</h3>
+      <p class="error" id="ai-text-off" hidden>Der KI-Text ist nicht eingerichtet (<code>ANTHROPIC_API_KEY</code> fehlt).</p>
+      <form id="ai-brief" class="ai-brief">
+        <label>Anlass <input name="occasion" maxlength="200" required placeholder="z. B. Eröffnung, Sommer-Sale, Jubiläum"></label>
+        <label>Firma / Marke <input name="firma" maxlength="200"></label>
+        <label>Kernbotschaft / Angebot <textarea name="botschaft" rows="3" maxlength="1500" required placeholder="Was soll hängen bleiben?"></textarea></label>
+        <label>Call-to-Action <input name="cta" maxlength="300" placeholder="leer = KI schlägt einen vor"></label>
+        <div class="ai-row">
+          <label>Tonalität <select name="tonality" id="ai-tonality"></select></label>
+          <label>Länge (s) <input name="seconds" type="number" min="5" max="120" class="num" id="ai-seconds"></label>
+        </div>
+        <label class="check" id="ai-tags-row"><input type="checkbox" name="audio_tags" checked> Regieanweisungen für die KI-Stimme, z. B. [excited]</label>
+        <button class="primary" id="ai-generate">3 Vorschläge erstellen</button>
+      </form>
+      <div id="ai-suggestions" class="ai-suggestions"></div>
+    </section>
+    <section>
+      <h3>2 · Sprechtext</h3>
+      <textarea id="ai-script" rows="9" maxlength="5000" aria-label="Sprechtext" placeholder="Vorschlag übernehmen oder eigenen Text schreiben – wird mit dem Projekt gespeichert."></textarea>
+      <p class="small muted" id="ai-script-info"></p>
+      <h3>3 · Einsprechen lassen</h3>
+      <p class="error" id="ai-voice-off" hidden></p>
+      <div id="ai-voice-box">
+        <label>Stimme <select id="ai-voice"></select></label>
+        <p class="small muted" id="ai-voice-desc"></p>
+        <button class="primary" id="ai-speak">Stimme erzeugen</button>
+      </div>
+      <div id="ai-result" class="ai-result" hidden>
+        <audio id="ai-audio" controls preload="auto"></audio>
+        <button id="ai-place">Auf die Sprach-Spur legen (an der Abspielposition)</button>
+      </div>
+      <p class="small muted" id="ai-usage"></p>
+    </section>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 {% endblock %}
 {% block scripts %}<script src="/static/studio.js" defer></script>{% endblock %}

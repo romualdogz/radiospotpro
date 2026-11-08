@@ -314,6 +314,19 @@ uvicorn studio.main:app --port 8001      # Mac: Doppelklick auf start-studio-mac
   immer bei höchstens −1 dBTP. Gemessene Lautheit und Spitze stehen beim Export. Exporte werden nach
   `STUDIO_EXPORT_DAYS` Tagen gelöscht; das Exportkontingent zählt alle gestarteten Exporte.
 
+**KI-Text & Stimme** (Button im Editor): Briefing eingeben → Claude schreibt drei Vorschläge →
+übernehmen und frei bearbeiten (der Sprechtext wird mit dem Projekt gespeichert) → mit einer
+freigegebenen Stimme einsprechen lassen. Die Aufnahme landet als Datei (Kennzeichen „KI“) in der
+Dateiliste und kann direkt auf die Sprach-Spur gelegt, geschnitten und exportiert werden – ohne
+Wasserzeichen. Es werden dieselben Funktionen und Keys wie im Konfigurator verwendet
+(`ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_MODEL`); gleiche Texte mit gleicher Stimme
+kommen aus dem Zwischenspeicher und kosten kein zweites Mal Guthaben.
+- **Stimmen** gibt der Admin unter *KI-Stimmen* frei – aus der Liste des ElevenLabs-Kontos oder per
+  Voice-ID, mit Name, Beschreibung und Klang-Einstellungen. Nutzer sehen nur freigegebene Stimmen.
+- **Kontingente pro Konto und Monat** (Admin → *Benutzer*): KI-Zeichen (Standard 20 000) und
+  KI-Texte (Standard 100), leer = unbegrenzt. Zusätzlich max. 10 Textanfragen bzw. 20 Aufnahmen pro
+  10 Minuten. Eine Aufnahme darf bis zu 1 000 Zeichen haben – längere Texte bitte aufteilen.
+
 **Render-Warteschlange:** Exporte laufen nie im Webprozess. Ein Worker holt die Aufträge aus der
 Datenbank und rendert jeden in einem eigenen Prozess mit Zeitlimit (`STUDIO_RENDER_TIMEOUT`), höchstens
 `STUDIO_RENDER_WORKERS` gleichzeitig und `STUDIO_MAX_QUEUED` wartende pro Konto. Am Mac läuft der Worker

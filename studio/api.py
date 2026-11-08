@@ -10,10 +10,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.orm import Session
 
-from . import storage
+from . import ai, storage
 from .config import settings
 from .database import get_db
-from .models import ROLES, TRACKS, Asset, Export, Project, StudioUser, now
+from .models import ROLES, TRACKS, Asset, Export, Project, StudioUser, StudioVoice, now
 from .projects import ProjectData, check_assets, empty_project
 from .security import api_admin, api_user
 
@@ -75,7 +75,7 @@ def list_users(_: StudioUser = Depends(api_admin), db: Session = Depends(get_db)
 
 def _asset(a: Asset) -> dict:
     return {"id": a.id, "name": a.name, "duration": a.duration_s, "size_bytes": a.size_bytes,
-            "media_type": a.media_type, "created_at": _iso(a.created_at)}
+            "media_type": a.media_type, "origin": a.origin, "created_at": _iso(a.created_at)}
 
 
 @router.get("/assets")
@@ -267,3 +267,58 @@ def delete_export(export_id: int, user: StudioUser = Depends(api_user), db: Sess
     storage.delete_export_file(e)
     e.status, e.size_bytes = "expired", 0  # Eintrag bleibt für die Exportzählung
     db.commit()
+
+
+# --------------------------------------------------------------------------- KI: Text & Stimme
+
+@router.get("/ai")
+def ai_status(user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    voices = db.query(StudioVoice).filter_by(active=True).order_by(StudioVoice.sort, StudioVoice.name)
+    return {"text_enabled": ai.text_enabled(), "voice_enabled": ai.voice_enabled(),
+            "tags_supported": ai.tags_supported(), "max_chars": ai.MAX_CHARS, "tonalities": ai.TONALITIES,
+            "voices": [{"id": v.id, "name": v.name, "description": v.description} for v in voices],
+            "usage": ai.usage(db, user.id),
+            "limits": {"scripts": user.scripts_month, "voice_chars": user.tts_chars_month}}
+
+
+class ScriptRequest(BaseModel):
+    occasion: str = Field(min_length=1, max_length=200)
+    seconds: int = Field(30, ge=5, le=120)
+    tonality: str = Field("freundlich", max_length=40)
+    firma: str = Field("", max_length=200)
+    botschaft: str = Field(min_length=1, max_length=1500)
+    cta: str = Field("", max_length=300)
+    audio_tags: bool = True
+
+
+@router.post("/ai/script")
+async def ai_script(body: ScriptRequest, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    try:
+        found = await ai.scripts(db, user, **body.model_dump())
+    except ai.AiError as e:
+        raise HTTPException(e.status, str(e)) from e
+    return {"scripts": found, "usage": ai.usage(db, user.id)}
+
+
+class VoiceRequest(BaseModel):
+    voice_id: int
+    text: str = Field(min_length=1, max_length=5000)
+
+
+@router.post("/ai/voice", status_code=201)
+async def ai_voice(body: VoiceRequest, user: StudioUser = Depends(api_user), db: Session = Depends(get_db)):
+    """Text einsprechen lassen → neue Datei in der Dateiliste (wie ein Upload, zählt zum Speicher)."""
+    voice = db.get(StudioVoice, body.voice_id)
+    if voice is None or not voice.active:
+        raise HTTPException(404, "Diese Stimme ist nicht verfügbar.")
+    try:
+        storage.check_quota(db, user, 0)
+        mp3 = await ai.speak(db, user, voice, body.text)
+        tmp = storage.temp_upload_path(user.id)
+        tmp.write_bytes(mp3)
+        asset = await run_in_threadpool(storage.save_upload, db, user, ai.asset_name(voice, body.text), tmp, "ai")
+    except ai.AiError as e:
+        raise HTTPException(e.status, str(e)) from e
+    except storage.StorageError as e:
+        raise HTTPException(e.status, str(e)) from e
+    return {"asset": _asset(asset), "usage": ai.usage(db, user.id)}

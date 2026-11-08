@@ -22,6 +22,10 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
   automatischem Speichern. Export als WAV (48 kHz, 24 Bit) über eine Render-Warteschlange mit eigenem
   Prozess und Zeitlimit pro Auftrag, wahlweise auf −8/−14/−23 LUFS gemastert, True Peak max. −1 dBTP.
   Speicher- und Exportkontingent werden jetzt durchgesetzt, alte Exporte automatisch gelöscht.
+- **Radiospot-Studio – KI-Text & Stimme:** Textvorschläge (Claude, drei Varianten, optional mit
+  Regieanweisungen) und Einsprechen mit ElevenLabs direkt im Editor; die Aufnahme wird zur Datei und
+  lässt sich auf die Sprach-Spur legen. Stimmen gibt der Admin unter *KI-Stimmen* frei (aus dem
+  ElevenLabs-Konto oder per Voice-ID). Monatskontingente pro Konto für KI-Zeichen und KI-Texte.
 
 ---
 

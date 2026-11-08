@@ -54,19 +54,25 @@ def active_admins(db: Session) -> int:
 
 
 def update_user(db: Session, actor: StudioUser, user: StudioUser, *, role: str, active: bool,
-                quota_mb: int, export_limit: int | None, name: str) -> None:
+                quota_mb: int, export_limit: int | None, name: str,
+                tts_chars_month: int | None = ..., scripts_month: int | None = ...) -> None:
     role = check_role(role)
     losing_admin = user.role == "admin" and user.active and (role != "admin" or not active)
     if losing_admin and active_admins(db) <= 1:
         raise AccountError("Der letzte aktive Administrator kann nicht herabgestuft oder gesperrt werden.")
     if user.id == actor.id and not active:
         raise AccountError("Du kannst dein eigenes Konto nicht sperren.")
-    if quota_mb < 0 or (export_limit is not None and export_limit < 0):
+    limits = [export_limit] + [v for v in (tts_chars_month, scripts_month) if v is not ...]
+    if quota_mb < 0 or any(v is not None and v < 0 for v in limits):
         raise AccountError("Kontingente dürfen nicht negativ sein.")
     if not active or role != user.role:
         user.session_epoch += 1  # Rechte geändert → neu anmelden
     user.role, user.active, user.quota_mb, user.export_limit = role, active, quota_mb, export_limit
     user.name = name.strip()[:120]
+    if tts_chars_month is not ...:
+        user.tts_chars_month = tts_chars_month
+    if scripts_month is not ...:
+        user.scripts_month = scripts_month
     db.commit()
 
 

@@ -43,6 +43,7 @@ class ProjectData(BaseModel):
     length: float = Field(30, ge=1)
     tracks: dict[str, TrackState] = Field(default_factory=dict)
     clips: list[Clip] = Field(default_factory=list, max_length=MAX_CLIPS)
+    script: str = Field("", max_length=5000)  # Sprechtext (KI-Vorschlag oder selbst geschrieben)
 
     @field_validator("length")
     @classmethod

@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from .config import settings
@@ -14,9 +14,22 @@ class Base(DeclarativeBase):
     pass
 
 
+# Spalten, die nach der ersten Version dazugekommen sind (create_all ergänzt keine Spalten in bestehenden Tabellen)
+_ADDED_COLUMNS = [
+    ("studio_users", "tts_chars_month", "INTEGER DEFAULT 20000"),
+    ("studio_users", "scripts_month", "INTEGER DEFAULT 100"),
+    ("studio_assets", "origin", "VARCHAR(10) NOT NULL DEFAULT 'upload'"),
+]
+
+
 def init_db() -> None:
     from . import models  # noqa: F401  (Tabellen registrieren)
     Base.metadata.create_all(engine)
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table, column, ddl in _ADDED_COLUMNS:
+            if column not in {c["name"] for c in insp.get_columns(table)}:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
 
 
 def get_db() -> Iterator[Session]:
