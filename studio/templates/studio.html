@@ -46,13 +46,23 @@
           {% for s in [10, 15, 20, 25, 30, 40, 45, 60, 90, 120] %}<option value="{{ s }}">{{ s }} s</option>{% endfor %}
         </select>
       </label>
+      <button id="env-mode" class="env-toggle" aria-pressed="false" title="Lautstärke über die Zeit zeichnen: Klick setzt Punkt, ziehen verschiebt, Doppelklick löscht">Hüllkurven</button>
+      <label class="inline muted" title="Spuren mit D werden leiser, sobald die Sprache spricht">Ducking
+        <select id="duck-amount">{% for d in [6, 8, 10, 12, 15, 18, 24] %}<option value="{{ d }}">−{{ d }} dB</option>{% endfor %}</select>
+      </label>
       <span class="spacer"></span>
       <label class="inline muted">Lautheit
         <select id="export-loudness">
-          <option value="">Pegel lassen (Spitzen −1 dBTP)</option>
-          <option value="-8">−8 LUFS (wie Konfigurator)</option>
-          <option value="-14">−14 LUFS (Web/Streaming)</option>
-          <option value="-23">−23 LUFS (EBU R128)</option>
+          <option value="">Pegel lassen (nur Spitzen auf −1 dBTP)</option>
+          <optgroup label="Normalisieren (Dynamik bleibt)">
+            <option value="normalize:-23">−23 LUFS · EBU R128, Sender-Anlieferung</option>
+            <option value="normalize:-16">−16 LUFS · Web, Podcast</option>
+            <option value="normalize:-14">−14 LUFS · Streaming</option>
+          </optgroup>
+          <optgroup label="Mastern (verdichtet, laut)">
+            <option value="master:-8">−8 LUFS · Radio-laut, wie Konfigurator</option>
+            <option value="master:-11">−11 LUFS · laut, etwas mehr Dynamik</option>
+          </optgroup>
         </select>
       </label>
       <button class="primary" id="export">Exportieren</button>
@@ -68,7 +78,7 @@
       <div class="track-head" data-track="{{ key }}">
         <span class="track-name"><span class="swatch {{ key }}"></span>{{ label }}</span>
         <span class="track-ctrls">
-          <button class="mini" data-act="mute" aria-pressed="false" title="Stumm">M</button><button class="mini" data-act="solo" aria-pressed="false" title="Solo">S</button>
+          <button class="mini" data-act="mute" aria-pressed="false" title="Stumm">M</button><button class="mini" data-act="solo" aria-pressed="false" title="Solo">S</button>{% if key != 'voice' %}<button class="mini" data-act="duck" aria-pressed="false" title="Ducking: leiser, sobald die Sprache spricht">D</button>{% endif %}
           <input type="range" min="-30" max="6" step="0.5" value="0" data-act="gain" aria-label="Lautstärke {{ label }}">
           <span class="db small muted" data-db>0 dB</span>
         </span>
@@ -88,7 +98,8 @@
       <span class="spacer"></span>
       <button id="insp-delete" class="link danger">Clip entfernen (Entf)</button>
     </div>
-    <p class="help small hint-line">Clips ziehen zum Verschieben (auch auf eine andere Spur), Ränder ziehen zum Kürzen bzw. – mit Loop – Verlängern, die kleinen Griffe oben setzen Ein- und Ausblendung. Alt gedrückt halten: ohne Einrasten.</p>
+    <p class="help small hint-line" id="hint-clips">Clips ziehen zum Verschieben (auch auf eine andere Spur), Ränder ziehen zum Kürzen bzw. – mit Loop – Verlängern, die kleinen Griffe oben setzen Ein- und Ausblendung. Alt gedrückt halten: ohne Einrasten.</p>
+    <p class="help small hint-line" id="hint-env" hidden>Hüllkurven: Klick auf eine Spur setzt einen Punkt (oben = lauter, Mitte-oben = 0 dB), Punkte ziehen, Doppelklick löscht einen Punkt. <button class="link" id="env-clear">Hüllkurve der gewählten Spur löschen</button></p>
   </section>
 </div>
 

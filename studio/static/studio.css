@@ -207,3 +207,14 @@ td.libs label.check { margin: 0; }
 .clip .clip-label { left: 10px; right: 10px; }
 #panel-files .library-head { flex-wrap: wrap; justify-content: flex-end; }
 #panel-files .library-head .help { flex-basis: 100%; order: 2; }
+/* --- Schritt 4: Hüllkurven, Ducking ----------------------------------- */
+svg.env { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 3; }
+svg.env polyline { fill: none; stroke: var(--text); stroke-width: 1.5; opacity: .55; }
+svg.env circle { fill: var(--card); stroke: var(--text); stroke-width: 1.5; }
+.lane.has-env svg.env polyline { opacity: .8; }
+.timeline.env-mode svg.env { pointer-events: all; cursor: crosshair; }
+.timeline.env-mode svg.env circle { cursor: grab; }
+.timeline.env-mode .clip { pointer-events: none; opacity: .65; }
+.timeline.env-mode .lane-hint { display: none; }
+.env-toggle[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.track-head .mini[aria-pressed="true"][data-act="duck"] { background: var(--atmo); color: #fff; border-color: var(--atmo); }

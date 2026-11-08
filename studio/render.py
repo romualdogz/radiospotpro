@@ -11,6 +11,7 @@ import numpy as np
 
 from app import audio
 
+from . import automation
 from .models import Export, StudioUser, now
 from .projects import ProjectData, resolve_sources
 
@@ -63,43 +64,90 @@ def looped(src: np.ndarray, offset: int, n: int) -> np.ndarray:
     return out[offset:total]
 
 
+def _clip_into(buf: np.ndarray, clip, src: np.ndarray) -> None:
+    """Clip (mit Clip-Lautstärke, Fades, Loop) in den Spurpuffer legen."""
+    total = len(buf)
+    start = int(round(clip.start * SR))
+    if start >= total:
+        return
+    a = int(round(clip.offset * SR))
+    want = min(int(round(clip.duration * SR)), total - start)
+    piece = looped(src, a, want) if clip.loop else src[a:a + want]
+    n = len(piece)
+    if not n:
+        return
+    full = int(round(clip.duration * SR))  # Fade-out bezieht sich auf das Clip-Ende, auch wenn es abgeschnitten ist
+    env = _envelope(full, _db(clip.gain_db), min(int(clip.fade_in * SR), full),
+                    min(int(clip.fade_out * SR), full), clip.fade_curve)[:n]
+    buf[start:start + n] += piece * env[:, None]
+
+
 def mix_project(data: ProjectData, files: dict) -> np.ndarray:
-    """Clips platzieren, Clip- und Spurlautstärke, Fades, Mute/Solo anwenden → Stereo-Mix (float32)."""
+    """Spuren einzeln mischen: Clips → Spurlautstärke × Hüllkurve (× Ducking) → Summe.
+    Die Sprach-Spur wird zuerst gemischt, ihr Pegel steuert das Ducking der anderen Spuren."""
     total = int(round(data.length * SR))
+    n_frames = automation.frames(data.length)
     out = np.zeros((total, 2), dtype=np.float32)
     soloed = {k for k, t in data.tracks.items() if t.solo}
-    cache: dict[int, np.ndarray] = {}
-    for clip in data.clips:
-        track = data.tracks[clip.track]
-        if track.mute or (soloed and clip.track not in soloed):
-            continue
-        start = int(round(clip.start * SR))
-        if start >= total:
-            continue
+    cache: dict = {}
+
+    def source(clip):
         key = clip.source
         if key not in cache:
             path = files[key]
             cache[key] = audio.stereo(audio.decode_file(getattr(path, "path", path), channels=2))
-        src = cache[key]
-        a = int(round(clip.offset * SR))
-        want = min(int(round(clip.duration * SR)), total - start)
-        piece = looped(src, a, want) if clip.loop else src[a:a + want]
-        n = len(piece)
-        if not n:
+        return cache[key]
+
+    duck = None
+    for name in ["voice"] + [k for k in data.tracks if k != "voice"]:
+        track = data.tracks[name]
+        clips = [c for c in data.clips if c.track == name]
+        audible = not (track.mute or (soloed and name not in soloed))
+        if not clips or (not audible and name != "voice"):
             continue
-        full = int(round(clip.duration * SR))  # Fade-out bezieht sich auf das Clip-Ende, auch wenn es abgeschnitten ist
-        env = _envelope(full, _db(clip.gain_db + track.gain_db),
-                        min(int(clip.fade_in * SR), full), min(int(clip.fade_out * SR), full), clip.fade_curve)[:n]
-        end = min(start + n, total)
-        out[start:end] += piece[:end - start] * env[:end - start, None]
+        buf = np.zeros((total, 2), dtype=np.float32)
+        for clip in clips:
+            _clip_into(buf, clip, source(clip))
+        curve = track.gain_db + automation.envelope_db(track.envelope, n_frames)
+        if name != "voice" and track.duck and duck is not None:
+            curve = curve + duck
+        buf *= automation.per_sample(curve, total, SR)[:, None]
+        if name == "voice":
+            if audible:
+                duck = automation.duck_db(automation.frame_rms_db(buf, SR, n_frames),
+                                          data.ducking.amount_db, data.ducking.release_s)
+                out += buf
+            continue
+        out += buf
     return out
 
 
-def finish(mix: np.ndarray, loudness: float | None) -> np.ndarray:
-    """Mit Ziel-Lautheit: Mastering wie im Konfigurator. Ohne: Pegel bleibt, nur Spitzen über −1 dBTP werden begrenzt."""
+def normalize(mix: np.ndarray, target: float) -> np.ndarray:
+    """Loudness-Normalisierung (z. B. EBU R128): nur Verstärkung, Dynamik bleibt. Spitzen über −1 dBTP
+    fängt der Limiter ab; kostet das Lautheit, wird einmal nachverstärkt."""
+    current = audio.loudness(mix)
+    if current <= -70:
+        return mix
+    out = mix * 10 ** ((target - current) / 20)
+    for _ in range(3):
+        if audio.true_peak_db(out) <= PEAK_CEILING:
+            break
+        out = audio.limit(out, PEAK_CEILING - 1.0)
+        miss = target - audio.loudness(out)
+        if abs(miss) < 0.1:
+            break
+        out = out * 10 ** (miss / 20)
+    return out
+
+
+def finish(mix: np.ndarray, loudness: float | None, mode: str = "master") -> np.ndarray:
+    """Ziel-Lautheit per Mastering (Kompressor + Limiter, laut, wie im Konfigurator) oder Normalisierung
+    (nur Verstärkung). Ohne Ziel: Pegel bleibt, nur Spitzen über −1 dBTP werden begrenzt."""
     if not np.abs(mix).max():
         return mix
-    if loudness is not None:
+    if loudness is not None and mode == "normalize":
+        out = normalize(mix, loudness)
+    elif loudness is not None:
         out = audio.master(mix, target_lufs=loudness, ceiling_dbtp=PEAK_CEILING)
     elif audio.true_peak_db(mix) > PEAK_CEILING:
         out = audio.limit(mix, PEAK_CEILING - 1.0)
@@ -132,7 +180,7 @@ def run(export_id: int) -> int:
                 sources = resolve_sources(db, owner, data)
             except ValueError as e:
                 raise RuntimeError("Eine verwendete Datei wurde inzwischen gelöscht.") from e
-            result = finish(mix_project(data, sources), job.loudness)
+            result = finish(mix_project(data, sources), job.loudness, job.mode)
             job.stored_name = secrets.token_hex(12) + ".wav"
             path = storage.export_path(job)
             path.write_bytes(audio.to_wav(result, bits=24))

@@ -198,6 +198,7 @@
     }
     renderProjectSelect();
     $("ai-script").value = data().script || "";
+    $("duck-amount").value = String(Math.round(data().ducking?.amount_db ?? 10));
     updateScriptInfo();
     renderTracks();
     renderAll();
@@ -327,6 +328,7 @@
       const t = data().tracks[head.dataset.track];
       head.querySelector('[data-act="mute"]').setAttribute("aria-pressed", String(t.mute));
       head.querySelector('[data-act="solo"]').setAttribute("aria-pressed", String(t.solo));
+      head.querySelector('[data-act="duck"]')?.setAttribute("aria-pressed", String(!!t.duck));
       head.querySelector('[data-act="gain"]').value = t.gain_db;
       head.querySelector("[data-db]").textContent = `${t.gain_db > 0 ? "+" : ""}${t.gain_db} dB`;
     }
@@ -340,6 +342,7 @@
     renderInspector();
     const ruler = $("ruler"), last = lanes().at(-1);
     $("playhead").style.height = `${last.offsetTop + last.offsetHeight - ruler.offsetTop}px`;
+    renderEnvelopes();
     drawPlayhead(player.position());
   }
 
@@ -560,14 +563,9 @@
       return this.buffers.get(id);
     },
 
-    trackLevel(track) {
+    audible(track) {
       const tracks = data().tracks, anySolo = TRACKS.some((k) => tracks[k].solo), t = tracks[track];
-      if (t.mute || (anySolo && !t.solo)) return 0;
-      return dbToLin(t.gain_db);
-    },
-
-    updateTrackGains() {
-      for (const k of TRACKS) if (this.trackGains[k]) this.trackGains[k].gain.setTargetAtTime(this.trackLevel(k), this.ctx.currentTime, 0.02);
+      return !(t.mute || (anySolo && !t.solo));
     },
 
     async play() {
@@ -583,11 +581,23 @@
     },
 
     async start(from) {
+      const token = (this.token = (this.token || 0) + 1);
+      let curves;
+      try { curves = await trackCurves(); } catch (e) { toast(e.message, true); return; }
+      if (token !== this.token) return;  // inzwischen neu gestartet
       this.stopNodes();
-      const ctx = this.ctx, now = ctx.currentTime + 0.05;
+      const ctx = this.ctx, now = ctx.currentTime + 0.05, L = data().length;
       for (const k of TRACKS) {
         const g = ctx.createGain();
-        g.gain.value = this.trackLevel(k);
+        if (!this.audible(k)) g.gain.value = 0;
+        else {
+          // Spurlautstärke × Hüllkurve × Ducking ab der Startposition
+          const i0 = Math.floor(from * FPS), src = curves[k];
+          const vals = new Float32Array(Math.max(2, src.length - i0));
+          for (let i = 0; i < vals.length; i++) vals[i] = dbToLin(src[Math.min(i0 + i, src.length - 1)]);
+          g.gain.setValueAtTime(vals[0], now);
+          if (L - from > 0.01) g.gain.setValueCurveAtTime(vals, now + 0.0001, (vals.length - 1) / FPS);
+        }
         g.connect(ctx.destination);
         this.trackGains[k] = g;
       }
@@ -714,7 +724,8 @@
       const badge = document.createElement("span"); badge.className = `badge ${e.status}`; badge.textContent = STATUS[e.status] || e.status;
       const info = document.createElement("span"); info.className = "small muted";
       if (e.status === "done") {
-        info.textContent = `${e.measured_lufs ?? "–"} LUFS · ${e.measured_peak ?? "–"} dBTP · ${fmtMB(e.size_bytes)}`;
+        const how = e.loudness == null ? "Pegel gelassen" : `${e.mode === "normalize" ? "normalisiert" : "gemastert"} auf ${e.loudness} LUFS`;
+        info.textContent = `${how} · gemessen ${e.measured_lufs ?? "–"} LUFS, ${e.measured_peak ?? "–"} dBTP · ${fmtMB(e.size_bytes)}`;
       } else if (e.status === "failed") { info.textContent = e.error; info.className = "small error-text"; }
       li.append(title, badge, info);
       if (e.status === "done") {
@@ -737,8 +748,8 @@
     btn.disabled = true;
     try {
       await flushSave();
-      const v = $("export-loudness").value;
-      await api("POST", `/api/projects/${state.project.id}/exports`, { loudness: v === "" ? null : Number(v) });
+      const [mode, target] = ($("export-loudness").value || "master:").split(":");
+      await api("POST", `/api/projects/${state.project.id}/exports`, { mode, loudness: target ? Number(target) : null });
       toast("Export gestartet");
       loadExports();
     } catch (e) { toast(e.message, true); } finally { btn.disabled = false; }
@@ -785,13 +796,13 @@
       const k = head.dataset.track;
       head.addEventListener("click", (e) => {
         const act = e.target.dataset.act;
-        if (act !== "mute" && act !== "solo") return;
+        if (act !== "mute" && act !== "solo" && act !== "duck") return;
         data().tracks[k][act] = !data().tracks[k][act];
-        renderTracks(); player.updateTrackGains(); changed({ replay: false });
+        renderTracks(); changed();
       });
       head.querySelector('[data-act="gain"]').addEventListener("input", (e) => {
         data().tracks[k].gain_db = Number(e.target.value);
-        renderTracks(); player.updateTrackGains(); changed({ replay: false });
+        renderTracks(); renderEnvelopes(); changed();
       });
     }
 
@@ -883,6 +894,188 @@
     window.addEventListener("beforeunload", (e) => { if (state.dirty) { saveNow(); e.preventDefault(); } });
   }
 
+
+
+  // ------------------------------------------------------------------ Hüllkurven & Ducking (wie studio/automation.py)
+  const FPS = 100, DUCK_THRESHOLD_DB = -45, DUCK_HOLD_S = 0.25, DUCK_LOOKAHEAD_S = 0.05, DUCK_ATTACK_S = 0.1;
+  const ENV_TOP = 12, ENV_BOTTOM = -36;   // Darstellungsbereich der Hüllkurve (dB)
+  let envMode = false, envTrack = null, lastEnvDown = null;
+
+  function envDbAt(points, t) {
+    if (!points || !points.length) return 0;
+    if (t <= points[0].t) return points[0].db;
+    for (let i = 1; i < points.length; i++) {
+      if (t <= points[i].t) {
+        const a = points[i - 1], b = points[i];
+        return b.t === a.t ? b.db : a.db + ((b.db - a.db) * (t - a.t)) / (b.t - a.t);
+      }
+    }
+    return points[points.length - 1].db;
+  }
+
+  function duckDb(voiceDb, amount, release) {
+    const n = voiceDb.length, hold = Math.round(DUCK_HOLD_S * FPS), ahead = Math.round(DUCK_LOOKAHEAD_S * FPS);
+    const spread = new Int32Array(n + 1);
+    for (let i = 0; i < n; i++) if (voiceDb[i] > DUCK_THRESHOLD_DB) {
+      spread[clamp(i - ahead, 0, n)] += 1; spread[clamp(i + hold + 1, 0, n)] -= 1;
+    }
+    const down = Math.exp(-3 / (DUCK_ATTACK_S * FPS)), up = Math.exp(-3 / (release * FPS));
+    const out = new Float64Array(n);
+    let acc = 0, g = 0;
+    for (let i = 0; i < n; i++) {
+      acc += spread[i];
+      const target = acc > 0 ? -amount : 0;
+      const k = target < g ? down : up;
+      g = target + (g - target) * k;
+      out[i] = g;
+    }
+    return out;
+  }
+
+  // Pegel der Sprach-Spur pro 10 ms – offline gerendert (16 kHz genügt für die Erkennung)
+  async function voiceLevels(n) {
+    const d = data(), t = d.tracks.voice;
+    const anySolo = TRACKS.some((k) => d.tracks[k].solo);
+    const clips = d.clips.filter((c) => c.track === "voice");
+    const out = new Float64Array(n).fill(-120);
+    if (!clips.length || t.mute || (anySolo && !t.solo)) return out;
+    const SR = 16000, len = Math.ceil(d.length * SR);
+    const off = new OfflineAudioContext(1, len, SR);
+    for (const clip of clips) {
+      let buf; try { buf = await player.buffer(keyOf(clip)); } catch (_) { continue; }
+      const src = off.createBufferSource(); src.buffer = buf;
+      let offset = clip.offset;
+      if (clip.loop) { src.loop = true; src.loopStart = 0; src.loopEnd = buf.duration; offset %= buf.duration; }
+      const g = off.createGain();
+      scheduleEnvelope(g.gain, clip, 0, clip.start, dbToLin(clip.gain_db));
+      src.connect(g).connect(off.destination);
+      src.start(clip.start, offset, Math.min(clip.duration, d.length - clip.start));
+    }
+    const rendered = (await off.startRendering()).getChannelData(0), hop = SR / FPS;
+    for (let i = 0; i < n; i++) {
+      let p = 0; const a = i * hop;
+      if (a + hop > rendered.length) break;
+      for (let j = a; j < a + hop; j++) p += rendered[j] * rendered[j];
+      // Server misst Stereo gemittelt: Mono-Spur ergibt denselben Wert
+      out[i] = 10 * Math.log10(Math.max(p / hop, 1e-12)) + t.gain_db + envDbAt(t.envelope, i / FPS);
+    }
+    return out;
+  }
+
+  // Lautstärke jeder Spur pro Frame (dB): Spurregler + Hüllkurve (+ Ducking)
+  async function trackCurves() {
+    const d = data(), n = Math.ceil(d.length * FPS) + 1;
+    const needDuck = TRACKS.some((k) => k !== "voice" && d.tracks[k].duck && d.clips.some((c) => c.track === k));
+    const duck = needDuck ? duckDb(await voiceLevels(n), d.ducking?.amount_db ?? 10, d.ducking?.release_s ?? 0.5) : null;
+    const curves = {};
+    for (const k of TRACKS) {
+      const t = d.tracks[k], arr = new Float64Array(n);
+      for (let i = 0; i < n; i++) arr[i] = t.gain_db + envDbAt(t.envelope, i / FPS) + (duck && k !== "voice" && t.duck ? duck[i] : 0);
+      curves[k] = arr;
+    }
+    return curves;
+  }
+
+  // Zeichnen und Bearbeiten
+  const dbToY = (db, H) => ((ENV_TOP - clamp(db, ENV_BOTTOM, ENV_TOP)) / (ENV_TOP - ENV_BOTTOM)) * H;
+  const yToDb = (y, H) => Math.round((ENV_TOP - (y / H) * (ENV_TOP - ENV_BOTTOM)) * 2) / 2;
+  const SVG = "http://www.w3.org/2000/svg";
+
+  function renderEnvelopes() {
+    if (!state.project) return;
+    for (const lane of lanes()) {
+      const k = lane.dataset.track, pts = data().tracks[k].envelope || [];
+      let svg = lane.querySelector("svg.env");
+      if (!svg) { svg = document.createElementNS(SVG, "svg"); svg.classList.add("env"); lane.appendChild(svg); }
+      const W = lane.clientWidth, H = lane.clientHeight, L = data().length;
+      svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      svg.replaceChildren();
+      lane.classList.toggle("has-env", pts.length > 0);
+      if (!pts.length && !envMode) continue;
+      const line = document.createElementNS(SVG, "polyline");
+      const coords = pts.length ? [[0, pts[0].db], ...pts.map((p) => [p.t, p.db]), [L, pts[pts.length - 1].db]] : [[0, 0], [L, 0]];
+      line.setAttribute("points", coords.map(([t, db]) => `${(t / L) * W},${dbToY(db, H)}`).join(" "));
+      svg.appendChild(line);
+      pts.forEach((p, i) => {
+        const c = document.createElementNS(SVG, "circle");
+        c.setAttribute("cx", (p.t / L) * W); c.setAttribute("cy", dbToY(p.db, H)); c.setAttribute("r", 5);
+        c.dataset.idx = i;
+        const title = document.createElementNS(SVG, "title"); title.textContent = `${fmtTime(p.t)} · ${p.db > 0 ? "+" : ""}${p.db} dB`;
+        c.appendChild(title);
+        svg.appendChild(c);
+      });
+    }
+  }
+
+  function setEnvMode(on) {
+    envMode = on;
+    $("env-mode").setAttribute("aria-pressed", String(on));
+    $("timeline").classList.toggle("env-mode", on);
+    $("hint-env").hidden = !on; $("hint-clips").hidden = on;
+    if (on) select(null);
+    renderEnvelopes();
+  }
+
+  function envPointer(e) {
+    if (!envMode) return;
+    const lane = e.target.closest(".lane[data-track]");
+    if (!lane || e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    const k = lane.dataset.track; envTrack = k;
+    const track = data().tracks[k];
+    track.envelope = track.envelope || [];
+    const rect = lane.getBoundingClientRect(), L = data().length;
+    const at = (ev) => ({ t: +clamp(snap(((ev.clientX - rect.left) / rect.width) * L, ev.altKey), 0, L).toFixed(3),
+                          db: clamp(yToDb(ev.clientY - rect.top, rect.height), -60, 12) });
+    let idx = e.target.dataset?.idx != null ? Number(e.target.dataset.idx) : -1;
+    let point;
+    if (idx >= 0) {
+      // Doppelklick auf einen Punkt löscht ihn (eigene Erkennung: die Punkte werden beim Ziehen neu gezeichnet)
+      const nowMs = performance.now();
+      if (lastEnvDown && lastEnvDown.point === track.envelope[idx] && nowMs - lastEnvDown.time < 400) {
+        track.envelope.splice(idx, 1);
+        lastEnvDown = null;
+        renderEnvelopes(); changed();
+        return;
+      }
+      point = track.envelope[idx];
+      lastEnvDown = { point, time: nowMs };
+    } else {
+      point = at(e);
+      track.envelope.push(point);
+      track.envelope.sort((a, b) => a.t - b.t);
+      lastEnvDown = null;
+      renderEnvelopes();
+    }
+    let moved = false;
+    const move = (ev) => {
+      moved = true;
+      const p = at(ev);
+      point.t = p.t; point.db = p.db;
+      track.envelope.sort((a, b) => a.t - b.t);
+      renderEnvelopes();
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      if (moved || idx < 0) changed();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  }
+
+  function bindEnvelopes() {
+    $("env-mode").addEventListener("click", () => setEnvMode(!envMode));
+    $("timeline").addEventListener("pointerdown", envPointer, true);
+    $("env-clear").addEventListener("click", () => {
+      if (!envTrack) { toast("Zuerst auf die Spur klicken, deren Hüllkurve gelöscht werden soll."); return; }
+      data().tracks[envTrack].envelope = [];
+      renderEnvelopes(); changed();
+    });
+    $("duck-amount").addEventListener("change", (e) => {
+      data().ducking = { ...(data().ducking || { release_s: 0.5 }), amount_db: Number(e.target.value) };
+      changed();
+    });
+  }
 
   // ------------------------------------------------------------------ KI: Text & Stimme
   const ai = { status: null, lastAsset: null };
@@ -996,5 +1189,6 @@
 
   bind();
   bindAi();
+  bindEnvelopes();
   init().catch((e) => toast(e.message, true));
 })();

@@ -12,10 +12,31 @@ from .models import TRACKS, Asset, Library, LibraryItem, StudioUser
 MAX_CLIPS = 300
 
 
+MAX_ENVELOPE_POINTS = 200
+
+
+class EnvPoint(BaseModel):
+    t: float = Field(ge=0)                    # Zeit auf der Zeitleiste (s)
+    db: float = Field(0.0, ge=-60, le=12)     # Lautstärke relativ zur Spur (dB)
+
+
 class TrackState(BaseModel):
     gain_db: float = Field(0.0, ge=-60, le=12)
     mute: bool = False
     solo: bool = False
+    # Lautstärke über die Zeit; leer = konstant
+    envelope: list[EnvPoint] = Field(default_factory=list, max_length=MAX_ENVELOPE_POINTS)
+    duck: bool = False                        # leiser, sobald die Sprache spricht
+
+    @field_validator("envelope")
+    @classmethod
+    def _sorted(cls, v):
+        return sorted(v, key=lambda p: p.t)
+
+
+class Ducking(BaseModel):
+    amount_db: float = Field(10.0, ge=0, le=30)   # um so viel dB absenken
+    release_s: float = Field(0.5, ge=0.1, le=3)   # so schnell wieder hochfahren
 
 
 FADE_CURVES = ("linear", "smooth")
@@ -67,6 +88,7 @@ class ProjectData(BaseModel):
     tracks: dict[str, TrackState] = Field(default_factory=dict)
     clips: list[Clip] = Field(default_factory=list, max_length=MAX_CLIPS)
     script: str = Field("", max_length=5000)  # Sprechtext (KI-Vorschlag oder selbst geschrieben)
+    ducking: Ducking = Field(default_factory=Ducking)
 
     @field_validator("length")
     @classmethod
@@ -86,7 +108,10 @@ class ProjectData(BaseModel):
 
 
 def empty_project(length: float = 30) -> dict:
-    return ProjectData(length=length).model_dump()
+    data = ProjectData(length=length)
+    for k in ("music", "atmo"):  # neue Projekte: Musik und Atmo weichen der Stimme aus
+        data.tracks[k].duck = True
+    return data.model_dump()
 
 
 class Source(NamedTuple):

@@ -238,11 +238,12 @@ def delete_project(project_id: int, user: StudioUser = Depends(api_user), db: Se
 
 class ExportRequest(BaseModel):
     loudness: float | None = Field(None, ge=-30, le=-6)  # None = Pegel lassen, nur Spitzen begrenzen
+    mode: str = Field("master", pattern="^(master|normalize)$")
 
 
 def _export(e: Export) -> dict:
     return {"id": e.id, "project_id": e.project_id, "name": e.name, "status": e.status, "error": e.error,
-            "loudness": e.loudness, "measured_lufs": e.measured_lufs, "measured_peak": e.measured_peak,
+            "loudness": e.loudness, "mode": e.mode, "measured_lufs": e.measured_lufs, "measured_peak": e.measured_peak,
             "size_bytes": e.size_bytes, "created_at": _iso(e.created_at), "finished_at": _iso(e.finished_at)}
 
 
@@ -266,7 +267,8 @@ def start_export(project_id: int, body: ExportRequest, user: StudioUser = Depend
         resolve_sources(db, user, data)
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
-    job = Export(user_id=user.id, project_id=p.id, name=p.name, snapshot=data.model_dump(), loudness=body.loudness)
+    job = Export(user_id=user.id, project_id=p.id, name=p.name, snapshot=data.model_dump(), loudness=body.loudness,
+                 mode=body.mode)
     db.add(job)
     db.commit()
     return _export(job)

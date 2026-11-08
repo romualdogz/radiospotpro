@@ -19,6 +19,7 @@ _ADDED_COLUMNS = [
     ("studio_users", "tts_chars_month", "INTEGER DEFAULT 20000"),
     ("studio_users", "scripts_month", "INTEGER DEFAULT 100"),
     ("studio_assets", "origin", "VARCHAR(10) NOT NULL DEFAULT 'upload'"),
+    ("studio_exports", "mode", "VARCHAR(10) NOT NULL DEFAULT 'master'"),
 ]
 
 

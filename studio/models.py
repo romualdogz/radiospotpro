@@ -105,6 +105,8 @@ class Export(Base):
     name: Mapped[str] = mapped_column(String(160))
     snapshot: Mapped[dict] = mapped_column(JSON, default=dict)  # Projektstand beim Auftrag
     loudness: Mapped[float | None] = mapped_column(Float, nullable=True)  # Ziel-LUFS, None = nur Spitzen begrenzen
+    # normalize = nur Verstärkung (+ Limiter für Spitzen), master = Kompressor + Limiter (laut)
+    mode: Mapped[str] = mapped_column(String(10), default="master")
     # queued → running → done | failed; done → expired (Datei gelöscht)
     status: Mapped[str] = mapped_column(String(12), default="queued", index=True)
     error: Mapped[str] = mapped_column(Text, default="")
