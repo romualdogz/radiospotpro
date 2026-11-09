@@ -39,6 +39,23 @@ Die Fußzeile (Adresse, UID …) stellst du unter *Einstellungen → Firmenangab
 Jeder Benutzer kann unter *Mein Konto* sein eigenes Passwort ändern. Der letzte Administrator kann nicht
 gelöscht oder herabgestuft werden.
 
+### Admin-Zugang vergessen oder gesperrt?
+
+Im Terminal zurücksetzen – für den Konfigurator und für das Studio. Am Mac: Doppelklick auf
+**`admin-zuruecksetzen.command`** und den Fragen folgen (welcher Admin, welches Konto, neues Passwort –
+leer lassen erzeugt eines). Oder direkt:
+
+```bash
+python scripts/admin_reset.py --list
+python scripts/admin_reset.py --studio --user ron@onaircraft.net
+python scripts/admin_reset.py --konfigurator --user admin --generate
+```
+
+Das Konto bekommt ein neues Passwort und die Rolle Administrator; im Studio wird es außerdem
+entsperrt, das Ablaufdatum entfernt, die Zwei-Faktor-Anmeldung abgeschaltet und alle Geräte
+abgemeldet. Gibt es das Konto nicht, wird es angelegt. Der Server darf dabei laufen; nur eine
+Login-Sperre nach zu vielen Fehlversuchen (15 Minuten) hebt erst ein Neustart auf.
+
 ## Installation auf dem Mac (empfohlen)
 
 1. ZIP entpacken (z. B. in *Dokumente*).

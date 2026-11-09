@@ -8,6 +8,15 @@ bleiben erhalten, Server neu starten. Neue Datenbank-Spalten werden beim Start a
 
 ---
 
+## 09.11.2026
+
+### Neu
+- **Admin zurücksetzen im Terminal:** `admin-zuruecksetzen.command` (Mac, Doppelklick) bzw.
+  `python scripts/admin_reset.py` – neues Passwort für den Admin des Konfigurators oder des Studios,
+  im Studio zusätzlich entsperren, Ablaufdatum und Zwei-Faktor entfernen; legt fehlende Konten an.
+
+---
+
 ## 08.11.2026
 
 ### Neu
